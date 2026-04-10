@@ -1,28 +1,11 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-
-/**
- * Profile shape matching the real AuthContext profile.
- * Keep in sync with AuthContext.tsx Profile interface.
- */
-export interface MockProfile {
-  id: string;
-  user_id: string;
-  email: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  title: string | null;
-  department: string | null;
-  manager_email: string | null;
-  is_admin: boolean;
-  can_view_diagnostics: boolean;
-  is_active: boolean;
-}
+import { AuthContext, type Profile } from "@/contexts/AuthContext";
 
 export interface MockUserOption {
   label: string;
   description: string;
-  profile: MockProfile;
+  profile: Profile;
 }
 
 /** Predefined mock users for preview testing */
@@ -80,26 +63,12 @@ export const MOCK_USERS: MockUserOption[] = [
   },
 ];
 
-interface PreviewAuthContextType {
-  session: Session | null;
-  user: User | null;
-  profile: MockProfile | null;
-  loading: boolean;
-  isPreview: true;
-  signInWithMicrosoft: () => Promise<void>;
-  signOut: () => Promise<void>;
-  signInAsMock: (profile: MockProfile) => void;
-}
-
-const PreviewAuthContext = createContext<PreviewAuthContextType | undefined>(undefined);
-
 export function PreviewAuthProvider({ children }: { children: React.ReactNode }) {
-  const [profile, setProfile] = useState<MockProfile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [mockUser, setMockUser] = useState<User | null>(null);
   const [mockSession, setMockSession] = useState<Session | null>(null);
 
-  const signInAsMock = useCallback((p: MockProfile) => {
-    // Build minimal User and Session objects that satisfy the app's needs
+  const signInAsMock = useCallback((p: Profile) => {
     const fakeUser = {
       id: p.user_id,
       email: p.email,
@@ -129,12 +98,11 @@ export function PreviewAuthProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const signInWithMicrosoft = useCallback(async () => {
-    // No-op in preview — we use mock login instead
     console.warn("[Preview] Microsoft sign-in is disabled in preview mode.");
   }, []);
 
   return (
-    <PreviewAuthContext.Provider
+    <AuthContext.Provider
       value={{
         session: mockSession,
         user: mockUser,
@@ -147,12 +115,6 @@ export function PreviewAuthProvider({ children }: { children: React.ReactNode })
       }}
     >
       {children}
-    </PreviewAuthContext.Provider>
+    </AuthContext.Provider>
   );
-}
-
-export function usePreviewAuth() {
-  const context = useContext(PreviewAuthContext);
-  if (!context) throw new Error("usePreviewAuth must be used within PreviewAuthProvider");
-  return context;
 }

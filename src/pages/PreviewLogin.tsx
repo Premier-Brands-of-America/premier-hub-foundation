@@ -1,14 +1,14 @@
-import { usePreviewAuth, MOCK_USERS } from "@/contexts/PreviewAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { MOCK_USERS } from "@/contexts/PreviewAuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
 import { brand } from "@/config/brand";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, User, Settings, Activity } from "lucide-react";
 
 const roleIcons = [User, Settings, Activity];
 
 const PreviewLogin = () => {
-  const { signInAsMock } = usePreviewAuth();
+  const { signInAsMock } = useAuth();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted">
@@ -38,7 +38,7 @@ const PreviewLogin = () => {
               return (
                 <button
                   key={mockUser.profile.id}
-                  onClick={() => signInAsMock(mockUser.profile)}
+                  onClick={() => signInAsMock?.(mockUser.profile)}
                   className="w-full flex items-center gap-4 p-4 rounded-lg border border-border bg-background hover:border-accent hover:bg-accent/5 transition-all text-left group"
                 >
                   <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted group-hover:bg-accent/10 transition-colors shrink-0">

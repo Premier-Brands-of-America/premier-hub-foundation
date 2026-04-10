@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { PreviewAuthProvider, usePreviewAuth } from "@/contexts/PreviewAuthContext";
+import { PreviewAuthProvider } from "@/contexts/PreviewAuthContext";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
@@ -16,69 +16,62 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 const IS_PREVIEW = isPreviewEnvironment();
 
-/* ─── Production protected route ─── */
-function ProdProtectedRoute({ children }: { children: React.ReactNode }) {
+/* ─── Protected route (works with both providers via shared AuthContext) ─── */
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading, profile } = useAuth();
 
-  if (loading) return <LoadingScreen />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // In preview mode, check profile presence (no real session)
+  if (IS_PREVIEW) {
+    if (!profile) return <Navigate to="/login" replace />;
+    return <AppLayout>{children}</AppLayout>;
+  }
+
+  // Production mode
   if (!session) return <Navigate to="/login" replace />;
-
-  if (profile && !profile.is_active) return <AccessRevokedScreen />;
+  if (profile && !profile.is_active) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center space-y-2 max-w-md mx-4">
+          <h1 className="text-xl font-semibold text-foreground">Access Revoked</h1>
+          <p className="text-sm text-muted-foreground">
+            Your access to Premier Project Hub has been removed. Contact your administrator if you believe this is an error.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return <AppLayout>{children}</AppLayout>;
 }
 
-function ProdPublicRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
-  if (loading) return null;
-  if (session) return <Navigate to="/" replace />;
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading, profile } = useAuth();
+
+  if (!IS_PREVIEW) {
+    if (loading) return null;
+    if (session) return <Navigate to="/" replace />;
+  } else {
+    if (profile) return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
 
-/* ─── Preview protected route ─── */
-function PreviewProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { profile } = usePreviewAuth();
-  if (!profile) return <Navigate to="/login" replace />;
-  return <AppLayout>{children}</AppLayout>;
-}
+/* ─── Route definitions ─── */
+function AppRoutes() {
+  const LoginPage = IS_PREVIEW ? PreviewLogin : Login;
 
-function PreviewPublicRoute({ children }: { children: React.ReactNode }) {
-  const { profile } = usePreviewAuth();
-  if (profile) return <Navigate to="/" replace />;
-  return <>{children}</>;
-}
-
-/* ─── Shared UI ─── */
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="text-center space-y-2">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-function AccessRevokedScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="text-center space-y-2 max-w-md mx-4">
-        <h1 className="text-xl font-semibold text-foreground">Access Revoked</h1>
-        <p className="text-sm text-muted-foreground">
-          Your access to Premier Project Hub has been removed. Contact your administrator if you believe this is an error.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Route definitions (shared) ─── */
-function AppRoutes({ ProtectedRoute, PublicRoute, LoginPage }: {
-  ProtectedRoute: React.ComponentType<{ children: React.ReactNode }>;
-  PublicRoute: React.ComponentType<{ children: React.ReactNode }>;
-  LoginPage: React.ComponentType;
-}) {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
@@ -96,32 +89,22 @@ function AppRoutes({ ProtectedRoute, PublicRoute, LoginPage }: {
 }
 
 /* ─── App shell ─── */
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        {IS_PREVIEW ? (
-          <PreviewAuthProvider>
-            <AppRoutes
-              ProtectedRoute={PreviewProtectedRoute}
-              PublicRoute={PreviewPublicRoute}
-              LoginPage={PreviewLogin}
-            />
-          </PreviewAuthProvider>
-        ) : (
-          <AuthProvider>
-            <AppRoutes
-              ProtectedRoute={ProdProtectedRoute}
-              PublicRoute={ProdPublicRoute}
-              LoginPage={Login}
-            />
-          </AuthProvider>
-        )}
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const Provider = IS_PREVIEW ? PreviewAuthProvider : AuthProvider;
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Provider>
+            <AppRoutes />
+          </Provider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
