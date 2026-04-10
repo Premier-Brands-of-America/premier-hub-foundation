@@ -103,7 +103,14 @@ export function AppSidebar() {
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {toolsNav.map((item) => (
+              {toolsNav
+                .filter((item) => {
+                  if ((item as any).requiresDiagnostics) {
+                    return profile?.is_admin || profile?.can_view_diagnostics;
+                  }
+                  return true;
+                })
+                .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
