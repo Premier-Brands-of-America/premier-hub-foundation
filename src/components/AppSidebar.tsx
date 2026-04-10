@@ -6,6 +6,7 @@ import {
   Globe,
   Archive,
   Bot,
+  BarChart3,
   Settings,
   LogOut,
   ChevronLeft,
@@ -40,6 +41,7 @@ const mainNav = [
 
 const toolsNav = [
   { title: "AI Assistant", url: "/ai-assistant", icon: Bot },
+  { title: "Diagnostics", url: "/diagnostics", icon: BarChart3, requiresDiagnostics: true },
 ];
 
 const adminNav = [
