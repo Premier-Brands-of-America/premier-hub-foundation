@@ -28,9 +28,14 @@ export async function updateProfileFlag(
   flag: "is_admin" | "can_view_diagnostics" | "is_active",
   value: boolean
 ) {
+  const updates: Record<string, boolean | string> = {
+    updated_at: new Date().toISOString(),
+  };
+  updates[flag] = value;
+
   const { error } = await supabase
     .from("profiles")
-    .update({ [flag]: value, updated_at: new Date().toISOString() })
+    .update(updates as any)
     .eq("user_id", userId);
 
   if (error) throw error;
