@@ -84,7 +84,7 @@ function AppRoutes() {
       <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />
       <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />
       <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
-      <Route path="/ai-assistant" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
