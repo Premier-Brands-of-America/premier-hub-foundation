@@ -10,7 +10,7 @@ import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
-import PlaceholderPage from "./pages/PlaceholderPage";
+
 import TasksPage from "./pages/TasksPage";
 import ProjectListPage from "./pages/ProjectListPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
