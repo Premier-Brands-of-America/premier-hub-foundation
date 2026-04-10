@@ -24,7 +24,7 @@ export const brand = {
    * When null, the app falls back to `appShortName` in a colored box.
    */
   logo: {
-    src: null as string | null,
+    src: logoSrc as string | null,
     alt: "Premier Brands logo",
     /** Width in pixels for the sidebar logo */
     sidebarWidth: 32,
