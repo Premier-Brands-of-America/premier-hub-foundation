@@ -30,6 +30,7 @@ export interface ProjectUpdate {
   content: string;
   created_at: string;
   updated_at: string;
+  edited_by: string | null;
 }
 
 export interface ProjectActivity {
@@ -63,9 +64,28 @@ export interface ProjectLink {
   created_at: string;
 }
 
+/** Profile info for stakeholder display */
+export interface StakeholderProfile {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  title: string | null;
+  department: string | null;
+  manager_email: string | null;
+}
+
+/** Enriched stakeholder with profile details */
+export interface EnrichedStakeholder extends ProjectStakeholder {
+  full_name?: string | null;
+  email?: string | null;
+  title?: string | null;
+  department?: string | null;
+  manager_email?: string | null;
+}
+
 /** Enriched project with stakeholder list + owner name for display */
 export interface ProjectWithMeta extends Project {
   owner_name?: string;
   owner_email?: string;
-  stakeholders?: (ProjectStakeholder & { name?: string; email?: string })[];
+  stakeholders?: EnrichedStakeholder[];
 }
