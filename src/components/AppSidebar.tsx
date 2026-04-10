@@ -11,6 +11,8 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { BrandLogo } from "@/components/BrandLogo";
+import { brand } from "@/config/brand";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -59,15 +61,13 @@ export function AppSidebar() {
         <div className={`px-4 py-5 border-b border-sidebar-border ${collapsed ? "px-2 py-3" : ""}`}>
           {collapsed ? (
             <div className="flex items-center justify-center">
-              <span className="font-bold text-sidebar-primary text-lg">P</span>
+              <BrandLogo size="sm" />
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-accent flex items-center justify-center shrink-0">
-                <span className="font-bold text-accent-foreground text-sm">P</span>
-              </div>
+              <BrandLogo size="sm" />
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-sidebar-primary truncate">Premier Project Hub</h2>
+                <h2 className="text-sm font-semibold text-sidebar-primary truncate">{brand.appName}</h2>
               </div>
             </div>
           )}
