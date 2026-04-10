@@ -4,14 +4,19 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { PreviewAuthProvider } from "@/contexts/PreviewAuthContext";
+import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
+import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+const IS_PREVIEW = isPreviewEnvironment();
 
+/* ─── Protected route (works with both providers via shared AuthContext) ─── */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading, profile } = useAuth();
 
@@ -26,9 +31,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session) return <Navigate to="/login" replace />;
+  // In preview mode, check profile presence (no real session)
+  if (IS_PREVIEW) {
+    if (!profile) return <Navigate to="/login" replace />;
+    return <AppLayout>{children}</AppLayout>;
+  }
 
-  // Block deactivated users
+  // Production mode
+  if (!session) return <Navigate to="/login" replace />;
   if (profile && !profile.is_active) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
@@ -46,35 +56,55 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
-  if (loading) return null;
-  if (session) return <Navigate to="/" replace />;
+  const { session, loading, profile } = useAuth();
+
+  if (!IS_PREVIEW) {
+    if (loading) return null;
+    if (session) return <Navigate to="/" replace />;
+  } else {
+    if (profile) return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/tasks" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="/assigned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="/owned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="/public-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="/completed-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="/ai-assistant" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+/* ─── Route definitions ─── */
+function AppRoutes() {
+  const LoginPage = IS_PREVIEW ? PreviewLogin : Login;
+
+  return (
+    <Routes>
+      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/assigned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/owned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/public-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/completed-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/ai-assistant" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+/* ─── App shell ─── */
+const App = () => {
+  const Provider = IS_PREVIEW ? PreviewAuthProvider : AuthProvider;
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Provider>
+            <AppRoutes />
+          </Provider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
