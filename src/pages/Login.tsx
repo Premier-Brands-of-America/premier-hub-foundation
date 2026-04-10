@@ -1,5 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/BrandLogo";
+import { brand } from "@/config/brand";
 import { Shield } from "lucide-react";
 
 const Login = () => {
@@ -11,13 +13,9 @@ const Login = () => {
         <div className="bg-card rounded-lg shadow-lg p-8 space-y-8">
           {/* Logo area */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-sidebar">
-              <span className="text-sidebar-foreground font-bold text-xl">P</span>
-            </div>
-            <h1 className="text-2xl font-semibold text-foreground">Premier Project Hub</h1>
-            <p className="text-muted-foreground text-sm">
-              Internal project management for Premier Brands of America
-            </p>
+            <BrandLogo size="lg" />
+            <h1 className="text-2xl font-semibold text-foreground">{brand.appName}</h1>
+            <p className="text-muted-foreground text-sm">{brand.tagline}</p>
           </div>
 
           {/* Divider */}
@@ -40,7 +38,7 @@ const Login = () => {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          &copy; {new Date().getFullYear()} Premier Brands of America. All rights reserved.
+          &copy; {new Date().getFullYear()} {brand.companyName}. All rights reserved.
         </p>
       </div>
     </div>
