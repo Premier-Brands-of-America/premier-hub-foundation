@@ -14,6 +14,8 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import TasksPage from "./pages/TasksPage";
 import ProjectListPage from "./pages/ProjectListPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
+import AdminPage from "./pages/AdminPage";
+import DiagnosticsPage from "./pages/DiagnosticsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,7 +87,8 @@ function AppRoutes() {
       <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />
       <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
       <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+      <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
