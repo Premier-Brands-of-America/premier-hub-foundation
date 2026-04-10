@@ -215,6 +215,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          edited_by: string | null
           id: string
           project_id: string
           updated_at: string
@@ -223,6 +224,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          edited_by?: string | null
           id?: string
           project_id: string
           updated_at?: string
@@ -231,6 +233,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          edited_by?: string | null
           id?: string
           project_id?: string
           updated_at?: string
