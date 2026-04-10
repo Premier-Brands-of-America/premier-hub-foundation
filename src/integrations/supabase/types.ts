@@ -62,6 +62,235 @@ export type Database = {
         }
         Relationships: []
       }
+      project_activity: {
+        Row: {
+          action: string
+          created_at: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activity_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          project_id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          project_id: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          project_id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_attachments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_links: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          project_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          project_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          project_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_stakeholders: {
+        Row: {
+          added_at: string
+          id: string
+          percent_complete: number | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          percent_complete?: number | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          percent_complete?: number | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_stakeholders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_updates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          desired_due_date: string | null
+          id: string
+          overall_percent_complete: number | null
+          owner_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_due_date: string | null
+          visibility: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          desired_due_date?: string | null
+          id?: string
+          overall_percent_complete?: number | null
+          owner_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_due_date?: string | null
+          visibility?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          desired_due_date?: string | null
+          id?: string
+          overall_percent_complete?: number | null
+          owner_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_due_date?: string | null
+          visibility?: string
+        }
+        Relationships: []
+      }
       task_activity: {
         Row: {
           action: string
@@ -296,7 +525,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_project_stakeholder: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
