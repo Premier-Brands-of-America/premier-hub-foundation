@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import TasksPage from "./pages/TasksPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,7 +77,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/tasks" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
       <Route path="/assigned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
       <Route path="/owned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
       <Route path="/public-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
