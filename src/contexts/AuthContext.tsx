@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Profile {
+export interface Profile {
   id: string;
   user_id: string;
   email: string | null;
@@ -16,13 +16,15 @@ interface Profile {
   is_active: boolean;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  isPreview?: boolean;
   signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
+  signInAsMock?: (profile: Profile) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
