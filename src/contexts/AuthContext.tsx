@@ -33,7 +33,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const syncAndFetchProfile = async (userId: string, userMeta?: Record<string, any>, email?: string) => {
+    // Sync Entra-backed fields on every login
+    if (userMeta || email) {
+      const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (email) updates.email = email;
+      if (userMeta?.full_name || userMeta?.name) updates.full_name = userMeta.full_name || userMeta.name;
+      if (userMeta?.avatar_url) updates.avatar_url = userMeta.avatar_url;
+
+      await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("user_id", userId);
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
