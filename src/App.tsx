@@ -12,6 +12,7 @@ import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import TasksPage from "./pages/TasksPage";
+import ProjectListPage from "./pages/ProjectListPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,10 +79,10 @@ function AppRoutes() {
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-      <Route path="/assigned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-      <Route path="/owned-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-      <Route path="/public-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
-      <Route path="/completed-projects" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+      <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
+      <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />
+      <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />
+      <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
       <Route path="/ai-assistant" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
