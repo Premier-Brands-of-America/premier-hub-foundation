@@ -117,7 +117,7 @@ export async function updateTask(
   if (IS_PREVIEW) {
     const idx = mockTasks.findIndex((t) => t.id === taskId);
     if (idx >= 0) {
-      mockTasks[idx] = { ...mockTasks[idx], ...dbUpdates, updated_at: new Date().toISOString() };
+      mockTasks[idx] = { ...mockTasks[idx], ...dbUpdates, updated_at: new Date().toISOString() } as Task;
       for (const c of changes) {
         mockActivity.push({
           id: mockId(), task_id: taskId, user_id: userId,
