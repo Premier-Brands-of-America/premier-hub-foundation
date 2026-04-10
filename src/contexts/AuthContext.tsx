@@ -27,7 +27,7 @@ export interface AuthContextType {
   signInAsMock?: (profile: Profile) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -36,7 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const syncAndFetchProfile = async (userId: string, userMeta?: Record<string, any>, email?: string) => {
-    // Sync Entra-backed fields on every login
     if (userMeta || email) {
       const updates: {
         email?: string;
