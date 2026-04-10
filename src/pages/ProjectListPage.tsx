@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,11 +19,31 @@ interface ProjectListPageProps {
   mode: ProjectViewMode;
 }
 
-const viewConfig: Record<ProjectViewMode, { title: string; description: string }> = {
-  assigned: { title: "My Assigned Projects", description: "Projects you are a stakeholder on (excluding ones you own)" },
-  owned: { title: "Projects I Own", description: "Projects where you are the owner" },
-  public: { title: "All Public Projects", description: "All publicly visible projects" },
-  completed: { title: "Completed Projects", description: "All completed projects you can view" },
+const viewConfig: Record<ProjectViewMode, { title: string; description: string; emptyMessage: string; emptyHint: string }> = {
+  assigned: {
+    title: "My Assigned Projects",
+    description: "Projects you are a stakeholder on",
+    emptyMessage: "No assigned projects",
+    emptyHint: "When you're added as a stakeholder on a project, it will appear here.",
+  },
+  owned: {
+    title: "Projects I Own",
+    description: "Projects where you are the owner",
+    emptyMessage: "No owned projects",
+    emptyHint: "Projects you create or take ownership of will appear here.",
+  },
+  public: {
+    title: "All Public Projects",
+    description: "All publicly visible projects",
+    emptyMessage: "No public projects",
+    emptyHint: "Public projects are visible to all authenticated users.",
+  },
+  completed: {
+    title: "Completed Projects",
+    description: "All completed projects you can view",
+    emptyMessage: "No completed projects",
+    emptyHint: "Projects marked as complete will appear here.",
+  },
 };
 
 const ProjectListPage = ({ mode }: ProjectListPageProps) => {
@@ -41,7 +61,6 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
   const loadProjects = async () => {
     try {
       const data = await projectService.fetchProjects();
-      // Enrich with stakeholders for filtering
       const enriched = await Promise.all(
         data.map(async (p) => {
           if (!p.stakeholders) {
@@ -88,7 +107,6 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
         break;
     }
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -96,7 +114,6 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
       );
     }
 
-    // Sort
     switch (sort) {
       case "newest": result.sort((a, b) => b.created_at.localeCompare(a.created_at)); break;
       case "oldest": result.sort((a, b) => a.created_at.localeCompare(b.created_at)); break;
@@ -117,17 +134,16 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
   }, [allProjects, mode, search, sort, userId]);
 
   const selectedProject = useMemo(() => allProjects.find((p) => p.id === selectedProjectId) ?? null, [allProjects, selectedProjectId]);
-
   const config = viewConfig[mode];
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
-      <div className={`flex flex-col ${selectedProject ? "w-1/2 xl:w-3/5" : "w-full"} transition-all`}>
-        <div className="px-6 py-4 border-b border-border">
-          <div className="flex items-center justify-between mb-4">
+      <div className={`flex flex-col ${selectedProject ? "hidden md:flex md:w-1/2 xl:w-3/5" : "w-full"} transition-all`}>
+        <div className="px-4 sm:px-6 py-4 border-b border-border bg-card">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-xl font-semibold text-foreground">{config.title}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
+              <h1 className="text-lg font-semibold text-foreground tracking-tight">{config.title}</h1>
+              <p className="text-xs text-muted-foreground">{config.description}</p>
             </div>
             <Button onClick={() => setShowCreate(true)} className="gap-2" size="sm">
               <Plus className="h-3.5 w-3.5" /> New Project
@@ -139,7 +155,7 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
               <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-              <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[100px] h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="newest">Newest</SelectItem>
                 <SelectItem value="oldest">Oldest</SelectItem>
@@ -150,19 +166,23 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5">
           {loading ? (
             <div className="flex items-center justify-center h-40">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : viewProjects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-center">
-              <p className="text-sm text-muted-foreground">
-                {search ? "No projects match your search." : "No projects in this view yet."}
+            <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <FolderOpen className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">{config.emptyMessage}</p>
+              <p className="text-xs text-muted-foreground mb-3 max-w-[280px]">
+                {search ? "Try a different search term." : config.emptyHint}
               </p>
-              {!search && (mode === "owned" || mode === "assigned") && (
-                <Button variant="outline" size="sm" className="mt-3 gap-1" onClick={() => setShowCreate(true)}>
-                  <Plus className="h-3 w-3" /> Create a project
+              {!search && (mode === "owned") && (
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                  <Plus className="h-3 w-3" /> Create Project
                 </Button>
               )}
             </div>
@@ -181,7 +201,7 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
       </div>
 
       {selectedProject && (
-        <div className="w-1/2 xl:w-2/5">
+        <div className="w-full md:w-1/2 xl:w-2/5 border-l border-border">
           <ProjectDetailPanel
             project={selectedProject}
             onClose={() => setSelectedProjectId(null)}
