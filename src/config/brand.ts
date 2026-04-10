@@ -1,3 +1,5 @@
+import logoSrc from "@/assets/logo.svg";
+
 /**
  * Centralized brand configuration.
  * Update logo, app name, colors, and fonts here — no need to touch component code.
