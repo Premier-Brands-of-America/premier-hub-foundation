@@ -13,6 +13,7 @@ import Dashboard from "./pages/Index";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import TasksPage from "./pages/TasksPage";
 import ProjectListPage from "./pages/ProjectListPage";
+import AIAssistantPage from "./pages/AIAssistantPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
