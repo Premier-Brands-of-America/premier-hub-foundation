@@ -10,6 +10,6 @@ export function isPreviewEnvironment(): boolean {
   return (
     host === "localhost" ||
     host === "127.0.0.1" ||
-    host.includes("lovable.app") && host.includes("id-preview--")
+    host.includes("lovableproject.com")
   );
 }
