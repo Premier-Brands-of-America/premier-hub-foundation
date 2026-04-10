@@ -98,7 +98,14 @@ export async function updateTask(
       new_: updates.percent_complete === null ? "N/A" : String(updates.percent_complete),
     });
 
-  const dbUpdates: Record<string, any> = { ...updates };
+  const dbUpdates: {
+    title?: string;
+    description?: string | null;
+    due_date?: string | null;
+    percent_complete?: number | null;
+    status?: string;
+    completed_at?: string | null;
+  } = { ...updates };
   if (updates.status === "complete" && oldTask.status !== "complete") {
     dbUpdates.completed_at = new Date().toISOString();
     changes.push({ field: "status", old: "active", new_: "complete" });
