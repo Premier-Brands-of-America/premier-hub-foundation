@@ -6,6 +6,7 @@ import {
   Globe,
   Archive,
   Bot,
+  BarChart3,
   Settings,
   LogOut,
   ChevronLeft,
@@ -40,6 +41,7 @@ const mainNav = [
 
 const toolsNav = [
   { title: "AI Assistant", url: "/ai-assistant", icon: Bot },
+  { title: "Diagnostics", url: "/diagnostics", icon: BarChart3, requiresDiagnostics: true },
 ];
 
 const adminNav = [
@@ -101,7 +103,14 @@ export function AppSidebar() {
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {toolsNav.map((item) => (
+              {toolsNav
+                .filter((item) => {
+                  if ((item as any).requiresDiagnostics) {
+                    return profile?.is_admin || profile?.can_view_diagnostics;
+                  }
+                  return true;
+                })
+                .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
