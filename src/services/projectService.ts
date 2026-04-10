@@ -2,20 +2,41 @@ import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
 import type {
   Project, ProjectStakeholder, ProjectUpdate, ProjectActivity,
-  ProjectAttachment, ProjectLink, ProjectWithMeta,
+  ProjectAttachment, ProjectLink, ProjectWithMeta, EnrichedStakeholder,
+  StakeholderProfile,
 } from "@/types/projects";
 
 const IS_PREVIEW = isPreviewEnvironment();
 
 // ─── Mock data for preview ───
 let mockProjects: Project[] = [];
-let mockStakeholders: (ProjectStakeholder & { name?: string; email?: string })[] = [];
+let mockStakeholders: EnrichedStakeholder[] = [];
 let mockUpdates: ProjectUpdate[] = [];
 let mockActivity: ProjectActivity[] = [];
 let mockAttachments: ProjectAttachment[] = [];
 let mockLinks: ProjectLink[] = [];
 let mockIdCounter = 1;
 const mockId = () => `mock-proj-${mockIdCounter++}`;
+
+// ─── Profile cache for display names ───
+const profileCache = new Map<string, { full_name: string | null; email: string | null }>();
+
+export async function resolveProfileName(userId: string): Promise<string> {
+  if (IS_PREVIEW) {
+    const s = mockStakeholders.find((s) => s.user_id === userId);
+    return s?.full_name || "Unknown";
+  }
+  if (profileCache.has(userId)) {
+    const cached = profileCache.get(userId)!;
+    return cached.full_name || cached.email || userId.slice(0, 8);
+  }
+  const { data } = await supabase.from("profiles").select("full_name, email").eq("user_id", userId).single();
+  if (data) {
+    profileCache.set(userId, data);
+    return data.full_name || data.email || userId.slice(0, 8);
+  }
+  return userId.slice(0, 8);
+}
 
 // ─── Projects ───
 
@@ -60,10 +81,9 @@ export async function createProject(
       completed_at: null, created_at: now, updated_at: now,
     };
     mockProjects.unshift(proj);
-    // Add owner as stakeholder
     mockStakeholders.push({
       id: mockId(), project_id: proj.id, user_id: userId,
-      percent_complete: null, added_at: now, name: "You", email: "",
+      percent_complete: null, added_at: now, full_name: "You", email: "",
     });
     mockActivity.push({
       id: mockId(), project_id: proj.id, user_id: userId,
@@ -81,7 +101,6 @@ export async function createProject(
   }).select().single();
   if (error) throw error;
 
-  // Add owner as stakeholder
   await supabase.from("project_stakeholders").insert({ project_id: data.id, user_id: userId });
   await logProjectActivity(userId, data.id, "project_created");
   return data as Project;
@@ -156,39 +175,51 @@ export async function updateProject(
 
 // ─── Stakeholders ───
 
-export async function fetchProjectStakeholders(projectId: string): Promise<(ProjectStakeholder & { name?: string; email?: string })[]> {
+export async function fetchProjectStakeholders(projectId: string): Promise<EnrichedStakeholder[]> {
   if (IS_PREVIEW) return mockStakeholders.filter((s) => s.project_id === projectId);
   const { data, error } = await supabase.from("project_stakeholders").select("*").eq("project_id", projectId);
   if (error) throw error;
 
-  // Enrich with profile names
   const stakeholders = (data ?? []) as ProjectStakeholder[];
   const userIds = stakeholders.map((s) => s.user_id);
   if (userIds.length > 0) {
-    const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, email, title, department, manager_email")
+      .in("user_id", userIds);
     const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
     return stakeholders.map((s) => ({
       ...s,
-      name: profileMap.get(s.user_id)?.full_name ?? undefined,
-      email: profileMap.get(s.user_id)?.email ?? undefined,
+      full_name: profileMap.get(s.user_id)?.full_name ?? null,
+      email: profileMap.get(s.user_id)?.email ?? null,
+      title: profileMap.get(s.user_id)?.title ?? null,
+      department: profileMap.get(s.user_id)?.department ?? null,
+      manager_email: profileMap.get(s.user_id)?.manager_email ?? null,
     }));
   }
-  return stakeholders as any;
+  return stakeholders.map((s) => ({ ...s, full_name: null, email: null, title: null, department: null, manager_email: null }));
 }
 
-export async function addProjectStakeholder(userId: string, projectId: string, stakeholderUserId: string, name?: string): Promise<void> {
+export async function addProjectStakeholder(
+  userId: string, projectId: string, stakeholderProfile: StakeholderProfile
+): Promise<void> {
+  const name = stakeholderProfile.full_name || stakeholderProfile.email || stakeholderProfile.user_id;
   if (IS_PREVIEW) {
     mockStakeholders.push({
-      id: mockId(), project_id: projectId, user_id: stakeholderUserId,
+      id: mockId(), project_id: projectId, user_id: stakeholderProfile.user_id,
       percent_complete: null, added_at: new Date().toISOString(),
-      name: name ?? "User", email: "",
+      full_name: stakeholderProfile.full_name, email: stakeholderProfile.email,
+      title: stakeholderProfile.title, department: stakeholderProfile.department,
+      manager_email: stakeholderProfile.manager_email,
     });
-    await logProjectActivity(userId, projectId, "stakeholder_added", "stakeholder", null, name ?? stakeholderUserId);
+    await logProjectActivity(userId, projectId, "stakeholder_added", "stakeholder", null, name);
     return;
   }
-  const { error } = await supabase.from("project_stakeholders").insert({ project_id: projectId, user_id: stakeholderUserId });
+  const { error } = await supabase.from("project_stakeholders").insert({
+    project_id: projectId, user_id: stakeholderProfile.user_id,
+  });
   if (error) throw error;
-  await logProjectActivity(userId, projectId, "stakeholder_added", "stakeholder", null, name ?? stakeholderUserId);
+  await logProjectActivity(userId, projectId, "stakeholder_added", "stakeholder", null, name);
 }
 
 export async function removeProjectStakeholder(userId: string, projectId: string, stakeholderId: string, name?: string): Promise<void> {
@@ -252,7 +283,7 @@ export async function fetchProjectUpdates(projectId: string): Promise<ProjectUpd
 export async function addProjectUpdate(userId: string, projectId: string, content: string): Promise<ProjectUpdate> {
   if (IS_PREVIEW) {
     const now = new Date().toISOString();
-    const u: ProjectUpdate = { id: mockId(), project_id: projectId, user_id: userId, content, created_at: now, updated_at: now };
+    const u: ProjectUpdate = { id: mockId(), project_id: projectId, user_id: userId, content, created_at: now, updated_at: now, edited_by: null };
     mockUpdates.push(u);
     await logProjectActivity(userId, projectId, "update_added");
     return u;
@@ -260,6 +291,26 @@ export async function addProjectUpdate(userId: string, projectId: string, conten
   const { data, error } = await supabase.from("project_updates").insert({ user_id: userId, project_id: projectId, content }).select().single();
   if (error) throw error;
   await logProjectActivity(userId, projectId, "update_added");
+  return data as ProjectUpdate;
+}
+
+export async function editProjectUpdate(userId: string, projectId: string, updateId: string, content: string): Promise<ProjectUpdate> {
+  if (IS_PREVIEW) {
+    const u = mockUpdates.find((u) => u.id === updateId);
+    if (u) {
+      u.content = content;
+      u.updated_at = new Date().toISOString();
+      u.edited_by = userId;
+    }
+    await logProjectActivity(userId, projectId, "update_edited");
+    return u!;
+  }
+  const { data, error } = await supabase.from("project_updates")
+    .update({ content, edited_by: userId })
+    .eq("id", updateId)
+    .select().single();
+  if (error) throw error;
+  await logProjectActivity(userId, projectId, "update_edited");
   return data as ProjectUpdate;
 }
 
