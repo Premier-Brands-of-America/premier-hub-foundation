@@ -8,8 +8,12 @@ interface Profile {
   email: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  title: string | null;
+  department: string | null;
+  manager_email: string | null;
   is_admin: boolean;
   can_view_diagnostics: boolean;
+  is_active: boolean;
 }
 
 interface AuthContextType {
