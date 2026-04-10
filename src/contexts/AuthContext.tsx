@@ -36,7 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const syncAndFetchProfile = async (userId: string, userMeta?: Record<string, any>, email?: string) => {
     // Sync Entra-backed fields on every login
     if (userMeta || email) {
-      const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+      const updates: {
+        email?: string;
+        full_name?: string;
+        avatar_url?: string;
+        updated_at: string;
+      } = { updated_at: new Date().toISOString() };
       if (email) updates.email = email;
       if (userMeta?.full_name || userMeta?.name) updates.full_name = userMeta.full_name || userMeta.name;
       if (userMeta?.avatar_url) updates.avatar_url = userMeta.avatar_url;
@@ -64,7 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          const meta = session.user.user_metadata;
+          setTimeout(() => syncAndFetchProfile(session.user.id, meta, session.user.email ?? undefined), 0);
         } else {
           setProfile(null);
         }
@@ -76,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        syncAndFetchProfile(session.user.id, session.user.user_metadata, session.user.email ?? undefined);
       }
       setLoading(false);
     });
