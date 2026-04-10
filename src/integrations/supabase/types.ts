@@ -19,10 +19,14 @@ export type Database = {
           avatar_url: string | null
           can_view_diagnostics: boolean
           created_at: string
+          department: string | null
           email: string | null
           full_name: string | null
           id: string
+          is_active: boolean
           is_admin: boolean
+          manager_email: string | null
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -30,10 +34,14 @@ export type Database = {
           avatar_url?: string | null
           can_view_diagnostics?: boolean
           created_at?: string
+          department?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          is_active?: boolean
           is_admin?: boolean
+          manager_email?: string | null
+          title?: string | null
           updated_at?: string
           user_id: string
         }
@@ -41,10 +49,14 @@ export type Database = {
           avatar_url?: string | null
           can_view_diagnostics?: boolean
           created_at?: string
+          department?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          is_active?: boolean
           is_admin?: boolean
+          manager_email?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -55,7 +67,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

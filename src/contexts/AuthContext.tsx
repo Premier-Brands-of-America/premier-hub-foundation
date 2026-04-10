@@ -8,8 +8,12 @@ interface Profile {
   email: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  title: string | null;
+  department: string | null;
+  manager_email: string | null;
   is_admin: boolean;
   can_view_diagnostics: boolean;
+  is_active: boolean;
 }
 
 interface AuthContextType {
@@ -29,7 +33,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const syncAndFetchProfile = async (userId: string, userMeta?: Record<string, any>, email?: string) => {
+    // Sync Entra-backed fields on every login
+    if (userMeta || email) {
+      const updates: {
+        email?: string;
+        full_name?: string;
+        avatar_url?: string;
+        updated_at: string;
+      } = { updated_at: new Date().toISOString() };
+      if (email) updates.email = email;
+      if (userMeta?.full_name || userMeta?.name) updates.full_name = userMeta.full_name || userMeta.name;
+      if (userMeta?.avatar_url) updates.avatar_url = userMeta.avatar_url;
+
+      await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("user_id", userId);
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -47,7 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          const meta = session.user.user_metadata;
+          setTimeout(() => syncAndFetchProfile(session.user.id, meta, session.user.email ?? undefined), 0);
         } else {
           setProfile(null);
         }
@@ -59,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        syncAndFetchProfile(session.user.id, session.user.user_metadata, session.user.email ?? undefined);
       }
       setLoading(false);
     });

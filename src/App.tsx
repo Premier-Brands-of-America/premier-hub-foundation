@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, profile } = useAuth();
 
   if (loading) {
     return (
@@ -27,6 +27,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) return <Navigate to="/login" replace />;
+
+  // Block deactivated users
+  if (profile && !profile.is_active) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center space-y-2 max-w-md mx-4">
+          <h1 className="text-xl font-semibold text-foreground">Access Revoked</h1>
+          <p className="text-sm text-muted-foreground">
+            Your access to Premier Project Hub has been removed. Contact your administrator if you believe this is an error.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return <AppLayout>{children}</AppLayout>;
 }
