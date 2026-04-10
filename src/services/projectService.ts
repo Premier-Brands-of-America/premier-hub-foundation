@@ -129,7 +129,11 @@ export async function updateProject(
   if (updates.owner_id && updates.owner_id !== oldProject.owner_id)
     changes.push({ field: "owner", old: oldProject.owner_id, new_: updates.owner_id });
 
-  const dbUpdates: Record<string, any> = { ...updates };
+  const dbUpdates: {
+    title?: string; description?: string | null; visibility?: string; status?: string;
+    desired_due_date?: string | null; updated_due_date?: string | null;
+    overall_percent_complete?: number | null; owner_id?: string; completed_at?: string | null;
+  } = { ...updates };
 
   if (updates.status === "complete" && oldProject.status !== "complete") {
     dbUpdates.completed_at = new Date().toISOString();
