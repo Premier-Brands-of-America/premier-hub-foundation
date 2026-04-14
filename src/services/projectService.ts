@@ -273,7 +273,7 @@ export async function removeProjectStakeholder(userId: string, projectId: string
   await logProjectActivity(userId, projectId, "stakeholder_removed", "stakeholder", name ?? null, null);
 }
 
-export async function updateStakeholderPercent(userId: string, projectId: string, stakeholderId: string, percent: number | null): Promise<void> {
+export async function updateStakeholderPercent(_userId: string, _projectId: string, stakeholderId: string, percent: number | null): Promise<void> {
   if (IS_PREVIEW) {
     const s = mockStakeholders.find((s) => s.id === stakeholderId);
     if (s) s.percent_complete = percent;

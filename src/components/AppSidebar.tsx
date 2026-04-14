@@ -9,7 +9,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  ChevronLeft,
+  
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";

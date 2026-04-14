@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import {
   X, Calendar, Percent, FileText, Link2, Users, MessageSquare,
   History, Plus, Trash2, Paperclip, ExternalLink, Check, RotateCcw,
-  Globe, Lock, Crown, Edit3, Save, ChevronDown,
+  Globe, Lock, Crown, Edit3, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

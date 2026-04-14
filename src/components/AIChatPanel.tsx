@@ -1,5 +1,3 @@
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { AIChat } from "@/components/AIChat";
 
 interface AIChatPanelProps {
