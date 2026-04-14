@@ -152,9 +152,14 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
   };
 
   const handleAddLink = async () => {
-    if (!newLinkUrl.trim()) return;
+    const url = newLinkUrl.trim();
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) {
+      toast({ title: "Invalid URL", description: "Only http:// and https:// URLs are allowed.", variant: "destructive" });
+      return;
+    }
     try {
-      await taskService.addTaskLink(userId, task.id, newLinkUrl.trim(), newLinkLabel.trim() || undefined);
+      await taskService.addTaskLink(userId, task.id, url, newLinkLabel.trim() || undefined);
       setNewLinkUrl("");
       setNewLinkLabel("");
       loadRelatedData();
