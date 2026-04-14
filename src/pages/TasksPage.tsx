@@ -25,6 +25,7 @@ const TasksPage = () => {
   const queryClient = useQueryClient();
 
   const { data: tasks = [], isLoading: loading } = useTasks();
+  useRealtimeInvalidation("tasks", ["tasks"]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
