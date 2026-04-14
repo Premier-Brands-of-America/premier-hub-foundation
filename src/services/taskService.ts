@@ -4,6 +4,9 @@ import { isValidUrl } from "@/lib/validation";
 import type { Task, TaskContact, TaskUpdate, TaskActivity, TaskAttachment, TaskLink } from "@/types/tasks";
 
 const IS_PREVIEW = isPreviewEnvironment();
+export const TASK_PAGE_SIZE = 25;
+
+const TASK_FIELDS = "id, title, status, due_date, percent_complete, created_at, completed_at, description, updated_at, user_id";
 
 // ─── Mock data for preview mode ───
 let mockTasks: Task[] = [];
@@ -15,21 +18,36 @@ let mockLinks: TaskLink[] = [];
 let mockIdCounter = 1;
 const mockId = () => `mock-task-${mockIdCounter++}`;
 
+// ─── Paginated response type ───
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 // ─── Tasks ───
 
-export async function fetchTasks(): Promise<Task[]> {
-  if (IS_PREVIEW) return [...mockTasks];
-  const { data, error } = await supabase
+export async function fetchTasks(page = 0): Promise<PaginatedResult<Task>> {
+  if (IS_PREVIEW) {
+    return { items: [...mockTasks], total: mockTasks.length, page, pageSize: TASK_PAGE_SIZE };
+  }
+
+  const from = page * TASK_PAGE_SIZE;
+  const to = from + TASK_PAGE_SIZE - 1;
+
+  const { data, error, count } = await supabase
     .from("tasks")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select(TASK_FIELDS, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return (data ?? []) as Task[];
+  return { items: (data ?? []) as Task[], total: count || 0, page, pageSize: TASK_PAGE_SIZE };
 }
 
 export async function fetchTask(id: string): Promise<Task | null> {
   if (IS_PREVIEW) return mockTasks.find((t) => t.id === id) ?? null;
-  const { data, error } = await supabase.from("tasks").select("*").eq("id", id).single();
+  const { data, error } = await supabase.from("tasks").select(TASK_FIELDS).eq("id", id).single();
   if (error) throw error;
   return data as Task;
 }
@@ -41,22 +59,15 @@ export async function createTask(
   if (IS_PREVIEW) {
     const now = new Date().toISOString();
     const task: Task = {
-      id: mockId(),
-      user_id: userId,
-      title: input.title,
-      description: input.description ?? null,
-      due_date: input.due_date ?? null,
-      percent_complete: input.percent_complete ?? null,
-      status: "active",
-      completed_at: null,
-      created_at: now,
-      updated_at: now,
+      id: mockId(), user_id: userId, title: input.title,
+      description: input.description ?? null, due_date: input.due_date ?? null,
+      percent_complete: input.percent_complete ?? null, status: "active",
+      completed_at: null, created_at: now, updated_at: now,
     };
     mockTasks.unshift(task);
     mockActivity.push({
       id: mockId(), task_id: task.id, user_id: userId,
-      action: "task_created", field_name: null, old_value: null, new_value: null,
-      created_at: now,
+      action: "task_created", field_name: null, old_value: null, new_value: null, created_at: now,
     });
     return task;
   }
@@ -64,23 +75,19 @@ export async function createTask(
   const { data, error } = await supabase
     .from("tasks")
     .insert({
-      user_id: userId,
-      title: input.title,
-      description: input.description || null,
-      due_date: input.due_date || null,
+      user_id: userId, title: input.title,
+      description: input.description || null, due_date: input.due_date || null,
       percent_complete: input.percent_complete ?? null,
     })
     .select()
     .single();
   if (error) throw error;
-
   await logActivity(userId, data.id, "task_created");
   return data as Task;
 }
 
 export async function updateTask(
-  userId: string,
-  taskId: string,
+  userId: string, taskId: string,
   updates: Partial<Pick<Task, "title" | "description" | "due_date" | "percent_complete" | "status">>,
   oldTask: Task
 ): Promise<Task> {
@@ -100,13 +107,10 @@ export async function updateTask(
     });
 
   const dbUpdates: {
-    title?: string;
-    description?: string | null;
-    due_date?: string | null;
-    percent_complete?: number | null;
-    status?: string;
-    completed_at?: string | null;
+    title?: string; description?: string | null; due_date?: string | null;
+    percent_complete?: number | null; status?: string; completed_at?: string | null;
   } = { ...updates };
+
   if (updates.status === "complete" && oldTask.status !== "complete") {
     dbUpdates.completed_at = new Date().toISOString();
     changes.push({ field: "status", old: "active", new_: "complete" });
@@ -123,8 +127,7 @@ export async function updateTask(
         mockActivity.push({
           id: mockId(), task_id: taskId, user_id: userId,
           action: c.field === "status" ? (c.new_ === "complete" ? "task_completed" : "task_reopened") : "field_changed",
-          field_name: c.field, old_value: c.old, new_value: c.new_,
-          created_at: new Date().toISOString(),
+          field_name: c.field, old_value: c.old, new_value: c.new_, created_at: new Date().toISOString(),
         });
       }
       return mockTasks[idx];
@@ -141,7 +144,6 @@ export async function updateTask(
       : "field_changed";
     await logActivity(userId, taskId, action, c.field, c.old, c.new_);
   }
-
   return data as Task;
 }
 
@@ -183,7 +185,8 @@ async function logActivity(
 export async function fetchTaskActivity(taskId: string): Promise<TaskActivity[]> {
   if (IS_PREVIEW) return mockActivity.filter((a) => a.task_id === taskId).sort((a, b) => b.created_at.localeCompare(a.created_at));
   const { data, error } = await supabase
-    .from("task_activity").select("*").eq("task_id", taskId).order("created_at", { ascending: false });
+    .from("task_activity").select("id, task_id, user_id, action, field_name, old_value, new_value, created_at")
+    .eq("task_id", taskId).order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as TaskActivity[];
 }
@@ -193,7 +196,8 @@ export async function fetchTaskActivity(taskId: string): Promise<TaskActivity[]>
 export async function fetchTaskUpdates(taskId: string): Promise<TaskUpdate[]> {
   if (IS_PREVIEW) return mockUpdates.filter((u) => u.task_id === taskId).sort((a, b) => b.created_at.localeCompare(a.created_at));
   const { data, error } = await supabase
-    .from("task_updates").select("*").eq("task_id", taskId).order("created_at", { ascending: false });
+    .from("task_updates").select("id, task_id, user_id, content, created_at, updated_at")
+    .eq("task_id", taskId).order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as TaskUpdate[];
 }
@@ -216,7 +220,9 @@ export async function addTaskUpdate(userId: string, taskId: string, content: str
 
 export async function fetchTaskContacts(taskId: string): Promise<TaskContact[]> {
   if (IS_PREVIEW) return mockContacts.filter((c) => c.task_id === taskId);
-  const { data, error } = await supabase.from("task_contacts").select("*").eq("task_id", taskId);
+  const { data, error } = await supabase
+    .from("task_contacts").select("id, task_id, contact_type, internal_user_id, name, email, created_at")
+    .eq("task_id", taskId);
   if (error) throw error;
   return (data ?? []) as TaskContact[];
 }
@@ -238,11 +244,9 @@ export async function addTaskContact(
     return c;
   }
   const { data, error } = await supabase.from("task_contacts").insert({
-    task_id: taskId,
-    contact_type: contact.contact_type,
+    task_id: taskId, contact_type: contact.contact_type,
     internal_user_id: contact.internal_user_id || null,
-    name: contact.name || null,
-    email: contact.email || null,
+    name: contact.name || null, email: contact.email || null,
   }).select().single();
   if (error) throw error;
   await logActivity(userId, taskId, "contact_added", "contact", null, contact.name || contact.email || null);
@@ -264,34 +268,30 @@ export async function removeTaskContact(userId: string, taskId: string, contactI
 
 export async function fetchTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
   if (IS_PREVIEW) return mockAttachments.filter((a) => a.task_id === taskId);
-  const { data, error } = await supabase.from("task_attachments").select("*").eq("task_id", taskId);
+  const { data, error } = await supabase
+    .from("task_attachments").select("id, task_id, user_id, file_name, file_size, file_type, storage_path, created_at")
+    .eq("task_id", taskId);
   if (error) throw error;
   return (data ?? []) as TaskAttachment[];
 }
 
-export async function uploadTaskAttachment(
-  userId: string, taskId: string, file: File
-): Promise<TaskAttachment> {
+export async function uploadTaskAttachment(userId: string, taskId: string, file: File): Promise<TaskAttachment> {
   if (IS_PREVIEW) {
     const a: TaskAttachment = {
       id: mockId(), task_id: taskId, user_id: userId,
       file_name: file.name, file_size: file.size, file_type: file.type,
-      storage_path: `preview/${file.name}`,
-      created_at: new Date().toISOString(),
+      storage_path: `preview/${file.name}`, created_at: new Date().toISOString(),
     };
     mockAttachments.push(a);
     await logActivity(userId, taskId, "attachment_added", "attachment", null, file.name);
     return a;
   }
-
   const path = `${userId}/${taskId}/${Date.now()}_${file.name}`;
   const { error: uploadError } = await supabase.storage.from("task-attachments").upload(path, file);
   if (uploadError) throw uploadError;
-
   const { data, error } = await supabase.from("task_attachments").insert({
     user_id: userId, task_id: taskId,
-    file_name: file.name, file_size: file.size, file_type: file.type,
-    storage_path: path,
+    file_name: file.name, file_size: file.size, file_type: file.type, storage_path: path,
   }).select().single();
   if (error) throw error;
   await logActivity(userId, taskId, "attachment_added", "attachment", null, file.name);
@@ -327,7 +327,9 @@ export async function getAttachmentSignedUrl(storagePath: string): Promise<strin
 
 export async function fetchTaskLinks(taskId: string): Promise<TaskLink[]> {
   if (IS_PREVIEW) return mockLinks.filter((l) => l.task_id === taskId);
-  const { data, error } = await supabase.from("task_links").select("*").eq("task_id", taskId);
+  const { data, error } = await supabase
+    .from("task_links").select("id, task_id, user_id, url, label, created_at")
+    .eq("task_id", taskId);
   if (error) throw error;
   return (data ?? []) as TaskLink[];
 }
