@@ -415,6 +415,9 @@ export async function fetchProjectLinks(projectId: string): Promise<ProjectLink[
 }
 
 export async function addProjectLink(userId: string, projectId: string, url: string, label?: string): Promise<ProjectLink> {
+  if (!isValidUrl(url)) {
+    throw new Error("Please enter a valid URL (e.g., https://example.com)");
+  }
   if (IS_PREVIEW) {
     const l: ProjectLink = { id: mockId(), project_id: projectId, user_id: userId, url, label: label ?? null, created_at: new Date().toISOString() };
     mockLinks.push(l);
