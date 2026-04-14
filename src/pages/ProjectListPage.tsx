@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useProjects } from "@/hooks/use-queries";
-import type { ProjectWithMeta } from "@/types/projects";
+
 import * as projectService from "@/services/projectService";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
 import { ProjectListItem } from "@/components/projects/ProjectListItem";

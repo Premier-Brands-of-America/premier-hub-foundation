@@ -17,9 +17,14 @@ export function TaskListItem({ task, selected, onSelect, onToggleComplete }: Tas
   return (
     <div
       className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all
+        focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
         ${selected ? "border-primary/40 bg-primary/[0.03] shadow-sm" : "border-border hover:border-primary/20 bg-card"}
         ${isComplete ? "opacity-60" : ""}`}
       onClick={onSelect}
+      tabIndex={0}
+      role="button"
+      aria-label={`${task.title}${isComplete ? " (completed)" : ""}${overdue ? " (overdue)" : ""}`}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
       <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
         <Checkbox
