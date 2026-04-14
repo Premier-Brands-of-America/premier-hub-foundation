@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PreviewAuthProvider } from "@/contexts/PreviewAuthContext";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
+import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
@@ -131,6 +132,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Provider>
+            <RouteAnnouncer />
             <AppRoutes />
           </Provider>
         </BrowserRouter>

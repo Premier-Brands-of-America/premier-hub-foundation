@@ -1,15 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useProjects } from "@/hooks/use-queries";
 import type { ProjectWithMeta } from "@/types/projects";
 import * as projectService from "@/services/projectService";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
 import { ProjectListItem } from "@/components/projects/ProjectListItem";
 import { ProjectDetailPanel } from "@/components/projects/ProjectDetailPanel";
+import { useQueryClient } from "@tanstack/react-query";
 
 type SortOption = "newest" | "oldest" | "due_date" | "title";
 
@@ -50,36 +52,19 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const userId = user?.id ?? profile?.user_id ?? "";
+  const queryClient = useQueryClient();
 
-  const [allProjects, setAllProjects] = useState<ProjectWithMeta[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: allProjects = [], isLoading: loading } = useProjects();
   const [showCreate, setShowCreate] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("newest");
 
-  const loadProjects = async () => {
-    try {
-      const data = await projectService.fetchProjects();
-      const projectIds = data.map(p => p.id);
-      const stakeholderMap = await projectService.fetchStakeholdersForProjects(projectIds);
-      const enriched = data.map(p => ({
-        ...p,
-        stakeholders: p.stakeholders || stakeholderMap[p.id] || [],
-      }));
-      setAllProjects(enriched);
-    } catch (err: any) {
-      toast({ title: "Error loading projects", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadProjects(); }, []);
+  const invalidateProjects = () => queryClient.invalidateQueries({ queryKey: ["projects"] });
 
   const handleCreate = async (input: { title: string; description?: string; visibility?: "public" | "private"; desired_due_date?: string }) => {
     await projectService.createProject(userId, input);
-    await loadProjects();
+    invalidateProjects();
     toast({ title: "Project created" });
   };
 
@@ -149,10 +134,10 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
+              <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" aria-label="Search projects" />
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-              <SelectTrigger className="w-[100px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[100px] h-8 text-xs" aria-label="Sort by"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="newest">Newest</SelectItem>
                 <SelectItem value="oldest">Oldest</SelectItem>
@@ -165,8 +150,9 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5">
           {loading ? (
-            <div className="flex items-center justify-center h-40">
+            <div className="flex items-center justify-center h-40" role="status" aria-label="Loading">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="sr-only">Loading projects...</span>
             </div>
           ) : viewProjects.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center px-4">
@@ -202,7 +188,7 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
           <ProjectDetailPanel
             project={selectedProject}
             onClose={() => setSelectedProjectId(null)}
-            onProjectUpdated={loadProjects}
+            onProjectUpdated={invalidateProjects}
           />
         </div>
       )}
