@@ -173,6 +173,46 @@ export async function updateProject(
   return data as Project;
 }
 
+// ─── Batch Stakeholders (avoids N+1) ───
+
+export async function fetchStakeholdersForProjects(projectIds: string[]): Promise<Record<string, EnrichedStakeholder[]>> {
+  if (IS_PREVIEW) {
+    const result: Record<string, EnrichedStakeholder[]> = {};
+    for (const id of projectIds) {
+      result[id] = mockStakeholders.filter(s => s.project_id === id);
+    }
+    return result;
+  }
+
+  const grouped: Record<string, EnrichedStakeholder[]> = {};
+  for (const id of projectIds) grouped[id] = [];
+
+  if (projectIds.length === 0) return grouped;
+
+  const { data, error } = await supabase
+    .from("project_stakeholders")
+    .select("id, project_id, user_id, percent_complete, added_at")
+    .in("project_id", projectIds);
+  if (error) throw error;
+
+  const userIds = [...new Set((data || []).map(s => s.user_id))];
+  const profiles = userIds.length > 0
+    ? (await supabase.from("profiles").select("user_id, full_name, email").in("user_id", userIds)).data || []
+    : [];
+  const profileMap = new Map(profiles.map(p => [p.user_id, p]));
+
+  for (const s of data || []) {
+    const profile = profileMap.get(s.user_id);
+    grouped[s.project_id].push({
+      ...s,
+      full_name: profile?.full_name || null,
+      email: profile?.email || null,
+    });
+  }
+
+  return grouped;
+}
+
 // ─── Stakeholders ───
 
 export async function fetchProjectStakeholders(projectId: string): Promise<EnrichedStakeholder[]> {

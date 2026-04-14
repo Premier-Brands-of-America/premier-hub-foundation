@@ -61,15 +61,12 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
   const loadProjects = async () => {
     try {
       const data = await projectService.fetchProjects();
-      const enriched = await Promise.all(
-        data.map(async (p) => {
-          if (!p.stakeholders) {
-            const stakeholders = await projectService.fetchProjectStakeholders(p.id);
-            return { ...p, stakeholders };
-          }
-          return p;
-        })
-      );
+      const projectIds = data.map(p => p.id);
+      const stakeholderMap = await projectService.fetchStakeholdersForProjects(projectIds);
+      const enriched = data.map(p => ({
+        ...p,
+        stakeholders: p.stakeholders || stakeholderMap[p.id] || [],
+      }));
       setAllProjects(enriched);
     } catch (err: any) {
       toast({ title: "Error loading projects", description: err.message, variant: "destructive" });
