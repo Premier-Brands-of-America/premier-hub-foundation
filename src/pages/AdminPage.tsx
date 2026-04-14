@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Settings, Users, Shield, BarChart3 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Settings, Users, BarChart3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeTable } from "@/components/admin/EmployeeTable";
 import { DiagnosticsTable } from "@/components/admin/DiagnosticsTable";

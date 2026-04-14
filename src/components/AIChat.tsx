@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Bot, Send, User, Loader2, Info, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,7 +43,7 @@ interface AIChatProps {
 }
 
 export function AIChat({ variant, onClose }: AIChatProps) {
-  const { user, profile } = useAuth();
+  const { user, profile: _profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
