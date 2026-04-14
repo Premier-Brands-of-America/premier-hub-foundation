@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PreviewAuthProvider } from "@/contexts/PreviewAuthContext";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
+import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
@@ -20,7 +21,16 @@ const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 const IS_PREVIEW = isPreviewEnvironment();
 
 /* ─── Protected route (works with both providers via shared AuthContext) ─── */
@@ -122,6 +132,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Provider>
+            <RouteAnnouncer />
             <AppRoutes />
           </Provider>
         </BrowserRouter>
