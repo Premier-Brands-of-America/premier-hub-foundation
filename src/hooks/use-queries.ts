@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import * as taskService from "@/services/taskService";
 import * as projectService from "@/services/projectService";
@@ -6,11 +6,25 @@ import type { Task } from "@/types/tasks";
 import type { ProjectWithMeta } from "@/types/projects";
 
 // ─── Task Queries ───
+
 export function useTasks() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["tasks"],
-    queryFn: () => taskService.fetchTasks(),
+    queryFn: ({ pageParam = 0 }) => taskService.fetchTasks(pageParam),
+    getNextPageParam: (lastPage) => {
+      const nextPage = lastPage.page + 1;
+      return nextPage * lastPage.pageSize < lastPage.total ? nextPage : undefined;
+    },
+    initialPageParam: 0,
   });
+}
+
+/** Flat helper: returns all loaded tasks and total count */
+export function useTasksFlat() {
+  const query = useTasks();
+  const tasks: Task[] = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const total = query.data?.pages[0]?.total ?? 0;
+  return { ...query, tasks, total };
 }
 
 export function useCreateTask() {
@@ -42,19 +56,36 @@ export function useUpdateTask() {
 }
 
 // ─── Project Queries ───
+
 export function useProjects() {
-  return useQuery<ProjectWithMeta[]>({
+  return useInfiniteQuery({
     queryKey: ["projects"],
-    queryFn: async () => {
-      const data = await projectService.fetchProjects();
-      const projectIds = data.map(p => p.id);
+    queryFn: async ({ pageParam = 0 }) => {
+      const result = await projectService.fetchProjects(pageParam);
+      const projectIds = result.items.map(p => p.id);
       const stakeholderMap = await projectService.fetchStakeholdersForProjects(projectIds);
-      return data.map(p => ({
-        ...p,
-        stakeholders: p.stakeholders || stakeholderMap[p.id] || [],
-      }));
+      return {
+        ...result,
+        items: result.items.map(p => ({
+          ...p,
+          stakeholders: p.stakeholders || stakeholderMap[p.id] || [],
+        })),
+      };
     },
+    getNextPageParam: (lastPage) => {
+      const nextPage = lastPage.page + 1;
+      return nextPage * lastPage.pageSize < lastPage.total ? nextPage : undefined;
+    },
+    initialPageParam: 0,
   });
+}
+
+/** Flat helper: returns all loaded projects and total count */
+export function useProjectsFlat() {
+  const query = useProjects();
+  const projects: ProjectWithMeta[] = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const total = query.data?.pages[0]?.total ?? 0;
+  return { ...query, projects, total };
 }
 
 export function useCreateProject() {

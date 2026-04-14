@@ -1,13 +1,12 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, FolderOpen } from "lucide-react";
+import { Plus, FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useProjects } from "@/hooks/use-queries";
+import { useProjectsFlat } from "@/hooks/use-queries";
 import { useRealtimeInvalidation } from "@/hooks/use-realtime";
 import { ProjectListSkeleton } from "@/components/projects/ProjectListSkeleton";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 
 import * as projectService from "@/services/projectService";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
@@ -22,6 +21,13 @@ export type ProjectViewMode = "assigned" | "owned" | "public" | "completed";
 interface ProjectListPageProps {
   mode: ProjectViewMode;
 }
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "due_date", label: "Due Date" },
+  { value: "title", label: "Title" },
+];
 
 const viewConfig: Record<ProjectViewMode, { title: string; description: string; emptyMessage: string; emptyHint: string }> = {
   assigned: {
@@ -56,7 +62,7 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
   const userId = user?.id ?? profile?.user_id ?? "";
   const queryClient = useQueryClient();
 
-  const { data: allProjects = [], isLoading: loading } = useProjects();
+  const { projects: allProjects, total, isLoading: loading, hasNextPage, fetchNextPage, isFetchingNextPage } = useProjectsFlat();
   useRealtimeInvalidation("projects", ["projects"]);
   useRealtimeInvalidation("project_stakeholders", ["projects"]);
   const [showCreate, setShowCreate] = useState(false);
@@ -121,6 +127,7 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
 
   const selectedProject = useMemo(() => allProjects.find((p) => p.id === selectedProjectId) ?? null, [allProjects, selectedProjectId]);
   const config = viewConfig[mode];
+  const remaining = total - allProjects.length;
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
@@ -128,28 +135,23 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
         <div className="px-4 sm:px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-lg font-semibold text-foreground tracking-tight">{config.title}</h1>
+              <h1 className="text-lg font-semibold text-foreground tracking-tight">
+                {config.title} {viewProjects.length > 0 && <span className="text-muted-foreground font-normal">({viewProjects.length})</span>}
+              </h1>
               <p className="text-xs text-muted-foreground">{config.description}</p>
             </div>
             <Button onClick={() => setShowCreate(true)} className="gap-2" size="sm">
               <Plus className="h-3.5 w-3.5" /> New Project
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" aria-label="Search projects" />
-            </div>
-            <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-              <SelectTrigger className="w-[100px] h-8 text-xs" aria-label="Sort by"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="oldest">Oldest</SelectItem>
-                <SelectItem value="due_date">Due Date</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <SearchFilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search projects..."
+            sortValue={sort}
+            onSortChange={(v) => setSort(v as SortOption)}
+            sortOptions={SORT_OPTIONS}
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5">
@@ -171,15 +173,34 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
               )}
             </div>
           ) : (
-            viewProjects.map((project) => (
-              <ProjectListItem
-                key={project.id}
-                project={project}
-                selected={project.id === selectedProjectId}
-                onSelect={() => setSelectedProjectId(project.id === selectedProjectId ? null : project.id)}
-                currentUserId={userId}
-              />
-            ))
+            <>
+              {viewProjects.map((project) => (
+                <ProjectListItem
+                  key={project.id}
+                  project={project}
+                  selected={project.id === selectedProjectId}
+                  onSelect={() => setSelectedProjectId(project.id === selectedProjectId ? null : project.id)}
+                  currentUserId={userId}
+                />
+              ))}
+              {hasNextPage && (
+                <div className="flex justify-center py-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="gap-2"
+                  >
+                    {isFetchingNextPage ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...</>
+                    ) : (
+                      `Load more (${remaining} remaining)`
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

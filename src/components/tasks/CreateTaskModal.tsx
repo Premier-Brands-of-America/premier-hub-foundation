@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePickerField } from "@/components/DatePickerField";
+import { CharacterCount } from "@/components/CharacterCount";
 
 interface CreateTaskModalProps {
   open: boolean;
@@ -19,9 +21,11 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
   const [percentComplete, setPercentComplete] = useState<string>("na");
   const [submitting, setSubmitting] = useState(false);
 
+  const titleValid = title.trim().length > 0 && title.length <= 200;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!titleValid) return;
     setSubmitting(true);
     try {
       await onSubmit({
@@ -48,7 +52,10 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="task-title">Title *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="task-title">Title *</Label>
+              <CharacterCount current={title.length} max={200} />
+            </div>
             <Input
               id="task-title"
               value={title}
@@ -57,10 +64,16 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
               autoFocus
               maxLength={200}
             />
+            {title.length > 200 && (
+              <p className="text-xs text-destructive">Title must be 200 characters or less</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="task-description">Description</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="task-description">Description</Label>
+              <CharacterCount current={description.length} max={2000} />
+            </div>
             <Textarea
               id="task-description"
               value={description}
@@ -73,39 +86,26 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="task-due-date">Due Date</Label>
-              <Input
-                id="task-due-date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+              <Label>Due Date</Label>
+              <DatePickerField value={dueDate} onChange={setDueDate} />
             </div>
             <div className="space-y-2">
               <Label>% Complete</Label>
               <Select value={percentComplete} onValueChange={setPercentComplete}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="na">N/A</SelectItem>
-                  <SelectItem value="0">0%</SelectItem>
-                  <SelectItem value="10">10%</SelectItem>
-                  <SelectItem value="25">25%</SelectItem>
-                  <SelectItem value="50">50%</SelectItem>
-                  <SelectItem value="75">75%</SelectItem>
-                  <SelectItem value="90">90%</SelectItem>
-                  <SelectItem value="100">100%</SelectItem>
+                  {[0, 10, 25, 50, 75, 90, 100].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n}%</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!title.trim() || submitting}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={!titleValid || submitting}>
               {submitting ? "Creating..." : "Create Task"}
             </Button>
           </div>

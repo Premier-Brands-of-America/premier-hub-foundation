@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AIChatPanel } from "@/components/AIChatPanel";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -37,6 +38,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </header>
 
           <main id="main-content" className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
+            <Breadcrumbs />
             {children}
           </main>
         </div>
