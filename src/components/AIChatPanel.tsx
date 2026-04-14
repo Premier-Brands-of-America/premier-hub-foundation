@@ -1,5 +1,4 @@
 import { AIChat } from "@/components/AIChat";
-import { AIChat } from "@/components/AIChat";
 
 interface AIChatPanelProps {
   onClose: () => void;

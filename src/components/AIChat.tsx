@@ -43,7 +43,7 @@ interface AIChatProps {
 }
 
 export function AIChat({ variant, onClose }: AIChatProps) {
-  const { user, profile: _profile } = useAuth();
+  const { user: _user, profile: _profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
