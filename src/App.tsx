@@ -20,7 +20,16 @@ const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 const IS_PREVIEW = isPreviewEnvironment();
 
 /* ─── Protected route (works with both providers via shared AuthContext) ─── */
