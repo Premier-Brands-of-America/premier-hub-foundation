@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { isValidUrl } from "@/lib/validation";
 import type { Task, TaskContact, TaskUpdate, TaskActivity, TaskAttachment, TaskLink } from "@/types/tasks";
 
 const IS_PREVIEW = isPreviewEnvironment();
@@ -332,6 +333,9 @@ export async function fetchTaskLinks(taskId: string): Promise<TaskLink[]> {
 }
 
 export async function addTaskLink(userId: string, taskId: string, url: string, label?: string): Promise<TaskLink> {
+  if (!isValidUrl(url)) {
+    throw new Error("Please enter a valid URL (e.g., https://example.com)");
+  }
   if (IS_PREVIEW) {
     const l: TaskLink = { id: mockId(), task_id: taskId, user_id: userId, url, label: label ?? null, created_at: new Date().toISOString() };
     mockLinks.push(l);
