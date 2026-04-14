@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,12 +12,12 @@ import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
 
-import TasksPage from "./pages/TasksPage";
-import ProjectListPage from "./pages/ProjectListPage";
-import AIAssistantPage from "./pages/AIAssistantPage";
-import AdminPage from "./pages/AdminPage";
-import DiagnosticsPage from "./pages/DiagnosticsPage";
-import NotFound from "./pages/NotFound";
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const ProjectListPage = lazy(() => import("./pages/ProjectListPage"));
+const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 const IS_PREVIEW = isPreviewEnvironment();
