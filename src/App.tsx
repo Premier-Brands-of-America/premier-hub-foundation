@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,12 +12,12 @@ import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
 
-import TasksPage from "./pages/TasksPage";
-import ProjectListPage from "./pages/ProjectListPage";
-import AIAssistantPage from "./pages/AIAssistantPage";
-import AdminPage from "./pages/AdminPage";
-import DiagnosticsPage from "./pages/DiagnosticsPage";
-import NotFound from "./pages/NotFound";
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const ProjectListPage = lazy(() => import("./pages/ProjectListPage"));
+const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 const IS_PREVIEW = isPreviewEnvironment();
@@ -73,24 +74,37 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="text-center space-y-2">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Route definitions ─── */
 function AppRoutes() {
   const LoginPage = IS_PREVIEW ? PreviewLogin : Login;
 
   return (
-    <Routes>
-      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-      <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
-      <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />
-      <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />
-      <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
-      <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-      <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+        <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
+        <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />
+        <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />
+        <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
+        <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+        <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 
