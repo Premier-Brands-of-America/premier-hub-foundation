@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { isValidUrl } from "@/lib/validation";
 import type {
   Project, ProjectStakeholder, ProjectUpdate, ProjectActivity,
   ProjectAttachment, ProjectLink, ProjectWithMeta, EnrichedStakeholder,

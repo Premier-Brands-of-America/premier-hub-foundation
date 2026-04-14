@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
 import { useAuth } from "@/contexts/AuthContext";
 import { isPreviewEnvironment } from "@/lib/environment";
 
@@ -275,7 +276,7 @@ export function AIChat({ variant, onClose }: AIChatProps) {
                       prose-headings:text-foreground prose-strong:text-foreground prose-em:text-muted-foreground
                       prose-li:text-foreground prose-p:text-foreground prose-code:text-foreground
                       prose-blockquote:text-muted-foreground prose-blockquote:border-accent/30`}>
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{msg.content}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className={`${isPanel ? "text-xs" : "text-sm"}`}>{msg.content}</p>
