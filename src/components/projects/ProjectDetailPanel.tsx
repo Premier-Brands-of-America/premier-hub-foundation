@@ -203,9 +203,14 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
   };
 
   const handleAddLink = async () => {
-    if (!newLinkUrl.trim()) return;
+    const url = newLinkUrl.trim();
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) {
+      toast({ title: "Invalid URL", description: "Only http:// and https:// URLs are allowed.", variant: "destructive" });
+      return;
+    }
     try {
-      await projectService.addProjectLink(userId, project.id, newLinkUrl.trim(), newLinkLabel.trim() || undefined);
+      await projectService.addProjectLink(userId, project.id, url, newLinkLabel.trim() || undefined);
       setNewLinkUrl("");
       setNewLinkLabel("");
       loadRelated();
