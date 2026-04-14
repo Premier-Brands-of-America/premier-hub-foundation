@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, SlidersHorizontal, ClipboardList } from "lucide-react";
+import { Plus, SlidersHorizontal, ClipboardList, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useTasks } from "@/hooks/use-queries";
+import { useTasksFlat } from "@/hooks/use-queries";
 import { useRealtimeInvalidation } from "@/hooks/use-realtime";
 import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 import type { Task } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
@@ -18,13 +18,20 @@ import { useQueryClient } from "@tanstack/react-query";
 type SortOption = "newest" | "oldest" | "due_date" | "title";
 type FilterOption = "all" | "active" | "complete";
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "due_date", label: "Due Date" },
+  { value: "title", label: "Title" },
+];
+
 const TasksPage = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const userId = user?.id ?? profile?.user_id ?? "";
   const queryClient = useQueryClient();
 
-  const { data: tasks = [], isLoading: loading } = useTasks();
+  const { tasks, total, isLoading: loading, hasNextPage, fetchNextPage, isFetchingNextPage } = useTasksFlat();
   useRealtimeInvalidation("tasks", ["tasks"]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -88,13 +95,17 @@ const TasksPage = () => {
     setSelectedTaskId(id === selectedTaskId ? null : id);
   };
 
+  const remaining = total - tasks.length;
+
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       <div className={`flex flex-col ${selectedTask ? "hidden md:flex md:w-1/2 xl:w-3/5" : "w-full"} transition-all`}>
         <div className="px-4 sm:px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-lg font-semibold text-foreground tracking-tight">My Tasks</h1>
+              <h1 className="text-lg font-semibold text-foreground tracking-tight">
+                My Tasks {total > 0 && <span className="text-muted-foreground font-normal">({total})</span>}
+              </h1>
               <p className="text-xs text-muted-foreground">
                 {counts.active} active · {counts.complete} complete
               </p>
@@ -105,32 +116,26 @@ const TasksPage = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" aria-label="Search tasks" />
-            </div>
-            <Select value={filter} onValueChange={(v) => setFilter(v as FilterOption)}>
-              <SelectTrigger className="w-[110px] h-8 text-xs" aria-label="Filter by status">
-                <SlidersHorizontal className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All ({counts.all})</SelectItem>
-                <SelectItem value="active">Active ({counts.active})</SelectItem>
-                <SelectItem value="complete">Done ({counts.complete})</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-              <SelectTrigger className="w-[100px] h-8 text-xs" aria-label="Sort by">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="oldest">Oldest</SelectItem>
-                <SelectItem value="due_date">Due Date</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchFilterBar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search tasks..."
+              sortValue={sort}
+              onSortChange={(v) => setSort(v as SortOption)}
+              sortOptions={SORT_OPTIONS}
+            >
+              <Select value={filter} onValueChange={(v) => setFilter(v as FilterOption)}>
+                <SelectTrigger className="w-[110px] h-8 text-xs" aria-label="Filter by status">
+                  <SlidersHorizontal className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All ({counts.all})</SelectItem>
+                  <SelectItem value="active">Active ({counts.active})</SelectItem>
+                  <SelectItem value="complete">Done ({counts.complete})</SelectItem>
+                </SelectContent>
+              </Select>
+            </SearchFilterBar>
           </div>
         </div>
 
@@ -146,9 +151,7 @@ const TasksPage = () => {
                 {search ? "No matching tasks" : filter !== "all" ? `No ${filter} tasks` : "No tasks yet"}
               </p>
               <p className="text-xs text-muted-foreground mb-3 max-w-[240px]">
-                {search
-                  ? "Try a different search term."
-                  : "Create your first task to get started."}
+                {search ? "Try a different search term." : "Create your first task to get started."}
               </p>
               {!search && filter === "all" && (
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
@@ -157,15 +160,34 @@ const TasksPage = () => {
               )}
             </div>
           ) : (
-            filteredAndSorted.map((task) => (
-              <TaskListItem
-                key={task.id}
-                task={task}
-                selected={task.id === selectedTaskId}
-                onSelect={() => handleSelect(task.id)}
-                onToggleComplete={() => handleToggleComplete(task)}
-              />
-            ))
+            <>
+              {filteredAndSorted.map((task) => (
+                <TaskListItem
+                  key={task.id}
+                  task={task}
+                  selected={task.id === selectedTaskId}
+                  onSelect={() => handleSelect(task.id)}
+                  onToggleComplete={() => handleToggleComplete(task)}
+                />
+              ))}
+              {hasNextPage && (
+                <div className="flex justify-center py-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="gap-2"
+                  >
+                    {isFetchingNextPage ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...</>
+                    ) : (
+                      `Load more (${remaining} remaining)`
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
