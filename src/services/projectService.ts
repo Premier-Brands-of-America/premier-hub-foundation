@@ -6,8 +6,12 @@ import type {
   ProjectAttachment, ProjectLink, ProjectWithMeta, EnrichedStakeholder,
   StakeholderProfile,
 } from "@/types/projects";
+import type { PaginatedResult } from "@/services/taskService";
 
 const IS_PREVIEW = isPreviewEnvironment();
+export const PROJECT_PAGE_SIZE = 25;
+
+const PROJECT_FIELDS = "id, title, status, visibility, owner_id, desired_due_date, updated_due_date, overall_percent_complete, created_at, completed_at, description, updated_at";
 
 // ─── Mock data for preview ───
 let mockProjects: Project[] = [];
@@ -41,19 +45,25 @@ export async function resolveProfileName(userId: string): Promise<string> {
 
 // ─── Projects ───
 
-export async function fetchProjects(): Promise<ProjectWithMeta[]> {
+export async function fetchProjects(page = 0): Promise<PaginatedResult<ProjectWithMeta>> {
   if (IS_PREVIEW) {
-    return mockProjects.map((p) => ({
+    const items = mockProjects.map((p) => ({
       ...p,
       stakeholders: mockStakeholders.filter((s) => s.project_id === p.id),
     }));
+    return { items, total: items.length, page, pageSize: PROJECT_PAGE_SIZE };
   }
-  const { data, error } = await supabase
+
+  const from = page * PROJECT_PAGE_SIZE;
+  const to = from + PROJECT_PAGE_SIZE - 1;
+
+  const { data, error, count } = await supabase
     .from("projects")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select(PROJECT_FIELDS, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return (data ?? []) as ProjectWithMeta[];
+  return { items: (data ?? []) as ProjectWithMeta[], total: count || 0, page, pageSize: PROJECT_PAGE_SIZE };
 }
 
 export async function fetchProject(id: string): Promise<ProjectWithMeta | null> {
@@ -62,7 +72,7 @@ export async function fetchProject(id: string): Promise<ProjectWithMeta | null> 
     if (!p) return null;
     return { ...p, stakeholders: mockStakeholders.filter((s) => s.project_id === id) };
   }
-  const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
+  const { data, error } = await supabase.from("projects").select(PROJECT_FIELDS).eq("id", id).single();
   if (error) throw error;
   return data as ProjectWithMeta;
 }
@@ -88,8 +98,7 @@ export async function createProject(
     });
     mockActivity.push({
       id: mockId(), project_id: proj.id, user_id: userId,
-      action: "project_created", field_name: null, old_value: null, new_value: null,
-      created_at: now,
+      action: "project_created", field_name: null, old_value: null, new_value: null, created_at: now,
     });
     return proj;
   }
@@ -114,7 +123,7 @@ export async function updateProject(
 ): Promise<Project> {
   const changes: { field: string; old: string | null; new_: string | null }[] = [];
 
-  const trackChange = (field: string, oldVal: any, newVal: any) => {
+  const trackChange = (field: string, oldVal: unknown, newVal: unknown) => {
     if (newVal !== undefined && String(newVal ?? "") !== String(oldVal ?? ""))
       changes.push({ field, old: oldVal === null ? null : String(oldVal), new_: newVal === null ? null : String(newVal) });
   };
@@ -152,8 +161,7 @@ export async function updateProject(
         mockActivity.push({
           id: mockId(), project_id: projectId, user_id: userId,
           action: c.field === "status" ? (c.new_ === "complete" ? "project_completed" : "project_reopened") : "field_changed",
-          field_name: c.field, old_value: c.old, new_value: c.new_,
-          created_at: new Date().toISOString(),
+          field_name: c.field, old_value: c.old, new_value: c.new_, created_at: new Date().toISOString(),
         });
       }
       return mockProjects[idx];
@@ -170,7 +178,6 @@ export async function updateProject(
       : c.field === "owner" ? "ownership_changed" : "field_changed";
     await logProjectActivity(userId, projectId, action, c.field, c.old, c.new_);
   }
-
   return data as Project;
 }
 
@@ -187,7 +194,6 @@ export async function fetchStakeholdersForProjects(projectIds: string[]): Promis
 
   const grouped: Record<string, EnrichedStakeholder[]> = {};
   for (const id of projectIds) grouped[id] = [];
-
   if (projectIds.length === 0) return grouped;
 
   const { data, error } = await supabase
@@ -205,12 +211,9 @@ export async function fetchStakeholdersForProjects(projectIds: string[]): Promis
   for (const s of data || []) {
     const profile = profileMap.get(s.user_id);
     grouped[s.project_id].push({
-      ...s,
-      full_name: profile?.full_name || null,
-      email: profile?.email || null,
+      ...s, full_name: profile?.full_name || null, email: profile?.email || null,
     });
   }
-
   return grouped;
 }
 
@@ -218,7 +221,9 @@ export async function fetchStakeholdersForProjects(projectIds: string[]): Promis
 
 export async function fetchProjectStakeholders(projectId: string): Promise<EnrichedStakeholder[]> {
   if (IS_PREVIEW) return mockStakeholders.filter((s) => s.project_id === projectId);
-  const { data, error } = await supabase.from("project_stakeholders").select("*").eq("project_id", projectId);
+  const { data, error } = await supabase
+    .from("project_stakeholders").select("id, project_id, user_id, percent_complete, added_at")
+    .eq("project_id", projectId);
   if (error) throw error;
 
   const stakeholders = (data ?? []) as ProjectStakeholder[];
@@ -307,7 +312,9 @@ async function logProjectActivity(
 
 export async function fetchProjectActivity(projectId: string): Promise<ProjectActivity[]> {
   if (IS_PREVIEW) return mockActivity.filter((a) => a.project_id === projectId).sort((a, b) => b.created_at.localeCompare(a.created_at));
-  const { data, error } = await supabase.from("project_activity").select("*").eq("project_id", projectId).order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("project_activity").select("id, project_id, user_id, action, field_name, old_value, new_value, created_at")
+    .eq("project_id", projectId).order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as ProjectActivity[];
 }
@@ -316,7 +323,9 @@ export async function fetchProjectActivity(projectId: string): Promise<ProjectAc
 
 export async function fetchProjectUpdates(projectId: string): Promise<ProjectUpdate[]> {
   if (IS_PREVIEW) return mockUpdates.filter((u) => u.project_id === projectId).sort((a, b) => b.created_at.localeCompare(a.created_at));
-  const { data, error } = await supabase.from("project_updates").select("*").eq("project_id", projectId).order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("project_updates").select("id, project_id, user_id, content, created_at, updated_at, edited_by")
+    .eq("project_id", projectId).order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as ProjectUpdate[];
 }
@@ -359,7 +368,9 @@ export async function editProjectUpdate(userId: string, projectId: string, updat
 
 export async function fetchProjectAttachments(projectId: string): Promise<ProjectAttachment[]> {
   if (IS_PREVIEW) return mockAttachments.filter((a) => a.project_id === projectId);
-  const { data, error } = await supabase.from("project_attachments").select("*").eq("project_id", projectId);
+  const { data, error } = await supabase
+    .from("project_attachments").select("id, project_id, user_id, file_name, file_size, file_type, storage_path, created_at")
+    .eq("project_id", projectId);
   if (error) throw error;
   return (data ?? []) as ProjectAttachment[];
 }
@@ -409,7 +420,9 @@ export async function getProjectAttachmentSignedUrl(storagePath: string): Promis
 
 export async function fetchProjectLinks(projectId: string): Promise<ProjectLink[]> {
   if (IS_PREVIEW) return mockLinks.filter((l) => l.project_id === projectId);
-  const { data, error } = await supabase.from("project_links").select("*").eq("project_id", projectId);
+  const { data, error } = await supabase
+    .from("project_links").select("id, project_id, user_id, url, label, created_at")
+    .eq("project_id", projectId);
   if (error) throw error;
   return (data ?? []) as ProjectLink[];
 }
