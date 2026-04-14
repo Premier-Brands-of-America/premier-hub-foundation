@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useProjects } from "@/hooks/use-queries";
+import { useRealtimeInvalidation } from "@/hooks/use-realtime";
+import { ProjectListSkeleton } from "@/components/projects/ProjectListSkeleton";
 
 import * as projectService from "@/services/projectService";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";

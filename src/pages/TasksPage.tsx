@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTasks } from "@/hooks/use-queries";
+import { useRealtimeInvalidation } from "@/hooks/use-realtime";
+import { TaskListSkeleton } from "@/components/tasks/TaskListSkeleton";
 import type { Task } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
@@ -133,10 +135,7 @@ const TasksPage = () => {
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5">
           {loading ? (
-            <div className="flex items-center justify-center h-40" role="status" aria-label="Loading">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="sr-only">Loading tasks...</span>
-            </div>
+            <TaskListSkeleton />
           ) : filteredAndSorted.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center px-4">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
