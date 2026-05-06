@@ -14,6 +14,8 @@ export interface Profile {
   is_admin: boolean;
   can_view_diagnostics: boolean;
   is_active: boolean;
+  role?: 'admin' | 'designer' | 'requester';
+  department_id?: string | null;
 }
 
 export interface AuthContextType {
