@@ -735,7 +735,11 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      current_department_id: { Args: never; Returns: string }
+      current_role: { Args: never; Returns: string }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_role: { Args: never; Returns: boolean }
+      is_designer_or_admin: { Args: never; Returns: boolean }
       is_feature_enabled: { Args: { p_feature_key: string }; Returns: boolean }
       is_project_stakeholder: {
         Args: { _project_id: string; _user_id: string }
