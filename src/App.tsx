@@ -13,6 +13,8 @@ import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
+import AuthCallback from "./pages/AuthCallback";
+import { toast } from "@/hooks/use-toast";
 
 const TasksPage = lazy(() => import("./pages/TasksPage"));
 const ProjectListPage = lazy(() => import("./pages/ProjectListPage"));
@@ -40,7 +42,7 @@ function ProtectedRoute({
   requireRole,
 }: {
   children: React.ReactNode;
-  requireRole?: "admin" | "designer" | "requester";
+  requireRole?: "admin" | "designer" | "requester" | Array<"admin" | "designer" | "requester">;
 }) {
   const { session, loading, profile } = useAuth();
 
@@ -58,12 +60,10 @@ function ProtectedRoute({
   // In preview mode, check profile presence (no real session)
   if (IS_PREVIEW) {
     if (!profile) return <Navigate to="/login" replace />;
-    if (requireRole === "admin" && !profile.is_admin) return <Navigate to="/" replace />;
-    return <AppLayout>{children}</AppLayout>;
+  } else {
+    if (!session) return <Navigate to="/login" replace />;
   }
 
-  // Production mode
-  if (!session) return <Navigate to="/login" replace />;
   if (profile && !profile.is_active) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
@@ -77,8 +77,14 @@ function ProtectedRoute({
     );
   }
 
-  if (requireRole === "admin" && !(profile?.is_admin || profile?.role === "admin")) {
-    return <Navigate to="/" replace />;
+  if (requireRole) {
+    const allowed = Array.isArray(requireRole) ? requireRole : [requireRole];
+    const effectiveRole = profile?.role ?? (profile?.is_admin ? "admin" : undefined);
+    const ok = effectiveRole && allowed.includes(effectiveRole as "admin" | "designer" | "requester");
+    if (!ok) {
+      toast({ title: "Access denied", description: "You don't have permission to view that page.", variant: "destructive" });
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <AppLayout>{children}</AppLayout>;
@@ -117,6 +123,7 @@ function AppRoutes() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
           <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
