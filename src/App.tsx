@@ -30,6 +30,7 @@ const SubmitRequest = lazy(() => import("./pages/portal/SubmitRequest"));
 const EasyRequest = lazy(() => import("./pages/portal/EasyRequest"));
 const FullBriefRequest = lazy(() => import("./pages/portal/FullBriefRequest"));
 const MyRequests = lazy(() => import("./pages/portal/MyRequests"));
+const RequestDetail = lazy(() => import("./pages/portal/RequestDetail"));
 const Queue = lazy(() => import("./pages/portal/Queue"));
 const Workload = lazy(() => import("./pages/portal/Workload"));
 const ReportsPage = lazy(() => import("./pages/portal/Reports"));
@@ -152,7 +153,7 @@ function AppRoutes() {
           <Route path="/requests/new" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><SubmitRequest /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests/new/easy" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><EasyRequest /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests/new/full-brief" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><FullBriefRequest /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/requests/:id" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><MyRequests /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/requests/:id" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><RequestDetail /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><MyRequests /></FeatureRoute></ProtectedRoute>} />
           <Route path="/queue" element={<ProtectedRoute requireRole={["designer","admin"]}><FeatureRoute feature="art_request_portal"><Queue /></FeatureRoute></ProtectedRoute>} />
           <Route path="/workload" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="department_dashboard"><Workload /></FeatureRoute></ProtectedRoute>} />
