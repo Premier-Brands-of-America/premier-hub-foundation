@@ -1,4 +1,4 @@
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useFeatureFlagsContext } from "@/providers/FeatureFlagsProvider";
 import { useRole, type Role } from "@/hooks/useRole";
 import type { FeatureKey } from "@/lib/featureKeys";
 import { NavLink } from "@/components/NavLink";
@@ -17,8 +17,8 @@ export interface NavItemConfig {
 export function NavItem({ item, collapsed }: { item: NavItemConfig; collapsed: boolean }) {
   const role = useRole();
   const location = useLocation();
-  const featureEnabled = useFeatureFlag(item.feature ?? ("__always__" as FeatureKey));
-  const featureOk = item.feature ? featureEnabled : true;
+  const { flags, loading } = useFeatureFlagsContext();
+  const featureOk = item.feature ? !loading && flags[item.feature] === true : true;
   const roleOk = item.roles ? !!role && item.roles.includes(role) : true;
   if (!featureOk || !roleOk) return null;
 
