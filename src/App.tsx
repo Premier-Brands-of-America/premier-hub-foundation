@@ -11,6 +11,7 @@ import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { FeatureFlagsProvider } from "@/providers/FeatureFlagsProvider";
+import { FeatureRoute } from "@/components/FeatureRoute";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
@@ -134,7 +135,7 @@ function AppRoutes() {
           <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
           <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute requireRole="admin"><AdminSettings /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="admin_settings"><AdminSettings /></FeatureRoute></ProtectedRoute>} />
           <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
           <Route path="/debug/flags" element={<ProtectedRoute requireRole="admin"><DebugFlags /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
