@@ -28,6 +28,7 @@ const DebugFlags = lazy(() => import("./pages/admin/DebugFlags"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const SubmitRequest = lazy(() => import("./pages/portal/SubmitRequest"));
 const EasyRequest = lazy(() => import("./pages/portal/EasyRequest"));
+const FullBriefRequest = lazy(() => import("./pages/portal/FullBriefRequest"));
 const MyRequests = lazy(() => import("./pages/portal/MyRequests"));
 const Queue = lazy(() => import("./pages/portal/Queue"));
 const Workload = lazy(() => import("./pages/portal/Workload"));
@@ -150,7 +151,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/requests/new" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><SubmitRequest /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests/new/easy" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><EasyRequest /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/requests/new/full-brief" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><SubmitRequest /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/requests/new/full-brief" element={<ProtectedRoute requireRole={["requester","designer","admin"]}><FeatureRoute feature="art_request_portal"><FullBriefRequest /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests/:id" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><MyRequests /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><MyRequests /></FeatureRoute></ProtectedRoute>} />
           <Route path="/queue" element={<ProtectedRoute requireRole={["designer","admin"]}><FeatureRoute feature="art_request_portal"><Queue /></FeatureRoute></ProtectedRoute>} />
