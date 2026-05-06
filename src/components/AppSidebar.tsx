@@ -9,7 +9,11 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  
+  FilePlus,
+  Inbox,
+  ListChecks,
+  Users2,
+  ScrollText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -29,6 +33,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { NavItem, type NavItemConfig } from "@/components/NavItem";
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -46,6 +51,16 @@ const toolsNav = [
 
 const adminNav = [
   { title: "Admin Tools", url: "/admin", icon: Settings },
+];
+
+const portalNav: NavItemConfig[] = [
+  { label: "Submit Request", to: "/requests/new", icon: FilePlus, feature: "art_request_portal", roles: ["requester", "designer", "admin"] },
+  { label: "My Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
+  { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
+  { label: "Department Workload", to: "/workload", icon: Users2, feature: "department_dashboard", roles: ["admin"] },
+  { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["admin"] },
+  { label: "Audit Log", to: "/audit", icon: ScrollText, feature: "audit_trail", roles: ["admin"] },
+  { label: "Settings", to: "/admin/settings", icon: Settings, feature: "admin_settings", roles: ["admin"] },
 ];
 
 export function AppSidebar() {
@@ -93,6 +108,18 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Art Request Portal */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Art Request Portal</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {portalNav.map((item) => (
+                <NavItem key={item.to} item={item} collapsed={collapsed} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
