@@ -18,6 +18,7 @@ const TasksPage = lazy(() => import("./pages/TasksPage"));
 const ProjectListPage = lazy(() => import("./pages/ProjectListPage"));
 const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -34,7 +35,13 @@ const queryClient = new QueryClient({
 const IS_PREVIEW = isPreviewEnvironment();
 
 /* ─── Protected route (works with both providers via shared AuthContext) ─── */
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({
+  children,
+  requireRole,
+}: {
+  children: React.ReactNode;
+  requireRole?: "admin" | "designer" | "requester";
+}) {
   const { session, loading, profile } = useAuth();
 
   if (loading) {
@@ -51,6 +58,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // In preview mode, check profile presence (no real session)
   if (IS_PREVIEW) {
     if (!profile) return <Navigate to="/login" replace />;
+    if (requireRole === "admin" && !profile.is_admin) return <Navigate to="/" replace />;
     return <AppLayout>{children}</AppLayout>;
   }
 
@@ -67,6 +75,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (requireRole === "admin" && !(profile?.is_admin || profile?.role === "admin")) {
+    return <Navigate to="/" replace />;
   }
 
   return <AppLayout>{children}</AppLayout>;
@@ -113,6 +125,7 @@ function AppRoutes() {
           <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
           <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute requireRole="admin"><AdminSettings /></ProtectedRoute>} />
           <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
