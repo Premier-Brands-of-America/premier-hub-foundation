@@ -14,12 +14,17 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
+import { useRole } from "@/hooks/useRole";
+import { FeatureGate } from "@/components/FeatureGate";
+import { DashboardWidget as DW } from "@/components/DashboardWidget";
+import { FilePlus, Inbox, ListChecks, BarChart3 as BarChart3Icon } from "lucide-react";
 
 const Dashboard = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const firstName = profile?.full_name?.split(" ")[0] || "there";
   const stats = useDashboardStats();
+  const role = useRole();
 
   if (stats.isLoading) return <DashboardSkeleton />;
 
@@ -96,6 +101,46 @@ const Dashboard = () => {
           )}
         </DashboardWidget>
       </div>
+
+      {/* Role-aware Art Request Portal sections */}
+      <FeatureGate feature="art_request_portal">
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold tracking-tight">Art Request Portal</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {role === "admin" && (
+              <>
+                <DW title="Open Requests" icon={Inbox}>
+                  <p className="text-xs text-muted-foreground">KPI placeholder.</p>
+                </DW>
+                <DW title="Overdue" icon={BarChart3Icon} accentColor="accent">
+                  <p className="text-xs text-muted-foreground">KPI placeholder.</p>
+                </DW>
+                <DW title="Awaiting Approval" icon={ListChecks}>
+                  <p className="text-xs text-muted-foreground">KPI placeholder.</p>
+                </DW>
+              </>
+            )}
+            {role === "designer" && (
+              <DW title="My Assignments" icon={Inbox}>
+                <p className="text-xs text-muted-foreground">Assignments will appear here.</p>
+              </DW>
+            )}
+            {role === "requester" && (
+              <>
+                <DW title="My Submitted Requests" icon={ListChecks}>
+                  <p className="text-xs text-muted-foreground">Your requests will appear here.</p>
+                </DW>
+                <div className="flex items-center">
+                  <Button size="lg" className="gap-2" onClick={() => navigate("/requests/new")}>
+                    <FilePlus className="h-4 w-4" />
+                    Submit New Request
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </FeatureGate>
     </div>
   );
 };
