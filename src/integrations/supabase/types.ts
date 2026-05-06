@@ -497,6 +497,112 @@ export type Database = {
         }
         Relationships: []
       }
+      request_counters: {
+        Row: {
+          last_seq: number
+          year: number
+        }
+        Insert: {
+          last_seq?: number
+          year: number
+        }
+        Update: {
+          last_seq?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      requests: {
+        Row: {
+          archived_at: string | null
+          assigned_at: string | null
+          assignee_id: string | null
+          completed_at: string | null
+          created_at: string
+          department_id: string
+          description: string
+          due_date: string | null
+          id: string
+          metadata: Json
+          priority: string
+          request_number: string | null
+          request_type: string
+          requester_id: string
+          sharepoint_folder_id: string | null
+          sharepoint_folder_url: string | null
+          status: string
+          submitted_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          assigned_at?: string | null
+          assignee_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department_id: string
+          description: string
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          priority?: string
+          request_number?: string | null
+          request_type: string
+          requester_id: string
+          sharepoint_folder_id?: string | null
+          sharepoint_folder_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          assigned_at?: string | null
+          assignee_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department_id?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          metadata?: Json
+          priority?: string
+          request_number?: string | null
+          request_type?: string
+          requester_id?: string
+          sharepoint_folder_id?: string | null
+          sharepoint_folder_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requests_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "requests_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       task_activity: {
         Row: {
           action: string
