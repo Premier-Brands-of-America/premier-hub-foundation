@@ -70,6 +70,103 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          enabled: boolean
+          entity_id: string | null
+          entity_type: string
+          feature_key: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          entity_id?: string | null
+          entity_type: string
+          feature_key: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          entity_id?: string | null
+          entity_type?: string
+          feature_key?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flags_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -109,12 +206,14 @@ export type Database = {
           can_view_diagnostics: boolean
           created_at: string
           department: string | null
+          department_id: string | null
           email: string | null
           full_name: string | null
           id: string
           is_active: boolean
           is_admin: boolean
           manager_email: string | null
+          role: string
           title: string | null
           updated_at: string
           user_id: string
@@ -124,12 +223,14 @@ export type Database = {
           can_view_diagnostics?: boolean
           created_at?: string
           department?: string | null
+          department_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           is_active?: boolean
           is_admin?: boolean
           manager_email?: string | null
+          role?: string
           title?: string | null
           updated_at?: string
           user_id: string
@@ -139,17 +240,27 @@ export type Database = {
           can_view_diagnostics?: boolean
           created_at?: string
           department?: string | null
+          department_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           is_active?: boolean
           is_admin?: boolean
           manager_email?: string | null
+          role?: string
           title?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_activity: {
         Row: {
