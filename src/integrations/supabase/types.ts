@@ -736,9 +736,17 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_feature_enabled: { Args: { p_feature_key: string }; Returns: boolean }
       is_project_stakeholder: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      resolve_features: {
+        Args: { p_keys: string[] }
+        Returns: {
+          enabled: boolean
+          feature_key: string
+        }[]
       }
     }
     Enums: {
