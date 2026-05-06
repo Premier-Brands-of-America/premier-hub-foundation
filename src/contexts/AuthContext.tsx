@@ -97,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signInWithOAuth({
       provider: "azure",
       options: {
-        scopes: "openid profile email",
-        redirectTo: window.location.origin,
+        scopes: "openid email profile User.Read",
+        redirectTo: window.location.origin + "/auth/callback",
       },
     });
   };
