@@ -26,6 +26,14 @@ const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
 const DebugFlags = lazy(() => import("./pages/admin/DebugFlags"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const SubmitRequest = lazy(() => import("./pages/portal/SubmitRequest"));
+const MyRequests = lazy(() => import("./pages/portal/MyRequests"));
+const Queue = lazy(() => import("./pages/portal/Queue"));
+const Workload = lazy(() => import("./pages/portal/Workload"));
+const ReportsPage = lazy(() => import("./pages/portal/Reports"));
+const AuditLogPage = lazy(() => import("./pages/portal/AuditLogPage"));
+const Forbidden = lazy(() => import("./pages/Forbidden"));
+const FeatureOff = lazy(() => import("./pages/FeatureOff"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -138,6 +146,15 @@ function AppRoutes() {
           <Route path="/admin/settings" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="admin_settings"><AdminSettings /></FeatureRoute></ProtectedRoute>} />
           <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
           <Route path="/debug/flags" element={<ProtectedRoute requireRole="admin"><DebugFlags /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/requests/new" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><SubmitRequest /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/requests" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><MyRequests /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/queue" element={<ProtectedRoute requireRole={["designer","admin"]}><FeatureRoute feature="art_request_portal"><Queue /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/workload" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="department_dashboard"><Workload /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="reports"><ReportsPage /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/audit" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="audit_trail"><AuditLogPage /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/403" element={<ProtectedRoute><Forbidden /></ProtectedRoute>} />
+          <Route path="/feature-off" element={<ProtectedRoute><FeatureOff /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
