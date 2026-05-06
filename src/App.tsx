@@ -10,6 +10,7 @@ import { PreviewAuthProvider } from "@/contexts/PreviewAuthContext";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
+import { FeatureFlagsProvider } from "@/providers/FeatureFlagsProvider";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
@@ -22,6 +23,7 @@ const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
 const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
+const DebugFlags = lazy(() => import("./pages/admin/DebugFlags"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -134,6 +136,7 @@ function AppRoutes() {
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute requireRole="admin"><AdminSettings /></ProtectedRoute>} />
           <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
+          <Route path="/debug/flags" element={<ProtectedRoute requireRole="admin"><DebugFlags /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
@@ -152,8 +155,10 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Provider>
-            <RouteAnnouncer />
-            <AppRoutes />
+            <FeatureFlagsProvider>
+              <RouteAnnouncer />
+              <AppRoutes />
+            </FeatureFlagsProvider>
           </Provider>
         </BrowserRouter>
       </TooltipProvider>
