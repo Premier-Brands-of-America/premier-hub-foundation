@@ -35,6 +35,7 @@ const Queue = lazy(() => import("./pages/portal/Queue"));
 const Workload = lazy(() => import("./pages/portal/Workload"));
 const ReportsPage = lazy(() => import("./pages/portal/Reports"));
 const AuditLogPage = lazy(() => import("./pages/portal/AuditLogPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const Forbidden = lazy(() => import("./pages/Forbidden"));
 const FeatureOff = lazy(() => import("./pages/FeatureOff"));
 
@@ -146,6 +147,7 @@ function AppRoutes() {
           <Route path="/completed-projects" element={<ProtectedRoute><ProjectListPage mode="completed" /></ProtectedRoute>} />
           <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="admin_settings"><AdminSettings /></FeatureRoute></ProtectedRoute>} />
           <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
           <Route path="/debug/flags" element={<ProtectedRoute requireRole="admin"><DebugFlags /></ProtectedRoute>} />
