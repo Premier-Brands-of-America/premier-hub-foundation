@@ -27,6 +27,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DatePickerField } from "@/components/DatePickerField";
+import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
 import { Plus, Trash2 } from "lucide-react";
 
 const STEP_TITLES = ["Basics", "Details", "Specifics"];
