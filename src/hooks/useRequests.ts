@@ -8,6 +8,7 @@ import {
   updateRequest,
 } from "@/services/requests";
 import type { CreateRequestPayload, UpdateRequestPatch } from "@/types/request";
+import { supabase } from "@/integrations/supabase/client";
 
 export const requestKeys = {
   all: ["requests"] as const,
@@ -53,7 +54,14 @@ export function useRequest(id: string | null | undefined) {
 export function useCreateRequest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateRequestPayload) => createRequest(payload),
+    mutationFn: async (payload: CreateRequestPayload) => {
+      const created = await createRequest(payload);
+      // Fire-and-forget SharePoint folder provisioning
+      supabase.functions
+        .invoke("sharepoint-provision", { body: { request_id: created.id } })
+        .catch((e) => console.warn("sharepoint-provision failed", e));
+      return created;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: requestKeys.all });
     },
