@@ -35,6 +35,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DatePickerField } from "@/components/DatePickerField";
+import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
 import { StepperShell } from "@/components/request-form/StepperShell";
 import { MultiSelectChips } from "@/components/request-form/MultiSelectChips";
 import { RepeatableList } from "@/components/request-form/RepeatableList";
@@ -78,7 +79,6 @@ export default function FullBriefRequest() {
   const [showCancel, setShowCancel] = useState(false);
   const [draftFound, setDraftFound] = useState(false);
 
-  const isAdmin = profile?.role === "admin" || profile?.is_admin;
   const profileDeptId = profile?.department_id ?? "";
 
   const form = useForm<FullBriefValues>({
@@ -109,8 +109,10 @@ export default function FullBriefRequest() {
   }, [watch, step]);
 
   useEffect(() => {
-    if (!isAdmin && profileDeptId) setValue("department_id", profileDeptId);
-  }, [isAdmin, profileDeptId, setValue]);
+    if (!getValues("department_id") && profileDeptId) {
+      setValue("department_id", profileDeptId);
+    }
+  }, [profileDeptId, setValue, getValues]);
 
   const stepValid = useMemo(() => async (i: number) => {
     const ok = await trigger(stepFieldNames[i] as never);
@@ -248,14 +250,16 @@ export default function FullBriefRequest() {
                     {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Department</Label>
-                    <Input
-                      value={getValues("department_id") || profile?.department || ""}
-                      onChange={(e) => isAdmin && setValue("department_id", e.target.value, { shouldValidate: true })}
-                      readOnly={!isAdmin}
-                      placeholder={isAdmin ? "Department UUID" : "From your profile"}
+                    <Label htmlFor="fb-dept">Department <span className="text-destructive">*</span></Label>
+                    <DepartmentPicker
+                      id="fb-dept"
+                      value={watch("department_id")}
+                      onChange={(v) => setValue("department_id", v, { shouldValidate: true })}
+                      required
                     />
-                    {!isAdmin && <p className="text-xs text-muted-foreground">Auto-filled from your profile.</p>}
+                    <p className="text-xs text-muted-foreground">
+                      Defaults to your profile department — change if this request belongs to a different department.
+                    </p>
                     {errors.department_id && <p className="text-xs text-destructive">{errors.department_id.message}</p>}
                   </div>
                   <div className="space-y-1.5">
