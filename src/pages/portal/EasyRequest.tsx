@@ -42,7 +42,6 @@ export default function EasyRequest() {
   const [showCancel, setShowCancel] = useState(false);
   const [draftFound, setDraftFound] = useState(false);
 
-  const isAdmin = profile?.role === "admin" || profile?.is_admin;
   const profileDeptId = profile?.department_id ?? "";
 
   const form = useForm<EasyRequestValues>({
