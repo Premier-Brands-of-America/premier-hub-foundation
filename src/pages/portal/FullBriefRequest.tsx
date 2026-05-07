@@ -192,7 +192,6 @@ export default function FullBriefRequest() {
       reset({
         ...defaultFullBriefValues,
         ...values,
-        department_id: !isAdmin ? profileDeptId : values.department_id,
       });
       const restored = typeof s === "number" ? s : 0;
       setStep(restored);
