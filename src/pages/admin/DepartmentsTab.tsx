@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +31,6 @@ export default function DepartmentsTab() {
   const { data: rows = [], isLoading } = useAllDepartments();
   const [edit, setEdit] = useState<EditState>({ open: false });
   const [deactivateRow, setDeactivateRow] = useState<DepartmentRow | null>(null);
-  const [deactivateInfo, setDeactivateInfo] = useState<{ count: number } | null>(null);
 
   const nextOrder = useMemo(() => {
     const max = rows.reduce((m, r) => Math.max(m, r.display_order ?? 0), 0);
@@ -72,7 +71,6 @@ export default function DepartmentsTab() {
       qc.invalidateQueries({ queryKey: departmentKeys.active });
       toast.success(vars.is_active ? "Department reactivated" : "Department deactivated");
       setDeactivateRow(null);
-      setDeactivateInfo(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -93,7 +91,6 @@ export default function DepartmentsTab() {
       return;
     }
     setDeactivateRow(row);
-    setDeactivateInfo({ count: count ?? 0 });
   };
 
   return (
