@@ -114,18 +114,27 @@ export type Database = {
       departments: {
         Row: {
           created_at: string
+          display_order: number | null
           id: string
+          is_active: boolean
           name: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
+          display_order?: number | null
           id?: string
+          is_active?: boolean
           name: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
+          display_order?: number | null
           id?: string
+          is_active?: boolean
           name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -256,6 +265,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "active_departments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_department_id_fkey"
             columns: ["department_id"]
@@ -642,6 +658,13 @@ export type Database = {
             foreignKeyName: "requests_department_id_fkey"
             columns: ["department_id"]
             isOneToOne: false
+            referencedRelation: "active_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
             referencedRelation: "departments"
             referencedColumns: ["id"]
           },
@@ -885,7 +908,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      active_departments: {
+        Row: {
+          display_order: number | null
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          display_order?: number | null
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          display_order?: number | null
+          id?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_view_project: {
