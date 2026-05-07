@@ -11,6 +11,7 @@ import { getRequest } from "@/services/requests";
 import { requestKeys } from "@/hooks/useRequests";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { AttachmentUploader } from "@/components/attachments/AttachmentUploader";
+import { SharePointPanel } from "@/components/request-detail/SharePointPanel";
 import { canUploadFiles } from "@/lib/permissions";
 import { ATTACHMENT_KINDS, type AttachmentKind } from "@/types/attachment";
 
@@ -80,6 +81,11 @@ export default function RequestDetail() {
           <p className="whitespace-pre-wrap text-sm">{request.description}</p>
         </CardContent>
       </Card>
+
+      <SharePointPanel
+        requestId={request.id}
+        folderUrl={request.sharepoint_folder_url ?? null}
+      />
 
       <Tabs defaultValue={tabs[0]} className="w-full">
         <TabsList className="flex flex-wrap h-auto">
