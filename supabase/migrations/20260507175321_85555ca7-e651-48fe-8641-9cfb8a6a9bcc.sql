@@ -1,0 +1,1 @@
+alter view public.active_departments set (security_invoker = true);
