@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ interface Props {
 }
 
 export function DepartmentPicker({
-  value, onChange, includeInactive, disabled, required, id, ariaLabel,
+  value, onChange, disabled, required, id, ariaLabel,
 }: Props) {
   const { data: active = [], isLoading } = useActiveDepartments();
 
