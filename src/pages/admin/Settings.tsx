@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import DepartmentsTab from "@/pages/admin/DepartmentsTab";
 
 type EntityType = "global" | "department" | "user";
 type FlagRow = {
@@ -449,28 +450,7 @@ function UsersTab() {
   );
 }
 
-function DepartmentsTab() {
-  const { data: departments = [] } = useDepartments();
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Department</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {departments.map((d) => (
-            <TableRow key={d.id}>
-              <TableCell>{d.name}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <p className="p-3 text-xs text-muted-foreground">Department editing coming soon.</p>
-    </div>
-  );
-}
+// DepartmentsTab moved to ./DepartmentsTab.tsx
 
 function AuditLogTab() {
   return (
