@@ -70,10 +70,12 @@ export default function EasyRequest() {
     return () => sub.unsubscribe();
   }, [watch, step]);
 
-  // Make sure department_id always reflects profile when not admin
+  // Default department from profile only when empty
   useEffect(() => {
-    if (!isAdmin && profileDeptId) setValue("department_id", profileDeptId);
-  }, [isAdmin, profileDeptId, setValue]);
+    if (!getValues("department_id") && profileDeptId) {
+      setValue("department_id", profileDeptId);
+    }
+  }, [profileDeptId, setValue, getValues]);
 
   const renders = useFieldArray({ control, name: "digital_renders" });
 
@@ -135,7 +137,7 @@ export default function EasyRequest() {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const { step: s, values } = JSON.parse(raw);
-      reset({ ...defaultEasyValues, ...values, department_id: !isAdmin ? profileDeptId : values.department_id });
+      reset({ ...defaultEasyValues, ...values });
       setStep(typeof s === "number" ? s : 0);
     } catch { /* noop */ }
     setDraftFound(false);
@@ -193,14 +195,16 @@ export default function EasyRequest() {
                   {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Department</Label>
-                  <Input
-                    value={getValues("department_id") || profile?.department || ""}
-                    onChange={(e) => isAdmin && setValue("department_id", e.target.value, { shouldValidate: true })}
-                    readOnly={!isAdmin}
-                    placeholder={isAdmin ? "Department UUID" : "From your profile"}
+                  <Label htmlFor="dept">Department <span className="text-destructive">*</span></Label>
+                  <DepartmentPicker
+                    id="dept"
+                    value={watch("department_id")}
+                    onChange={(v) => setValue("department_id", v, { shouldValidate: true })}
+                    required
                   />
-                  {!isAdmin && <p className="text-xs text-muted-foreground">Auto-filled from your profile.</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Defaults to your profile department — change if this request belongs to a different department.
+                  </p>
                   {errors.department_id && <p className="text-xs text-destructive">{errors.department_id.message}</p>}
                 </div>
                 <div className="space-y-1.5">
