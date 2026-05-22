@@ -7,6 +7,16 @@
     <title>Premier Project Hub</title>
     <meta name="description" content="Internal Project Management Tool for Premier Brands of America">
     <meta name="author" content="Lovable" />
+    <script>
+      try {
+        var p = JSON.parse(localStorage.getItem('phv2:design-prefs') || '{}');
+        document.documentElement.dataset.design = (p.designMode === 'modern') ? 'modern' : 'classic';
+        document.documentElement.dataset.density = (p.density === 'compact') ? 'compact' : 'comfortable';
+      } catch (e) {
+        document.documentElement.dataset.design = 'classic';
+        document.documentElement.dataset.density = 'comfortable';
+      }
+    </script>
 
     <!-- TODO: Update og:title to match your application name -->
     

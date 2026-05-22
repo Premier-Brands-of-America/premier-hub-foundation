@@ -417,6 +417,7 @@ export type Database = {
           is_active: boolean
           is_admin: boolean
           manager_email: string | null
+          preferences: Json
           role: string
           title: string | null
           updated_at: string
@@ -435,6 +436,7 @@ export type Database = {
           is_active?: boolean
           is_admin?: boolean
           manager_email?: string | null
+          preferences?: Json
           role?: string
           title?: string | null
           updated_at?: string
@@ -453,6 +455,7 @@ export type Database = {
           is_active?: boolean
           is_admin?: boolean
           manager_email?: string | null
+          preferences?: Json
           role?: string
           title?: string | null
           updated_at?: string

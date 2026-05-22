@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useDesignMode, type DesignMode, type Density } from "@/providers/DesignModeProvider";
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
@@ -15,6 +17,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [departmentId, setDepartmentId] = useState<string>(profile?.department_id ?? "");
   const [saving, setSaving] = useState(false);
+  const { mode, setMode, density, setDensity } = useDesignMode();
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
@@ -80,6 +83,44 @@ export default function ProfilePage() {
           </div>
           <div className="flex justify-end">
             <Button onClick={onSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Design</Label>
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={(v) => v && setMode(v as DesignMode)}
+            >
+              <ToggleGroupItem value="classic">Classic</ToggleGroupItem>
+              <ToggleGroupItem value="modern">Modern</ToggleGroupItem>
+            </ToggleGroup>
+            <p className="text-xs text-muted-foreground">
+              Modern uses a refined typography stack, softer surfaces, and subtle motion.
+              Classic stays utility-first.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Density</Label>
+            <ToggleGroup
+              type="single"
+              value={density}
+              onValueChange={(v) => v && setDensity(v as Density)}
+            >
+              <ToggleGroupItem value="comfortable">Comfortable</ToggleGroupItem>
+              <ToggleGroupItem value="compact">Compact</ToggleGroupItem>
+            </ToggleGroup>
+            <p className="text-xs text-muted-foreground">
+              Compact tightens spacing in lists and tables. Press <kbd className="kbd">⌘⇧D</kbd>
+              {" "}any time to switch designs.
+            </p>
           </div>
         </CardContent>
       </Card>
