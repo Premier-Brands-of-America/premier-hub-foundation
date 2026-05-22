@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Plus, FileText, MoreHorizontal, Archive, Edit } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, FileText, Archive, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -24,7 +24,6 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   const { data: nodes = [], isLoading } = usePageTree(rootId);
   const createMut = useCreatePage();
   const archiveMut = useArchivePage();
-  const renameMut = useUpdatePageTitle(undefined);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const byParent = new Map<string | null, PageTreeNode[]>();
@@ -46,10 +45,6 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   const handleRename = async (id: string, currentTitle: string) => {
     const next = window.prompt("Rename page", currentTitle);
     if (!next || next === currentTitle) return;
-    try {
-      await renameMut.mutateAsync.call({ mutate: () => {} }, next).catch(() => {});
-    } catch {/* noop */}
-    // Inline call via direct service to avoid hook id issue
     const { updatePageTitle } = await import("@/services/pagesService");
     await updatePageTitle(id, next);
     toast({ title: "Renamed" });
