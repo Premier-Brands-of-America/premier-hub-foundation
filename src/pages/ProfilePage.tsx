@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useDesignMode, type DesignMode, type Density } from "@/providers/DesignModeProvider";
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
@@ -15,6 +17,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [departmentId, setDepartmentId] = useState<string>(profile?.department_id ?? "");
   const [saving, setSaving] = useState(false);
+  const { mode, setMode, density, setDensity } = useDesignMode();
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
