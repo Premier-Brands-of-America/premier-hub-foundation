@@ -20,7 +20,7 @@ export function useRealtimeInvalidation(table: TableName, queryKey: string[]) {
     if (isPreviewEnvironment()) return;
 
     const channel = supabase
-      .channel(`realtime-${table}`)
+      .channel(`realtime-${table}-${queryKey.join("-")}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table },
