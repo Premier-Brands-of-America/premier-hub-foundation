@@ -95,15 +95,16 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
   }, [fgData]);
 
   const useWorker = data.nodes.length > 800;
+  const extraProps: Record<string, unknown> = { useWorkerForCalc: useWorker };
 
   return (
     <ForceGraph2D
+      {...(extraProps as never)}
       ref={fgRef as never}
       width={width}
       height={height}
       graphData={fgData as never}
       cooldownTicks={150}
-      useWorkerForCalc={useWorker}
       onNodeClick={(n) => onNodeClick(n as FGNode)}
       onNodeHover={(n) => {
         const node = n as FGNode | null;
