@@ -263,6 +263,16 @@
   --status-info:         234 89% 68%;
   --status-neutral:      220 10% 65%;
   --status-danger:       0 70% 62%;
+
+  --sidebar-background:        222 16% 11%;
+  --sidebar-foreground:        210 20% 90%;
+  --sidebar-primary:           210 20% 96%;
+  --sidebar-primary-foreground: 222 20% 10%;
+  --sidebar-accent:            222 14% 17%;
+  --sidebar-accent-foreground: 210 20% 96%;
+  --sidebar-border:            222 14% 18%;
+  --sidebar-ring:              234 89% 66%;
+  --sidebar-muted:             220 10% 60%;
 }
 
 [data-design="modern"] body {
