@@ -45,7 +45,7 @@ export async function fetchPageTree(rootId?: string): Promise<PageTreeNode[]> {
     }
     return tree;
   }
-  const { data, error } = await supabase.rpc("get_page_tree", { p_root_id: rootId ?? null });
+  const { data, error } = await supabase.rpc("get_page_tree", { p_root_id: rootId ?? undefined });
   if (error) throw error;
   return (data ?? []) as PageTreeNode[];
 }
@@ -82,7 +82,7 @@ export async function createPage(input: { title: string; parent_id?: string | nu
   }
   const { data, error } = await supabase.rpc("create_page", {
     p_title: input.title,
-    p_parent_id: input.parent_id ?? null,
+    p_parent_id: input.parent_id ?? undefined,
     p_visibility: input.visibility ?? "private",
   });
   if (error) throw error;
@@ -168,7 +168,8 @@ export async function fetchAncestors(id: string): Promise<PageTreeNode[]> {
   const chain: PageTreeNode[] = [];
   let curId: string | null = id;
   for (let i = 0; i < 12 && curId; i++) {
-    const { data } = await supabase.from("pages").select("id,title,parent_id,icon").eq("id", curId).maybeSingle();
+    const { data }: { data: { id: string; title: string; parent_id: string | null; icon: string | null } | null } =
+      await supabase.from("pages").select("id,title,parent_id,icon").eq("id", curId).maybeSingle();
     if (!data) break;
     chain.unshift({ id: data.id, title: data.title, parent_id: data.parent_id, icon: data.icon, depth: 0 });
     curId = data.parent_id;
