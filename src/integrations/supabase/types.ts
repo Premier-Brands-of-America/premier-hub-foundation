@@ -1117,6 +1117,19 @@ export type Database = {
         }
         Relationships: []
       }
+      timeline_items: {
+        Row: {
+          color_hint: string | null
+          end_date: string | null
+          entity_type: string | null
+          id: string | null
+          owner_id: string | null
+          start_date: string | null
+          status: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_relation: {
@@ -1164,6 +1177,19 @@ export type Database = {
           icon: string
           id: string
           parent_id: string
+          title: string
+        }[]
+      }
+      get_timeline: {
+        Args: { p_from: string; p_to: string; p_types?: string[] }
+        Returns: {
+          color_hint: string
+          end_date: string
+          entity_type: string
+          id: string
+          owner_id: string
+          start_date: string
+          status: string
           title: string
         }[]
       }
