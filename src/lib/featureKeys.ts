@@ -9,6 +9,7 @@ export const ALL_FEATURE_KEYS = [
   "admin_settings",
   "notifications",
   "reports",
+  "pages",
 ] as const;
 
 export type FeatureKey = (typeof ALL_FEATURE_KEYS)[number];
@@ -24,4 +25,5 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   admin_settings: "Admin settings panel",
   notifications: "Email + in-app notifications",
   reports: "Analytics and reports",
+  pages: "Notion-style pages with backlinks",
 };

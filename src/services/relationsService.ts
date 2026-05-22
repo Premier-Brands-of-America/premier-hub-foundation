@@ -181,3 +181,15 @@ export async function searchEntities(
   await Promise.all(promises);
   return results.slice(0, limit);
 }
+
+// pages search appended via dynamic import to avoid circulars
+export async function searchPages(query: string, limit = 20): Promise<RelationRef[]> {
+  if (!query.trim() || IS_PREVIEW) return [];
+  const { data } = await supabase
+    .from("pages")
+    .select("id,title")
+    .ilike("title", `%${query.trim()}%`)
+    .is("archived_at", null)
+    .limit(limit);
+  return (data ?? []).map((r) => ({ entityType: "page" as const, entityId: r.id, title: r.title }));
+}

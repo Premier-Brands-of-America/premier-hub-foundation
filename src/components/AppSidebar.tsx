@@ -14,6 +14,7 @@ import {
   ListChecks,
   Users2,
   ScrollText,
+  FileType2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -38,6 +39,7 @@ import { NavItem, type NavItemConfig } from "@/components/NavItem";
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "My Tasks", url: "/tasks", icon: CheckSquare },
+  { title: "Pages", url: "/pages", icon: FileType2 },
   { title: "My Assigned Projects", url: "/assigned-projects", icon: FolderKanban },
   { title: "Projects I Own", url: "/owned-projects", icon: Crown },
   { title: "All Public Projects", url: "/public-projects", icon: Globe },

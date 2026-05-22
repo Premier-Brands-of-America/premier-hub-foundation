@@ -245,6 +245,161 @@ export type Database = {
         }
         Relationships: []
       }
+      page_activity: {
+        Row: {
+          action: string
+          created_at: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          page_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          page_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          page_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_activity_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_links: {
+        Row: {
+          anchor_text: string | null
+          created_at: string
+          id: string
+          position: number | null
+          source_page_id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          anchor_text?: string | null
+          created_at?: string
+          id?: string
+          position?: number | null
+          source_page_id: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          anchor_text?: string | null
+          created_at?: string
+          id?: string
+          position?: number | null
+          source_page_id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_links_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pages: {
+        Row: {
+          archived_at: string | null
+          body: Json
+          body_md: string | null
+          body_text: string | null
+          cover_url: string | null
+          created_at: string
+          department_id: string | null
+          icon: string | null
+          id: string
+          owner_id: string
+          parent_id: string | null
+          slug: string | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          archived_at?: string | null
+          body?: Json
+          body_md?: string | null
+          body_text?: string | null
+          cover_url?: string | null
+          created_at?: string
+          department_id?: string | null
+          icon?: string | null
+          id?: string
+          owner_id: string
+          parent_id?: string | null
+          slug?: string | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          archived_at?: string | null
+          body?: Json
+          body_md?: string | null
+          body_text?: string | null
+          cover_url?: string | null
+          created_at?: string
+          department_id?: string | null
+          icon?: string | null
+          id?: string
+          owner_id?: string
+          parent_id?: string | null
+          slug?: string | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "active_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pages_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -979,12 +1134,39 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: boolean
       }
+      can_view_page: {
+        Args: { _page_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      create_page: {
+        Args: { p_parent_id?: string; p_title: string; p_visibility?: string }
+        Returns: string
+      }
       current_department_id: { Args: never; Returns: string }
       current_role: { Args: never; Returns: string }
+      get_backlinks: {
+        Args: { p_target_id: string; p_target_type: string }
+        Returns: {
+          created_at: string
+          snippet: string
+          source_page_id: string
+          source_title: string
+        }[]
+      }
+      get_page_tree: {
+        Args: { p_root_id?: string }
+        Returns: {
+          depth: number
+          icon: string
+          id: string
+          parent_id: string
+          title: string
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_admin_role: { Args: never; Returns: boolean }
       is_designer_or_admin: { Args: never; Returns: boolean }

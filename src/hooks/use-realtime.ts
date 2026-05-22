@@ -9,7 +9,9 @@ type TableName =
   | "project_stakeholders"
   | "project_updates"
   | "notifications"
-  | "entity_relations";
+  | "entity_relations"
+  | "pages"
+  | "page_links";
 
 export function useRealtimeInvalidation(table: TableName, queryKey: string[]) {
   const queryClient = useQueryClient();

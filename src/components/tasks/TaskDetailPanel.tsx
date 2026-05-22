@@ -18,6 +18,7 @@ import type { Task, TaskContact, TaskUpdate, TaskActivity, TaskAttachment, TaskL
 import { FILE_EXTENSIONS, MAX_FILE_SIZE } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
 import { RelationsSection } from "@/components/relations/RelationsSection";
+import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 
 interface TaskDetailPanelProps {
   task: Task;
@@ -461,6 +462,8 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             ownerRef={{ entityType: "task", entityId: task.id, title: task.title }}
             editable
           />
+
+          <BacklinksPanel targetType="task" targetId={task.id} />
 
           <Separator />
 
