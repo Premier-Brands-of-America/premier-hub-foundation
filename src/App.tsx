@@ -40,6 +40,7 @@ const Forbidden = lazy(() => import("./pages/Forbidden"));
 const FeatureOff = lazy(() => import("./pages/FeatureOff"));
 const PagesPage = lazy(() => import("./pages/Pages"));
 const TimelinePage = lazy(() => import("./pages/Timeline"));
+const GraphPage = lazy(() => import("./pages/Graph"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -166,6 +167,7 @@ function AppRoutes() {
           <Route path="/pages" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages/:id" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/timeline" element={<ProtectedRoute><FeatureRoute feature="timeline"><TimelinePage /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/graph" element={<ProtectedRoute requireRole={["admin","designer"]}><FeatureRoute feature="graph"><GraphPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/403" element={<ProtectedRoute><Forbidden /></ProtectedRoute>} />
           <Route path="/feature-off" element={<ProtectedRoute><FeatureOff /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />

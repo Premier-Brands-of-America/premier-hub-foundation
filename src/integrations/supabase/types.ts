@@ -1161,6 +1161,13 @@ export type Database = {
       }
       current_department_id: { Args: never; Returns: string }
       current_role: { Args: never; Returns: string }
+      expand_node: {
+        Args: { p_depth?: number; p_node_id: string; p_node_type: string }
+        Returns: {
+          edges: Json
+          nodes: Json
+        }[]
+      }
       get_backlinks: {
         Args: { p_target_id: string; p_target_type: string }
         Returns: {
@@ -1168,6 +1175,13 @@ export type Database = {
           snippet: string
           source_page_id: string
           source_title: string
+        }[]
+      }
+      get_graph_data: {
+        Args: { p_filters?: Json; p_limit?: number }
+        Returns: {
+          edges: Json
+          nodes: Json
         }[]
       }
       get_page_tree: {

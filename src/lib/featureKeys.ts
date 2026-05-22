@@ -11,6 +11,7 @@ export const ALL_FEATURE_KEYS = [
   "reports",
   "pages",
   "timeline",
+  "graph",
 ] as const;
 
 export type FeatureKey = (typeof ALL_FEATURE_KEYS)[number];
@@ -28,4 +29,5 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   reports: "Analytics and reports",
   pages: "Notion-style pages with backlinks",
   timeline: "Unified Timeline / Calendar view across tasks, projects, requests",
+  graph: "Interactive node-link graph of all entities and relations",
 };
