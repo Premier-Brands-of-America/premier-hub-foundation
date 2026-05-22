@@ -86,6 +86,44 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Design</Label>
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={(v) => v && setMode(v as DesignMode)}
+            >
+              <ToggleGroupItem value="classic">Classic</ToggleGroupItem>
+              <ToggleGroupItem value="modern">Modern</ToggleGroupItem>
+            </ToggleGroup>
+            <p className="text-xs text-muted-foreground">
+              Modern uses a refined typography stack, softer surfaces, and subtle motion.
+              Classic stays utility-first.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Density</Label>
+            <ToggleGroup
+              type="single"
+              value={density}
+              onValueChange={(v) => v && setDensity(v as Density)}
+            >
+              <ToggleGroupItem value="comfortable">Comfortable</ToggleGroupItem>
+              <ToggleGroupItem value="compact">Compact</ToggleGroupItem>
+            </ToggleGroup>
+            <p className="text-xs text-muted-foreground">
+              Compact tightens spacing in lists and tables. Press <kbd className="kbd">⌘⇧D</kbd>
+              {" "}any time to switch designs.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
