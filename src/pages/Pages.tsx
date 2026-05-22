@@ -10,6 +10,7 @@ import { usePage, useSavePageBody } from "@/hooks/use-page";
 import { useCreatePage, usePageTree } from "@/hooks/use-pages";
 import { Button } from "@/components/ui/button";
 import { FilePlus } from "lucide-react";
+import { PromptDialog } from "@/components/pages/PromptDialog";
 
 export default function PagesPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ export default function PagesPage() {
   const createMut = useCreatePage();
   const { data: tree = [] } = usePageTree();
   const [mobileTab, setMobileTab] = useState<"tree" | "editor" | "backlinks">("editor");
+  const [newOpen, setNewOpen] = useState(false);
 
   // Auto-select first page if none in URL
   useEffect(() => {
@@ -27,12 +29,7 @@ export default function PagesPage() {
     }
   }, [id, tree, navigate]);
 
-  const handleNewRoot = async () => {
-    const title = window.prompt("Page title", "Untitled");
-    if (!title) return;
-    const newId = await createMut.mutateAsync({ title });
-    navigate(`/pages/${newId}`);
-  };
+  const handleNewRoot = () => setNewOpen(true);
 
   const Tree = (
     <PageTree activeId={id} onSelect={(pid) => navigate(`/pages/${pid}`)} />
@@ -99,6 +96,19 @@ export default function PagesPage() {
           {mobileTab === "backlinks" && Back}
         </div>
       </div>
+      <PromptDialog
+        open={newOpen}
+        title="New page"
+        description="Give your page a title. You can rename it any time."
+        defaultValue="Untitled"
+        confirmLabel="Create page"
+        onCancel={() => setNewOpen(false)}
+        onConfirm={async (title) => {
+          setNewOpen(false);
+          const newId = await createMut.mutateAsync({ title });
+          navigate(`/pages/${newId}`);
+        }}
+      />
     </>
   );
 }
