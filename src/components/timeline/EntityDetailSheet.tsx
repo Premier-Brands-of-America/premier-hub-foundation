@@ -8,7 +8,7 @@ import { fetchProject } from "@/services/projectService";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { ProjectDetailPanel } from "@/components/projects/ProjectDetailPanel";
 import type { Task } from "@/types/tasks";
-import type { Project } from "@/types/projects";
+import type { ProjectWithMeta } from "@/types/projects";
 import type { TimelineEntityType } from "@/types/timeline";
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 
 export function EntityDetailSheet({ open, onOpenChange, entity, onUpdated }: Props) {
   const [task, setTask] = useState<Task | null>(null);
-  const [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useState<ProjectWithMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
