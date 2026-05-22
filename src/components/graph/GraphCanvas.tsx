@@ -95,40 +95,40 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
   }, [fgData]);
 
   const useWorker = data.nodes.length > 800;
-  const extraProps: Record<string, unknown> = { useWorkerForCalc: useWorker };
+  const FG = ForceGraph2D as unknown as React.ComponentType<Record<string, unknown>>;
 
   return (
-    <ForceGraph2D
-      {...(extraProps as never)}
-      ref={fgRef as never}
+    <FG
+      ref={fgRef}
       width={width}
       height={height}
-      graphData={fgData as never}
+      graphData={fgData}
       cooldownTicks={150}
-      onNodeClick={(n) => onNodeClick(n as FGNode)}
-      onNodeHover={(n) => {
-        const node = n as FGNode | null;
+      useWorkerForCalc={useWorker}
+      onNodeClick={(n: FGNode) => onNodeClick(n)}
+      onNodeHover={(n: FGNode | null) => {
+        const node = n;
         setHoverId(node?.id ?? null);
         onNodeHover?.(node ?? null);
       }}
-      onNodeDragEnd={(n) => {
-        const node = n as FGNode;
+      onNodeDragEnd={(n: FGNode) => {
+        const node = n;
         node.fx = node.x;
         node.fy = node.y;
       }}
-      linkColor={(l) => {
-        const e = l as GraphEdge;
+      linkColor={(l: GraphEdge) => {
+        const e = l;
         const s = typeof e.source === "string" ? e.source : (e.source as unknown as GraphNode).id;
         const t = typeof e.target === "string" ? e.target : (e.target as unknown as GraphNode).id;
         const active = !highlightedSet || (highlightedSet.has(s) && highlightedSet.has(t));
         return active ? "rgba(120,120,120,0.55)" : "rgba(120,120,120,0.12)";
       }}
-      linkLineDash={(l) => RELATION_STYLES[(l as GraphEdge).type]?.dash ?? null}
-      linkWidth={(l) => RELATION_STYLES[(l as GraphEdge).type]?.weight ?? 1}
+      linkLineDash={(l: GraphEdge) => RELATION_STYLES[l.type]?.dash ?? null}
+      linkWidth={(l: GraphEdge) => RELATION_STYLES[l.type]?.weight ?? 1}
       linkDirectionalArrowLength={4}
       linkDirectionalArrowRelPos={0.95}
-      nodeCanvasObject={(n, ctx, globalScale) => {
-        const node = n as FGNode;
+      nodeCanvasObject={(n: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+        const node = n;
         const x = node.x ?? 0;
         const y = node.y ?? 0;
         const color = node.__color ?? (node.__color = getNodeColor(node.type));
@@ -167,8 +167,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         }
         ctx.globalAlpha = 1;
       }}
-      nodePointerAreaPaint={(n, color, ctx) => {
-        const node = n as FGNode;
+      nodePointerAreaPaint={(n: FGNode, color: string, ctx: CanvasRenderingContext2D) => {
+        const node = n;
         const x = node.x ?? 0;
         const y = node.y ?? 0;
         ctx.fillStyle = color;
