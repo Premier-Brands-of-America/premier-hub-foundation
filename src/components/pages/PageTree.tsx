@@ -13,6 +13,17 @@ import { usePageTree, useCreatePage } from "@/hooks/use-pages";
 import { useArchivePage } from "@/hooks/use-page";
 import type { PageTreeNode } from "@/types/pages";
 import { toast } from "@/hooks/use-toast";
+import { PromptDialog } from "@/components/pages/PromptDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   rootId?: string;
@@ -25,6 +36,9 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   const createMut = useCreatePage();
   const archiveMut = useArchivePage();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [createParent, setCreateParent] = useState<{ open: boolean; parentId: string | null }>({ open: false, parentId: null });
+  const [renameState, setRenameState] = useState<{ open: boolean; id: string; title: string } | null>(null);
+  const [archiveId, setArchiveId] = useState<string | null>(null);
 
   const byParent = new Map<string | null, PageTreeNode[]>();
   for (const n of nodes) {
@@ -34,21 +48,9 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   }
   const roots = byParent.get(null) ?? nodes.filter((n) => n.depth === 0);
 
-  const handleCreate = async (parentId: string | null) => {
-    const title = window.prompt("Page title", "Untitled");
-    if (!title) return;
-    const id = await createMut.mutateAsync({ title, parent_id: parentId });
-    if (parentId) setExpanded((e) => ({ ...e, [parentId]: true }));
-    onSelect(id);
-  };
-
-  const handleRename = async (id: string, currentTitle: string) => {
-    const next = window.prompt("Rename page", currentTitle);
-    if (!next || next === currentTitle) return;
-    const { updatePageTitle } = await import("@/services/pagesService");
-    await updatePageTitle(id, next);
-    toast({ title: "Renamed" });
-  };
+  const handleCreate = (parentId: string | null) => setCreateParent({ open: true, parentId });
+  const handleRename = (id: string, currentTitle: string) =>
+    setRenameState({ open: true, id, title: currentTitle });
 
   const renderNode = (node: PageTreeNode) => {
     const kids = byParent.get(node.id) ?? [];
@@ -100,11 +102,7 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
               <Edit className="h-3.5 w-3.5 mr-2" /> Rename
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={async () => {
-                if (!confirm("Archive this page and its children?")) return;
-                await archiveMut.mutateAsync(node.id);
-                toast({ title: "Page archived" });
-              }}
+              onClick={() => setArchiveId(node.id)}
               className="text-destructive"
             >
               <Archive className="h-3.5 w-3.5 mr-2" /> Archive
@@ -137,6 +135,60 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
           {roots.map(renderNode)}
         </ul>
       </ScrollArea>
+      <PromptDialog
+        open={createParent.open}
+        title="New page"
+        description="Give your page a title."
+        defaultValue="Untitled"
+        confirmLabel="Create page"
+        onCancel={() => setCreateParent({ open: false, parentId: null })}
+        onConfirm={async (title) => {
+          const parentId = createParent.parentId;
+          setCreateParent({ open: false, parentId: null });
+          const id = await createMut.mutateAsync({ title, parent_id: parentId });
+          if (parentId) setExpanded((e) => ({ ...e, [parentId]: true }));
+          onSelect(id);
+        }}
+      />
+      <PromptDialog
+        open={!!renameState?.open}
+        title="Rename page"
+        defaultValue={renameState?.title ?? ""}
+        confirmLabel="Rename"
+        onCancel={() => setRenameState(null)}
+        onConfirm={async (next) => {
+          const target = renameState;
+          setRenameState(null);
+          if (!target || next === target.title) return;
+          const { updatePageTitle } = await import("@/services/pagesService");
+          await updatePageTitle(target.id, next);
+          toast({ title: "Renamed" });
+        }}
+      />
+      <AlertDialog open={!!archiveId} onOpenChange={(o) => !o && setArchiveId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this page?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This page and any child pages will be archived.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const id = archiveId;
+                setArchiveId(null);
+                if (!id) return;
+                await archiveMut.mutateAsync(id);
+                toast({ title: "Page archived" });
+              }}
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
