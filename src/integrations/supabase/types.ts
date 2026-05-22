@@ -337,6 +337,7 @@ export type Database = {
           id: string
           owner_id: string
           parent_id: string | null
+          search_vector: unknown
           slug: string | null
           title: string
           updated_at: string
@@ -354,6 +355,7 @@ export type Database = {
           id?: string
           owner_id: string
           parent_id?: string | null
+          search_vector?: unknown
           slug?: string | null
           title: string
           updated_at?: string
@@ -371,6 +373,7 @@ export type Database = {
           id?: string
           owner_id?: string
           parent_id?: string | null
+          search_vector?: unknown
           slug?: string | null
           title?: string
           updated_at?: string
@@ -668,6 +671,7 @@ export type Database = {
           id: string
           overall_percent_complete: number | null
           owner_id: string
+          search_vector: unknown
           status: string
           title: string
           updated_at: string
@@ -682,6 +686,7 @@ export type Database = {
           id?: string
           overall_percent_complete?: number | null
           owner_id: string
+          search_vector?: unknown
           status?: string
           title: string
           updated_at?: string
@@ -696,6 +701,7 @@ export type Database = {
           id?: string
           overall_percent_complete?: number | null
           owner_id?: string
+          search_vector?: unknown
           status?: string
           title?: string
           updated_at?: string
@@ -786,6 +792,7 @@ export type Database = {
           request_number: string | null
           request_type: string
           requester_id: string
+          search_vector: unknown
           sharepoint_folder_id: string | null
           sharepoint_folder_url: string | null
           status: string
@@ -808,6 +815,7 @@ export type Database = {
           request_number?: string | null
           request_type: string
           requester_id: string
+          search_vector?: unknown
           sharepoint_folder_id?: string | null
           sharepoint_folder_url?: string | null
           status?: string
@@ -830,6 +838,7 @@ export type Database = {
           request_number?: string | null
           request_type?: string
           requester_id?: string
+          search_vector?: unknown
           sharepoint_folder_id?: string | null
           sharepoint_folder_url?: string | null
           status?: string
@@ -1066,6 +1075,7 @@ export type Database = {
           due_date: string | null
           id: string
           percent_complete: number | null
+          search_vector: unknown
           status: string
           title: string
           updated_at: string
@@ -1078,6 +1088,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           percent_complete?: number | null
+          search_vector?: unknown
           status?: string
           title: string
           updated_at?: string
@@ -1090,6 +1101,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           percent_complete?: number | null
+          search_vector?: unknown
           status?: string
           title?: string
           updated_at?: string
@@ -1235,6 +1247,37 @@ export type Database = {
           feature_key: string
         }[]
       }
+      search_all: {
+        Args: { p_limit?: number; p_query: string; p_types?: string[] }
+        Returns: {
+          entity_type: string
+          id: string
+          rank: number
+          snippet: string
+          title: string
+        }[]
+      }
+      search_fuzzy: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          entity_type: string
+          id: string
+          similarity: number
+          title: string
+        }[]
+      }
+      search_people: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          department: string
+          email: string
+          full_name: string
+          role: string
+          user_id: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

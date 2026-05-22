@@ -26,6 +26,9 @@ export function useRealtimeInvalidation(table: TableName, queryKey: string[]) {
         { event: "*", schema: "public", table },
         () => {
           queryClient.invalidateQueries({ queryKey });
+          if (table === "tasks" || table === "projects" || table === "pages") {
+            queryClient.invalidateQueries({ queryKey: ["search"] });
+          }
         }
       )
       .subscribe();
