@@ -101,7 +101,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       ref={fgRef as never}
       width={width}
       height={height}
-      graphData={fgData}
+      graphData={fgData as never}
       cooldownTicks={150}
       useWorkerForCalc={useWorker}
       onNodeClick={(n) => onNodeClick(n as FGNode)}
