@@ -10,13 +10,12 @@ interface DashboardWidgetProps {
   className?: string;
 }
 
-const railClass: Record<string, string> = {
-  warning: "before:bg-[hsl(var(--status-warning))]",
-  accent:  "before:bg-[hsl(var(--entity-project))]",
-  success: "before:bg-[hsl(var(--status-done))]",
-  info:    "before:bg-[hsl(var(--primary))]",
-  danger:  "before:bg-[hsl(var(--destructive))]",
-  default: "border-l-primary/60",
+const modernRail: Record<string, string> = {
+  warning: "modern:before:bg-[hsl(var(--status-warning))]",
+  accent:  "modern:before:bg-[hsl(var(--entity-project))]",
+  success: "modern:before:bg-[hsl(var(--status-done))]",
+  info:    "modern:before:bg-[hsl(var(--primary))]",
+  danger:  "modern:before:bg-[hsl(var(--destructive))]",
 };
 
 const classicBorder: Record<string, string> = {
@@ -49,7 +48,7 @@ export function DashboardWidget({
         hasModernRail && [
           "modern:before:absolute modern:before:left-0 modern:before:top-0 modern:before:bottom-0",
           "modern:before:w-[3px] modern:before:rounded-l-md",
-          `modern:${railClass[accentColor]}`,
+          modernRail[accentColor],
         ],
         className,
       )}
