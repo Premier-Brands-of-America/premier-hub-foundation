@@ -3,7 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
 
-type TableName = "tasks" | "projects" | "project_stakeholders" | "project_updates" | "notifications";
+type TableName =
+  | "tasks"
+  | "projects"
+  | "project_stakeholders"
+  | "project_updates"
+  | "notifications"
+  | "entity_relations";
 
 export function useRealtimeInvalidation(table: TableName, queryKey: string[]) {
   const queryClient = useQueryClient();

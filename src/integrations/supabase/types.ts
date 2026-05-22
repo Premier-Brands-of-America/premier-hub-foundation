@@ -138,6 +138,42 @@ export type Database = {
         }
         Relationships: []
       }
+      entity_relations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          relation_type: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          relation_type: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          relation_type?: string
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           enabled: boolean
@@ -928,6 +964,21 @@ export type Database = {
       }
     }
     Functions: {
+      add_relation: {
+        Args: {
+          p_relation_type: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: string
+      }
+      bulk_add_relations: { Args: { p_pairs: Json }; Returns: string[] }
+      can_view_entity: {
+        Args: { p_id: string; p_type: string }
+        Returns: boolean
+      }
       can_view_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
@@ -942,6 +993,19 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      list_relations: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          created_at: string
+          direction: string
+          id: string
+          other_id: string
+          other_title: string
+          other_type: string
+          relation_type: string
+        }[]
+      }
+      remove_relation: { Args: { p_id: string }; Returns: undefined }
       resolve_features: {
         Args: { p_keys: string[] }
         Returns: {

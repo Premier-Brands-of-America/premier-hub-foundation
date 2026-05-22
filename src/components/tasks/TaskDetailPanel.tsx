@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, TaskContact, TaskUpdate, TaskActivity, TaskAttachment, TaskLink } from "@/types/tasks";
 import { FILE_EXTENSIONS, MAX_FILE_SIZE } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
+import { RelationsSection } from "@/components/relations/RelationsSection";
 
 interface TaskDetailPanelProps {
   task: Task;
@@ -452,6 +453,14 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
               </Button>
             </div>
           </section>
+
+          <Separator />
+
+          {/* Relations */}
+          <RelationsSection
+            ownerRef={{ entityType: "task", entityId: task.id, title: task.title }}
+            editable
+          />
 
           <Separator />
 

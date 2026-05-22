@@ -58,6 +58,14 @@
     --sidebar-border: 210 12% 22%;
     --sidebar-ring: 350 72% 38%;
     --sidebar-muted: 210 8% 44%;
+
+    /* Entity type tokens (relations) */
+    --entity-project: 210 70% 45%;
+    --entity-task: 152 55% 38%;
+    --entity-request: 25 85% 50%;
+    --entity-page: 265 55% 55%;
+    --entity-person: 200 50% 40%;
+    --entity-department: 220 12% 42%;
   }
 
   .dark {
@@ -93,6 +101,13 @@
     --sidebar-border: 210 12% 16%;
     --sidebar-ring: 350 72% 44%;
     --sidebar-muted: 210 8% 38%;
+
+    --entity-project: 210 70% 65%;
+    --entity-task: 152 55% 55%;
+    --entity-request: 25 85% 60%;
+    --entity-page: 265 60% 70%;
+    --entity-person: 200 50% 60%;
+    --entity-department: 220 12% 62%;
   }
 }
 
