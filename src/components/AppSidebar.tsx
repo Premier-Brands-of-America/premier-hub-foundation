@@ -81,14 +81,14 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         {/* Brand */}
-        <div className={`px-4 py-5 border-b border-sidebar-border ${collapsed ? "px-2 py-3" : ""}`}>
+        <div className={`px-4 py-5 modern:py-6 border-b border-sidebar-border ${collapsed ? "px-2 py-3" : ""}`}>
           {collapsed ? (
             <div className="flex items-center justify-center">
-              <BrandLogo size="sm" />
+              <BrandLogo size="sm" className="modern:opacity-90" />
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <BrandLogo size="sm" />
+              <BrandLogo size="sm" className="modern:scale-110 modern:opacity-90 modern:origin-left" />
               <div className="min-w-0">
                 <h2 className="text-sm font-semibold text-sidebar-primary truncate">{brand.appName}</h2>
               </div>
