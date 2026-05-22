@@ -66,6 +66,16 @@
     --entity-page: 265 55% 55%;
     --entity-person: 200 50% 40%;
     --entity-department: 220 12% 42%;
+
+    /* Status & priority tokens for Timeline */
+    --status-todo: 220 12% 60%;
+    --status-in-progress: 210 70% 50%;
+    --status-blocked: 0 72% 50%;
+    --status-done: 152 55% 40%;
+    --priority-low: 200 30% 55%;
+    --priority-medium: 48 90% 50%;
+    --priority-high: 25 85% 50%;
+    --priority-urgent: 0 75% 50%;
   }
 
   .dark {
@@ -108,6 +118,15 @@
     --entity-page: 265 60% 70%;
     --entity-person: 200 50% 60%;
     --entity-department: 220 12% 62%;
+
+    --status-todo: 220 8% 55%;
+    --status-in-progress: 210 70% 60%;
+    --status-blocked: 0 65% 55%;
+    --status-done: 152 50% 50%;
+    --priority-low: 200 30% 60%;
+    --priority-medium: 48 85% 55%;
+    --priority-high: 25 80% 58%;
+    --priority-urgent: 0 70% 58%;
   }
 }
 

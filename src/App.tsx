@@ -39,6 +39,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const Forbidden = lazy(() => import("./pages/Forbidden"));
 const FeatureOff = lazy(() => import("./pages/FeatureOff"));
 const PagesPage = lazy(() => import("./pages/Pages"));
+const TimelinePage = lazy(() => import("./pages/Timeline"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -164,6 +165,7 @@ function AppRoutes() {
           <Route path="/audit" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="audit_trail"><AuditLogPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages/:id" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/timeline" element={<ProtectedRoute><FeatureRoute feature="timeline"><TimelinePage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/403" element={<ProtectedRoute><Forbidden /></ProtectedRoute>} />
           <Route path="/feature-off" element={<ProtectedRoute><FeatureOff /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
