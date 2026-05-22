@@ -456,6 +456,14 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
 
           <Separator />
 
+          {/* Relations */}
+          <RelationsSection
+            ownerRef={{ entityType: "task", entityId: task.id, title: task.title }}
+            editable
+          />
+
+          <Separator />
+
           {/* Activity Trail */}
           <section className="space-y-3">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
