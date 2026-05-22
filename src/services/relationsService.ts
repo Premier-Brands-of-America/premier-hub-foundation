@@ -135,56 +135,49 @@ export async function searchEntities(
 
   const q = `%${query.trim()}%`;
   const results: RelationRef[] = [];
-  const tasks: Promise<void>[] = [];
+
+  const promises: Promise<void>[] = [];
 
   if (entityTypes.includes("project")) {
-    tasks.push(
-      supabase
-        .from("projects")
-        .select("id,title")
-        .ilike("title", q)
-        .limit(limit)
-        .then(({ data }) => {
-          (data ?? []).forEach((r) =>
-            results.push({ entityType: "project", entityId: r.id, title: r.title }),
-          );
-        }),
+    promises.push(
+      (async () => {
+        const { data } = await supabase.from("projects").select("id,title").ilike("title", q).limit(limit);
+        (data ?? []).forEach((r) =>
+          results.push({ entityType: "project", entityId: r.id, title: r.title }),
+        );
+      })(),
     );
   }
   if (entityTypes.includes("task")) {
-    tasks.push(
-      supabase
-        .from("tasks")
-        .select("id,title")
-        .ilike("title", q)
-        .limit(limit)
-        .then(({ data }) => {
-          (data ?? []).forEach((r) =>
-            results.push({ entityType: "task", entityId: r.id, title: r.title }),
-          );
-        }),
+    promises.push(
+      (async () => {
+        const { data } = await supabase.from("tasks").select("id,title").ilike("title", q).limit(limit);
+        (data ?? []).forEach((r) =>
+          results.push({ entityType: "task", entityId: r.id, title: r.title }),
+        );
+      })(),
     );
   }
   if (entityTypes.includes("request")) {
-    tasks.push(
-      supabase
-        .from("requests")
-        .select("id,title,request_number")
-        .ilike("title", q)
-        .limit(limit)
-        .then(({ data }) => {
-          (data ?? []).forEach((r) =>
-            results.push({
-              entityType: "request",
-              entityId: r.id,
-              title: r.title,
-              subtitle: r.request_number ?? undefined,
-            }),
-          );
-        }),
+    promises.push(
+      (async () => {
+        const { data } = await supabase
+          .from("requests")
+          .select("id,title,request_number")
+          .ilike("title", q)
+          .limit(limit);
+        (data ?? []).forEach((r) =>
+          results.push({
+            entityType: "request",
+            entityId: r.id,
+            title: r.title,
+            subtitle: r.request_number ?? undefined,
+          }),
+        );
+      })(),
     );
   }
 
-  await Promise.all(tasks);
+  await Promise.all(promises);
   return results.slice(0, limit);
 }
