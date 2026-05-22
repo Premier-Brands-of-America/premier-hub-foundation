@@ -15,6 +15,7 @@ import {
   Users2,
   ScrollText,
   FileType2,
+  CalendarRange,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -40,6 +41,7 @@ const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "My Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Pages", url: "/pages", icon: FileType2 },
+  { title: "Timeline", url: "/timeline", icon: CalendarRange },
   { title: "My Assigned Projects", url: "/assigned-projects", icon: FolderKanban },
   { title: "Projects I Own", url: "/owned-projects", icon: Crown },
   { title: "All Public Projects", url: "/public-projects", icon: Globe },
