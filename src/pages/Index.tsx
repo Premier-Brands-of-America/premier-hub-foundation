@@ -67,7 +67,7 @@ const Dashboard = () => {
       {/* Widget Grid — bento in modern */}
       <div className="grid gap-4 modern:gap-5 sm:grid-cols-2 lg:grid-cols-6 auto-rows-[minmax(140px,auto)]">
         <div className="lg:col-span-2">
-        <DashboardWidget title="My Active Tasks" icon={CheckSquare}>
+        <DashboardWidget title="My Active Tasks" icon={CheckSquare} accentColor="info">
           {stats.activeTasks > 0 ? (
             <StatDisplay count={stats.activeTasks} label="active task" action={() => navigate("/tasks")} actionLabel="View Tasks" />
           ) : (
@@ -77,7 +77,7 @@ const Dashboard = () => {
         </div>
 
         <div className="lg:col-span-2">
-        <DashboardWidget title="Assigned Projects" icon={FolderKanban}>
+        <DashboardWidget title="Assigned Projects" icon={FolderKanban} accentColor="accent">
           {stats.assignedProjects > 0 ? (
             <StatDisplay count={stats.assignedProjects} label="assigned project" action={() => navigate("/assigned-projects")} actionLabel="View Projects" />
           ) : (
@@ -97,7 +97,7 @@ const Dashboard = () => {
         </div>
 
         <div className="lg:col-span-2 lg:row-span-2">
-        <DashboardWidget title="Overdue Items" icon={AlertTriangle} accentColor="accent">
+        <DashboardWidget title="Overdue Items" icon={AlertTriangle} accentColor="danger">
           <div className="flex items-center gap-3">
             <p className="text-foreground font-semibold text-2xl">{stats.overdueItems}</p>
             <p className="text-xs text-muted-foreground">
