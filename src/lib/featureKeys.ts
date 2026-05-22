@@ -10,6 +10,7 @@ export const ALL_FEATURE_KEYS = [
   "notifications",
   "reports",
   "pages",
+  "timeline",
 ] as const;
 
 export type FeatureKey = (typeof ALL_FEATURE_KEYS)[number];
@@ -26,4 +27,5 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   notifications: "Email + in-app notifications",
   reports: "Analytics and reports",
   pages: "Notion-style pages with backlinks",
+  timeline: "Unified Timeline / Calendar view across tasks, projects, requests",
 };
