@@ -45,6 +45,11 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-sm text-muted-foreground">
                 An unexpected error occurred. Try refreshing the page or click below to retry.
               </p>
+              {this.state.error?.message && (
+                <pre className="mt-3 text-xs text-left whitespace-pre-wrap bg-muted text-muted-foreground rounded-md p-3 border max-h-48 overflow-auto">
+                  {this.state.error.message}
+                </pre>
+              )}
             </div>
             <div className="flex gap-2 justify-center">
               <Button variant="outline" onClick={this.handleReset} className="gap-2">
