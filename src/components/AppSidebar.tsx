@@ -16,6 +16,7 @@ import {
   ScrollText,
   FileType2,
   CalendarRange,
+  Network,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
