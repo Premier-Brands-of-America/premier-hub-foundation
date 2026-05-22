@@ -4,19 +4,33 @@ import { AIChatPanel } from "@/components/AIChatPanel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Bot, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleBadge } from "@/components/RoleBadge";
 import { useNavigate } from "react-router-dom";
+import { GlobalCommandPalette } from "@/components/search/GlobalCommandPalette";
+import { SearchTrigger } from "@/components/search/SearchTrigger";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [aiOpen, setAiOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { profile, role, signOut } = useAuth();
   const navigate = useNavigate();
   const handleSignOut = async () => {
     await signOut();
     navigate("/login", { replace: true });
   };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <SidebarProvider>
@@ -33,6 +47,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <header className="h-12 flex items-center justify-between border-b border-border bg-card px-3 sm:px-4 shrink-0">
             <div className="flex items-center gap-2">
               <SidebarTrigger aria-label="Toggle sidebar" />
+              <SearchTrigger onClick={() => setSearchOpen(true)} />
             </div>
             <Button
               variant="ghost"
@@ -71,6 +86,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {aiOpen && <AIChatPanel onClose={() => setAiOpen(false)} />}
+        <GlobalCommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       </div>
     </SidebarProvider>
   );
