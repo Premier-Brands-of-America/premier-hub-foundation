@@ -653,6 +653,7 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
               <History className="h-3 w-3" /> Activity Trail
             </h3>
+            {/* placeholder anchor */}
             {activity.length > 0 ? (
               <div className="space-y-1">
                 {activity.map((a) => (
