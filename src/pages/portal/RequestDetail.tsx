@@ -13,6 +13,7 @@ import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { AttachmentUploader } from "@/components/attachments/AttachmentUploader";
 import { SharePointPanel } from "@/components/request-detail/SharePointPanel";
 import { RelationsSection } from "@/components/relations/RelationsSection";
+import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { canUploadFiles } from "@/lib/permissions";
 import { ATTACHMENT_KINDS, type AttachmentKind } from "@/types/attachment";
 
@@ -92,6 +93,8 @@ export default function RequestDetail() {
         ownerRef={{ entityType: "request", entityId: request.id, title: request.title }}
         editable
       />
+
+      <BacklinksPanel targetType="request" targetId={request.id} />
 
       <Tabs defaultValue={tabs[0]} className="w-full">
         <TabsList className="flex flex-wrap h-auto">
