@@ -12,6 +12,7 @@ import { requestKeys } from "@/hooks/useRequests";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { AttachmentUploader } from "@/components/attachments/AttachmentUploader";
 import { SharePointPanel } from "@/components/request-detail/SharePointPanel";
+import { RelationsSection } from "@/components/relations/RelationsSection";
 import { canUploadFiles } from "@/lib/permissions";
 import { ATTACHMENT_KINDS, type AttachmentKind } from "@/types/attachment";
 
@@ -85,6 +86,11 @@ export default function RequestDetail() {
       <SharePointPanel
         requestId={request.id}
         folderUrl={request.sharepoint_folder_url ?? null}
+      />
+
+      <RelationsSection
+        ownerRef={{ entityType: "request", entityId: request.id, title: request.title }}
+        editable
       />
 
       <Tabs defaultValue={tabs[0]} className="w-full">
