@@ -11,6 +11,7 @@ import { isPreviewEnvironment } from "@/lib/environment";
 import { AppLayout } from "@/components/AppLayout";
 import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { FeatureFlagsProvider } from "@/providers/FeatureFlagsProvider";
+import { DesignModeProvider } from "@/providers/DesignModeProvider";
 import { FeatureRoute } from "@/components/FeatureRoute";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
@@ -185,18 +186,20 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Provider>
-            <FeatureFlagsProvider>
-              <RouteAnnouncer />
-              <AppRoutes />
-            </FeatureFlagsProvider>
-          </Provider>
-        </BrowserRouter>
-      </TooltipProvider>
+      <DesignModeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Provider>
+              <FeatureFlagsProvider>
+                <RouteAnnouncer />
+                <AppRoutes />
+              </FeatureFlagsProvider>
+            </Provider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </DesignModeProvider>
     </QueryClientProvider>
   );
 };
