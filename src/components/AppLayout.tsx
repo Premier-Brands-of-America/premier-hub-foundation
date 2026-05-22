@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AIChatPanel } from "@/components/AIChatPanel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Bot, LogOut, Sparkles, User as UserIcon } from "lucide-react";
+import { Bell, Bot, LogOut, Sparkles, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,22 +70,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="app-header h-12 modern:h-14 flex items-center justify-between border-b border-border bg-card px-3 sm:px-4 shrink-0">
+          <header className="app-header h-12 modern:h-14 flex items-center justify-between border-b border-border bg-card px-3 sm:px-4 shrink-0 modern:border-b-0 modern:bg-transparent">
             <div className="flex items-center gap-2">
               <SidebarTrigger aria-label="Toggle sidebar" />
               <SearchTrigger onClick={() => setSearchOpen(true)} />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setAiOpen(!aiOpen)}
-              aria-label={aiOpen ? "Close AI Assistant" : "Open AI Assistant"}
-            >
-              <Bot className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs">AI Assistant</span>
-            </Button>
-            <div className="flex items-center gap-2 ml-auto pl-2">
+            <div className="flex items-center gap-1 ml-auto pl-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-foreground modern:hover:bg-foreground/5"
+                onClick={() => setAiOpen(!aiOpen)}
+                aria-label={aiOpen ? "Close AI Assistant" : "Open AI Assistant"}
+              >
+                <Bot className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">AI Assistant</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground modern:hover:bg-foreground/5"
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
               {profile && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

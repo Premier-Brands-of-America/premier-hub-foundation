@@ -31,33 +31,42 @@ const Dashboard = () => {
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+      <div className="space-y-1.5 modern:space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground tracking-tight modern:text-3xl modern:tracking-[-0.02em]">
           Welcome back, {firstName}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground modern:text-base">
           Here's what's happening across your projects and tasks.
         </p>
       </div>
 
       {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 modern:gap-2.5">
         <Button size="sm" className="gap-2" onClick={() => navigate("/tasks")}>
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5 modern:h-4 modern:w-4" />
           New Task
         </Button>
-        <Button size="sm" variant="outline" className="gap-2" onClick={() => navigate("/owned-projects")}>
+        <Button size="sm" variant="outline" className="gap-2 modern:hidden" onClick={() => navigate("/owned-projects")}>
           <Plus className="h-3.5 w-3.5" />
           New Project
         </Button>
-        <Button size="sm" variant="outline" className="gap-2" onClick={() => navigate("/ai-assistant")}>
+        <Button size="sm" variant="tinted" className="gap-2 hidden modern:inline-flex" onClick={() => navigate("/owned-projects")}>
+          <Plus className="h-4 w-4" />
+          New Project
+        </Button>
+        <Button size="sm" variant="outline" className="gap-2 modern:hidden" onClick={() => navigate("/ai-assistant")}>
           <Bot className="h-3.5 w-3.5" />
+          AI Assistant
+        </Button>
+        <Button size="sm" variant="ghost-soft" className="gap-2 hidden modern:inline-flex" onClick={() => navigate("/ai-assistant")}>
+          <Bot className="h-4 w-4" />
           AI Assistant
         </Button>
       </div>
 
-      {/* Widget Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Widget Grid — bento in modern */}
+      <div className="grid gap-4 modern:gap-5 sm:grid-cols-2 lg:grid-cols-6 auto-rows-[minmax(140px,auto)]">
+        <div className="lg:col-span-2">
         <DashboardWidget title="My Active Tasks" icon={CheckSquare}>
           {stats.activeTasks > 0 ? (
             <StatDisplay count={stats.activeTasks} label="active task" action={() => navigate("/tasks")} actionLabel="View Tasks" />
@@ -65,7 +74,9 @@ const Dashboard = () => {
             <EmptyHint message="No active tasks yet" hint="Create tasks to track your personal work items." action={() => navigate("/tasks")} actionLabel="Go to Tasks" />
           )}
         </DashboardWidget>
+        </div>
 
+        <div className="lg:col-span-2">
         <DashboardWidget title="Assigned Projects" icon={FolderKanban}>
           {stats.assignedProjects > 0 ? (
             <StatDisplay count={stats.assignedProjects} label="assigned project" action={() => navigate("/assigned-projects")} actionLabel="View Projects" />
@@ -73,7 +84,9 @@ const Dashboard = () => {
             <EmptyHint message="No assigned projects" hint="Projects where you're a stakeholder will appear here." action={() => navigate("/assigned-projects")} actionLabel="View Projects" />
           )}
         </DashboardWidget>
+        </div>
 
+        <div className="lg:col-span-2">
         <DashboardWidget title="Projects I Own" icon={Crown} accentColor="warning">
           {stats.ownedProjects > 0 ? (
             <StatDisplay count={stats.ownedProjects} label="owned project" action={() => navigate("/owned-projects")} actionLabel="View Projects" />
@@ -81,7 +94,9 @@ const Dashboard = () => {
             <EmptyHint message="No owned projects" hint="Projects you create or manage will appear here." action={() => navigate("/owned-projects")} actionLabel="View Projects" />
           )}
         </DashboardWidget>
+        </div>
 
+        <div className="lg:col-span-2 lg:row-span-2">
         <DashboardWidget title="Overdue Items" icon={AlertTriangle} accentColor="accent">
           <div className="flex items-center gap-3">
             <p className="text-foreground font-semibold text-2xl">{stats.overdueItems}</p>
@@ -92,7 +107,9 @@ const Dashboard = () => {
             </p>
           </div>
         </DashboardWidget>
+        </div>
 
+        <div className="lg:col-span-4 lg:row-span-2">
         <DashboardWidget title="Recent Activity" icon={ClipboardList}>
           {stats.recentActivity > 0 ? (
             <StatDisplay count={stats.recentActivity} label="update" suffix="in the last 7 days" />
@@ -100,6 +117,7 @@ const Dashboard = () => {
             <EmptyHint message="No recent activity" hint="Updates and changes to your projects will show here." />
           )}
         </DashboardWidget>
+        </div>
       </div>
 
       {/* Role-aware Art Request Portal sections */}
