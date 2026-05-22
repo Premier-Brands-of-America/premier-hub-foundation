@@ -41,13 +41,13 @@ export async function fetchTimeline(
 ): Promise<TimelineEvent[]> {
   if (IS_PREVIEW) return mockTimeline(from, to, types);
 
-  const { data, error } = await supabase.rpc("get_timeline", {
+  const { data, error } = await supabase.rpc("get_timeline" as never, {
     p_from: toIsoDate(from),
     p_to: toIsoDate(to),
-    p_types: types && types.length ? types : null,
-  });
+    p_types: types && types.length ? types : undefined,
+  } as never);
   if (error) throw error;
-  return (data ?? []) as TimelineEvent[];
+  return ((data ?? []) as unknown) as TimelineEvent[];
 }
 
 export interface ReschedulePayload {
