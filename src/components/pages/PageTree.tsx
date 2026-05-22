@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { usePageTree, useCreatePage } from "@/hooks/use-pages";
-import { useArchivePage, useUpdatePageTitle } from "@/hooks/use-page";
+import { useArchivePage } from "@/hooks/use-page";
 import type { PageTreeNode } from "@/types/pages";
 import { toast } from "@/hooks/use-toast";
 
