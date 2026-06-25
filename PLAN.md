@@ -78,13 +78,16 @@ Internal pilot for **Premier Brands of America** ("Premier Project Hub" / Art Re
       patterns, Teams/Outlook/transcription on Edge Functions + RLS + secret names + work split)
 - [x] **GATE:** `findings.md` committed before P2/P3 choices lock ✓
 
-### P2 — Design System (solo)
-- [ ] worktree `hub-design` (`feat/design-system` off `feat/v2`)
-- [ ] ONE revamped dark+light system, semantic HSL tokens; remove dead Classic tokens
-- [ ] persist per-user (`profiles.preferences` + `phv2:design-prefs`); toggle in profile menu + ⌘⇧D
-- [ ] adopt `findings.md` UX patterns
-- [ ] owns `src/index.css` + `tailwind.config.ts` + theme provider
-- [ ] **GATE:** merge `feat/design-system` → `feat/v2` BEFORE P3 starts
+### P2 — Design System (solo)  ✅
+- [x] worktree `hub-design` (`feat/design-system` off `feat/v2`) — EXISTS, reuse
+- [x] ONE revamped dark+light system, semantic HSL tokens; removed dead Classic tokens
+- [x] persist per-user (`profiles.preferences` + `phv2:design-prefs`); toggle in profile menu + ⌘⇧D
+- [x] adopt `findings.md §3a` UX patterns; ⌘K palette reused (existing GlobalCommandPalette)
+- [x] owns `src/index.css` + `tailwind.config.ts` + theme provider + AppLayout/sonner
+- [x] **GATE:** merged `feat/design-system` → `feat/v2` (commit `bb30ce6`); tsc+build clean
+- [ ] LEAD loose-end (next session): `src/pages/ProfilePage.tsx` still has a vestigial
+      Classic/Modern ToggleGroup bound to `mode`/`setMode` (stuck on "Modern", no crash) —
+      swap to Dark/Light + density using the new `theme`/`setTheme`/`density` API. Unowned file.
 
 ### P3 — Parallel build (5 agents, each own worktree + dir; consume P2 tokens; never edit index.css)
 - [ ] **DASHBOARD** (`hub-dash`, `feat/dashboard`): editable card system (add/remove/reorder/drag),
