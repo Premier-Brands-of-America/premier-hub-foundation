@@ -64,19 +64,19 @@ Internal pilot for **Premier Brands of America** ("Premier Project Hub" / Art Re
 - [x] Copy handoff → `docs/HANDOFF.md`; read it fully
 - [x] Read repo structure (package.json, src tree, supabase)
 - [x] Write `PLAN.md` (this file)
-- [ ] **GATE:** report plan + roster → WAIT for user confirmation before P1
+- [x] **GATE:** report plan + roster → user confirmed (autonomous run; draft-PR delivery)
 
-### P1 — Research (parallel, read-only, no worktrees; each owns ONE file)
-- [ ] `research/affine.md`    (affine-researcher)
-- [ ] `research/appflowy.md`  (appflowy-researcher)
-- [ ] `research/obsidian.md`  (obsidian-researcher)
-- [ ] `research/anytype.md`   (anytype-researcher)
-- [ ] `research/notion.md`    (notion-researcher — MUST cover Teams + Outlook + transcription in depth)
-- [ ] commit all 5 app files
-- [ ] `research/findings.md`  (synthesis-researcher: feature matrix, ranked shortlist mapped
-      to our workflow, UX patterns for design/dashboard/graph, Teams/Outlook/transcription
-      approach for Edge Functions + RLS)
-- [ ] **GATE:** `findings.md` committed before P2/P3 choices lock
+### P1 — Research (parallel, read-only, no worktrees; each owns ONE file)  ✅
+- [x] `research/affine.md`    (affine-researcher)
+- [x] `research/appflowy.md`  (appflowy-researcher)
+- [x] `research/obsidian.md`  (obsidian-researcher)
+- [x] `research/anytype.md`   (anytype-researcher)
+- [x] `research/notion.md`    (notion-researcher — Teams + Outlook + transcription deep ✓)
+- [x] `research/supabase-keys.md` (added per user: new sb_publishable_/sb_secret_ keys; anon legacy)
+- [x] commit all app files (commit fe020c3)
+- [x] `research/findings.md`  (synthesis-researcher: matrix, ranked shortlist, per-agent UX
+      patterns, Teams/Outlook/transcription on Edge Functions + RLS + secret names + work split)
+- [x] **GATE:** `findings.md` committed before P2/P3 choices lock ✓
 
 ### P2 — Design System (solo)
 - [ ] worktree `hub-design` (`feat/design-system` off `feat/v2`)
