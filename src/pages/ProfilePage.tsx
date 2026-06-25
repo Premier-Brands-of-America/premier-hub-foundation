@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useDesignMode, type DesignMode, type Density } from "@/providers/DesignModeProvider";
+import { useDesignMode, type Theme, type Density } from "@/providers/DesignModeProvider";
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [departmentId, setDepartmentId] = useState<string>(profile?.department_id ?? "");
   const [saving, setSaving] = useState(false);
-  const { mode, setMode, density, setDensity } = useDesignMode();
+  const { theme, setTheme, density, setDensity } = useDesignMode();
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
@@ -93,18 +93,17 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Design</Label>
+            <Label>Theme</Label>
             <ToggleGroup
               type="single"
-              value={mode}
-              onValueChange={(v) => v && setMode(v as DesignMode)}
+              value={theme}
+              onValueChange={(v) => v && setTheme(v as Theme)}
             >
-              <ToggleGroupItem value="classic">Classic</ToggleGroupItem>
-              <ToggleGroupItem value="modern">Modern</ToggleGroupItem>
+              <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
+              <ToggleGroupItem value="light">Light</ToggleGroupItem>
             </ToggleGroup>
             <p className="text-xs text-muted-foreground">
-              Modern uses a refined typography stack, softer surfaces, and subtle motion.
-              Classic stays utility-first.
+              Switch between the dark and light variants of the v2 design system.
             </p>
           </div>
           <div className="space-y-2">
@@ -119,7 +118,7 @@ export default function ProfilePage() {
             </ToggleGroup>
             <p className="text-xs text-muted-foreground">
               Compact tightens spacing in lists and tables. Press <kbd className="kbd">⌘⇧D</kbd>
-              {" "}any time to switch designs.
+              {" "}any time to toggle dark/light.
             </p>
           </div>
         </CardContent>
