@@ -1,22 +1,42 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
 
-export type DesignMode = "classic" | "modern";
+/* v2 design system: a single revamped look, toggled only by theme + density.
+ * The legacy `DesignMode` ("classic" | "modern") type is preserved as a
+ * deprecated compatibility alias so existing consumers (e.g. ProfilePage,
+ * sonner) keep compiling — there is now only one design ("modern"). */
+export type Theme = "dark" | "light";
 export type Density = "comfortable" | "compact";
+/** @deprecated v2 has one design. Kept only for import compatibility. */
+export type DesignMode = "classic" | "modern";
 
 interface DesignModeCtx {
-  mode: DesignMode;
-  setMode: (m: DesignMode) => void;
+  theme: Theme;
+  setTheme: (t: Theme) => void;
+  toggleTheme: () => void;
   density: Density;
   setDensity: (d: Density) => void;
+
+  /** @deprecated always "modern" in v2. */
+  mode: DesignMode;
+  /** @deprecated no-op in v2 (single design). */
+  setMode: (m: DesignMode) => void;
+  /** @deprecated alias for toggleTheme. */
   toggle: () => void;
 }
 
 const Ctx = createContext<DesignModeCtx | null>(null);
 const STORAGE_KEY = "phv2:design-prefs";
 
-function readCached(): { designMode?: DesignMode; density?: Density } {
+function readCached(): { theme?: Theme; density?: Density } {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   } catch {
@@ -24,16 +44,28 @@ function readCached(): { designMode?: DesignMode; density?: Density } {
   }
 }
 
+function prefersDark(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+}
+
 export function DesignModeProvider({ children }: { children: React.ReactNode }) {
   const cached = typeof window !== "undefined" ? readCached() : {};
-  const [mode, setModeState] = useState<DesignMode>(
-    cached.designMode === "modern" ? "modern" : "classic"
+  const [theme, setThemeState] = useState<Theme>(
+    cached.theme === "light" || cached.theme === "dark"
+      ? cached.theme
+      : prefersDark()
+        ? "dark"
+        : "light",
   );
   const [density, setDensityState] = useState<Density>(
-    cached.density === "compact" ? "compact" : "comfortable"
+    cached.density === "compact" ? "compact" : "comfortable",
   );
 
-  // Reconcile with profile.preferences after auth resolves.
+  // Reconcile with profiles.preferences once auth resolves.
   useEffect(() => {
     if (isPreviewEnvironment()) return;
     let cancelled = false;
@@ -47,12 +79,12 @@ export function DesignModeProvider({ children }: { children: React.ReactNode }) 
         .eq("user_id", uid)
         .maybeSingle();
       const prefs = ((p?.preferences as unknown) ?? {}) as {
-        designMode?: DesignMode;
+        theme?: Theme;
         density?: Density;
       };
       if (cancelled) return;
-      if (prefs.designMode === "modern" || prefs.designMode === "classic") {
-        setModeState(prefs.designMode);
+      if (prefs.theme === "dark" || prefs.theme === "light") {
+        setThemeState(prefs.theme);
       }
       if (prefs.density === "compact" || prefs.density === "comfortable") {
         setDensityState(prefs.density);
@@ -63,15 +95,22 @@ export function DesignModeProvider({ children }: { children: React.ReactNode }) 
     };
   }, []);
 
-  // Apply to <html> + cache + persist.
-  useEffect(() => {
-    document.documentElement.dataset.design = mode;
-    document.documentElement.dataset.density = density;
+  // Apply to <html> before paint (avoids theme flash) + cache + persist.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.dataset.design = "modern"; // single design; keeps legacy selectors resolving
+    root.dataset.density = density;
+    root.classList.toggle("dark", theme === "dark");
+    root.style.colorScheme = theme;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ designMode: mode, density }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ theme, density }));
     } catch {
       /* ignore */
     }
+  }, [theme, density]);
+
+  // Persist to DB (non-blocking; merges into existing preferences).
+  useEffect(() => {
     if (isPreviewEnvironment()) return;
     (async () => {
       const { data } = await supabase.auth.getUser();
@@ -84,24 +123,38 @@ export function DesignModeProvider({ children }: { children: React.ReactNode }) 
         .maybeSingle();
       const merged = {
         ...((p?.preferences as Record<string, unknown>) ?? {}),
-        designMode: mode,
+        theme,
         density,
       };
       await supabase.from("profiles").update({ preferences: merged }).eq("user_id", uid);
     })().catch(() => {
       /* non-fatal */
     });
-  }, [mode, density]);
+  }, [theme, density]);
 
-  const setMode = useCallback((m: DesignMode) => setModeState(m), []);
-  const setDensity = useCallback((d: Density) => setDensityState(d), []);
-  const toggle = useCallback(
-    () => setModeState((m) => (m === "modern" ? "classic" : "modern")),
-    []
+  const setTheme = useCallback((t: Theme) => setThemeState(t), []);
+  const toggleTheme = useCallback(
+    () => setThemeState((t) => (t === "dark" ? "light" : "dark")),
+    [],
   );
+  const setDensity = useCallback((d: Density) => setDensityState(d), []);
+
+  // Deprecated compatibility shims.
+  const setMode = useCallback((_m: DesignMode) => {}, []);
 
   return (
-    <Ctx.Provider value={{ mode, setMode, density, setDensity, toggle }}>
+    <Ctx.Provider
+      value={{
+        theme,
+        setTheme,
+        toggleTheme,
+        density,
+        setDensity,
+        mode: "modern",
+        setMode,
+        toggle: toggleTheme,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );
