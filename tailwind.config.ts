@@ -87,9 +87,10 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
       },
       keyframes: {
         "accordion-down": {
@@ -132,8 +133,11 @@ export default {
     require("tailwindcss-animate"),
     require("@tailwindcss/typography"),
     plugin(function ({ addVariant }) {
-      addVariant("modern", '[data-design="modern"] &');
-      addVariant("classic", '[data-design="classic"] &, :root:not([data-design="modern"]) &');
+      // v2: a single revamped design. The legacy `modern:` prefix is kept
+      // working (so existing components don't need editing) but now always
+      // matches. `classic:` is retired and intentionally never matches.
+      addVariant("modern", "&");
+      addVariant("classic", "&:not(*)");
       addVariant("compact", '[data-density="compact"] &');
       addVariant("comfortable", '[data-density="comfortable"] &');
     }),
