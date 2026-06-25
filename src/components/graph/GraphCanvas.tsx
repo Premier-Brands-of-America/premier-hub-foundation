@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useState } from "react";
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
-import { getNodeColor, RELATION_STYLES } from "./graphColors";
-import type { GraphEdge, GraphNode, GraphPayload } from "@/types/graph";
+import { getForegroundColor, getNodeColor, getStatusColor, nodeRadius, RELATION_STYLES } from "./graphColors";
+import { DEFAULT_FORCES, type GraphEdge, type GraphForces, type GraphNode, type GraphPayload } from "@/types/graph";
 
 export interface GraphCanvasHandle {
   zoomToFit: () => void;
@@ -14,20 +14,38 @@ interface Props {
   data: GraphPayload;
   selectedId?: string | null;
   highlightIds?: Set<string>;
+  forces?: GraphForces;
   onNodeClick: (n: GraphNode) => void;
   onNodeHover?: (n: GraphNode | null) => void;
   width: number;
   height: number;
 }
 
-type FGNode = GraphNode & { __color?: string };
+type FGNode = GraphNode & { __color?: string; __border?: string | null; __deg?: number };
 type FGData = { nodes: FGNode[]; links: GraphEdge[] };
 
+function edgeEnds(e: GraphEdge): [string, string] {
+  const s = typeof e.source === "string" ? e.source : (e.source as unknown as GraphNode).id;
+  const t = typeof e.target === "string" ? e.target : (e.target as unknown as GraphNode).id;
+  return [s, t];
+}
+
 export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCanvas(
-  { data, selectedId, highlightIds, onNodeClick, onNodeHover, width, height }, ref,
+  { data, selectedId, highlightIds, forces = DEFAULT_FORCES, onNodeClick, onNodeHover, width, height }, ref,
 ) {
   const fgRef = useRef<ForceGraphMethods<FGNode, GraphEdge>>();
   const [hoverId, setHoverId] = useState<string | null>(null);
+
+  // degree per node (drives area-proportional sizing)
+  const degree = useMemo(() => {
+    const d = new Map<string, number>();
+    for (const e of data.edges) {
+      const [s, t] = edgeEnds(e);
+      d.set(s, (d.get(s) ?? 0) + 1);
+      d.set(t, (d.get(t) ?? 0) + 1);
+    }
+    return d;
+  }, [data.edges]);
 
   // Stable graphData reference: mutate in place when ids match to preserve positions
   const fgDataRef = useRef<FGData>({ nodes: [], links: [] });
@@ -36,22 +54,21 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
     const prevById = new Map(prev.nodes.map((n) => [n.id, n]));
     const nextNodes: FGNode[] = data.nodes.map((n) => {
       const existing = prevById.get(n.id);
-      if (existing) {
-        Object.assign(existing, n);
-        return existing;
-      }
-      return { ...n };
+      const base = existing ? (Object.assign(existing, n), existing) : { ...n };
+      base.__color = getNodeColor(n.type);
+      base.__border = getStatusColor(n.status);
+      base.__deg = degree.get(n.id) ?? 0;
+      return base;
     });
     const next: FGData = { nodes: nextNodes, links: data.edges.map((e) => ({ ...e })) };
     fgDataRef.current = next;
     return next;
-  }, [data]);
+  }, [data, degree]);
 
   const neighbors = useMemo(() => {
     const map = new Map<string, Set<string>>();
     for (const e of data.edges) {
-      const s = typeof e.source === "string" ? e.source : (e.source as unknown as GraphNode).id;
-      const t = typeof e.target === "string" ? e.target : (e.target as unknown as GraphNode).id;
+      const [s, t] = edgeEnds(e);
       if (!map.has(s)) map.set(s, new Set());
       if (!map.has(t)) map.set(t, new Set());
       map.get(s)!.add(t);
@@ -61,8 +78,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
   }, [data.edges]);
 
   const highlightedSet = useMemo(() => {
-    const active = hoverId ?? selectedId ?? null;
     if (highlightIds && highlightIds.size > 0) return highlightIds;
+    const active = hoverId ?? selectedId ?? null;
     if (!active) return null;
     const set = new Set<string>([active]);
     neighbors.get(active)?.forEach((id) => set.add(id));
@@ -88,13 +105,30 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
     },
   }));
 
+  // Apply force tuning and reheat whenever sliders or data change.
   useEffect(() => {
-    fgRef.current?.d3Force("charge")?.strength(-180);
-    const linkF = fgRef.current?.d3Force("link") as { distance: (n: number) => void } | undefined;
-    linkF?.distance(70);
-  }, [fgData]);
+    const fg = fgRef.current as unknown as {
+      d3Force: (n: string) => { strength?: (v: number) => void; distance?: (v: number) => void } | undefined;
+      d3VelocityDecay: (v: number) => void;
+      d3ReheatSimulation: () => void;
+    } | undefined;
+    if (!fg) return;
+    fg.d3VelocityDecay(0.3);
+    fg.d3Force("charge")?.strength?.(forces.charge);
+    const link = fg.d3Force("link");
+    link?.distance?.(forces.linkDistance);
+    link?.strength?.(forces.linkStrength);
+    fg.d3Force("center")?.strength?.(forces.center);
+    fg.d3ReheatSimulation();
+  }, [forces, fgData]);
 
-  const useWorker = data.nodes.length > 800;
+  // Resolve once per render so it tracks theme toggles.
+  const labelColor = getForegroundColor();
+
+  // Perf: freeze layout sooner as the graph grows; offload to worker past ~800 nodes.
+  const n = data.nodes.length;
+  const cooldownTicks = n > 500 ? 80 : n > 200 ? 120 : 200;
+  const useWorker = n > 800;
   const FG = ForceGraph2D as unknown as React.ComponentType<Record<string, unknown>>;
 
   return (
@@ -103,90 +137,73 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       width={width}
       height={height}
       graphData={fgData}
-      cooldownTicks={150}
+      cooldownTicks={cooldownTicks}
+      nodeRelSize={forces.nodeSize}
+      nodeVal={(node: FGNode) => (node.__deg ?? 0) + 1}
       useWorkerForCalc={useWorker}
-      onNodeClick={(n: FGNode) => onNodeClick(n)}
-      onNodeHover={(n: FGNode | null) => {
-        const node = n;
+      onNodeClick={(node: FGNode) => onNodeClick(node)}
+      onNodeHover={(node: FGNode | null) => {
         setHoverId(node?.id ?? null);
         onNodeHover?.(node ?? null);
       }}
-      onNodeDragEnd={(n: FGNode) => {
-        const node = n;
+      onNodeDragEnd={(node: FGNode) => {
         node.fx = node.x;
         node.fy = node.y;
       }}
       linkColor={(l: GraphEdge) => {
-        const e = l;
-        const s = typeof e.source === "string" ? e.source : (e.source as unknown as GraphNode).id;
-        const t = typeof e.target === "string" ? e.target : (e.target as unknown as GraphNode).id;
+        const [s, t] = edgeEnds(l);
         const active = !highlightedSet || (highlightedSet.has(s) && highlightedSet.has(t));
-        return active ? "rgba(120,120,120,0.55)" : "rgba(120,120,120,0.12)";
+        return active ? "rgba(120,120,120,0.55)" : "rgba(120,120,120,0.10)";
       }}
       linkLineDash={(l: GraphEdge) => RELATION_STYLES[l.type]?.dash ?? null}
       linkWidth={(l: GraphEdge) => RELATION_STYLES[l.type]?.weight ?? 1}
       linkDirectionalArrowLength={4}
       linkDirectionalArrowRelPos={0.95}
-      nodeCanvasObject={(n: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-        const node = n;
+      nodeCanvasObject={(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const x = node.x ?? 0;
         const y = node.y ?? 0;
-        const color = node.__color ?? (node.__color = getNodeColor(node.type));
+        const r = nodeRadius(node.__deg ?? 0, forces.nodeSize);
         const dimmed = highlightedSet ? !highlightedSet.has(node.id) : false;
-        ctx.globalAlpha = dimmed ? 0.2 : 1;
+        ctx.globalAlpha = dimmed ? 0.18 : 1;
 
-        if (globalScale < 0.3) {
-          ctx.beginPath();
-          ctx.arc(x, y, 3, 0, 2 * Math.PI);
-          ctx.fillStyle = color;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          return;
-        }
-
-        const w = 120 / globalScale;
-        const h = 36 / globalScale;
-        const r = 8 / globalScale;
-        ctx.fillStyle = color;
-        roundRect(ctx, x - w / 2, y - h / 2, w, h, r);
+        // Body — color by type
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = node.__color ?? "hsl(220,12%,50%)";
         ctx.fill();
 
+        // Border — tint by status (selection ring overrides)
         if (node.id === selectedId) {
-          ctx.lineWidth = 2 / globalScale;
+          ctx.lineWidth = 2.5 / globalScale;
           ctx.strokeStyle = "#fff";
+          ctx.stroke();
+        } else if (node.__border) {
+          ctx.lineWidth = Math.max(1.5, r * 0.28);
+          ctx.strokeStyle = node.__border;
           ctx.stroke();
         }
 
-        if (globalScale >= 0.6) {
-          ctx.fillStyle = "#fff";
-          ctx.font = `${12 / globalScale}px sans-serif`;
-          ctx.textAlign = "left";
-          ctx.textBaseline = "middle";
-          const label = node.label?.length > 14 ? node.label.slice(0, 14) + "…" : (node.label ?? "");
-          ctx.fillText(label, x - w / 2 + 12 / globalScale, y);
+        // Label — only when zoomed in enough to be legible
+        if (globalScale >= 1.2) {
+          const fontSize = 11 / globalScale;
+          ctx.font = `${fontSize}px sans-serif`;
+          ctx.fillStyle = labelColor;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const label = node.label?.length > 18 ? node.label.slice(0, 18) + "…" : (node.label ?? "");
+          ctx.fillText(label, x, y + r + 2 / globalScale);
         }
         ctx.globalAlpha = 1;
       }}
-      nodePointerAreaPaint={(n: FGNode, color: string, ctx: CanvasRenderingContext2D) => {
-        const node = n;
+      nodePointerAreaPaint={(node: FGNode, color: string, ctx: CanvasRenderingContext2D) => {
         const x = node.x ?? 0;
         const y = node.y ?? 0;
+        const r = nodeRadius(node.__deg ?? 0, forces.nodeSize);
         ctx.fillStyle = color;
-        roundRect(ctx, x - 60, y - 18, 120, 36, 8);
+        ctx.beginPath();
+        ctx.arc(x, y, r + 2, 0, 2 * Math.PI);
         ctx.fill();
       }}
     />
   );
 });
-
-function roundRect(
-  ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}

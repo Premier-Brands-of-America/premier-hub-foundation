@@ -10,6 +10,7 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   node: GraphNode | null;
+  onFocusLocal?: (node: GraphNode) => void;
 }
 
 const ROUTE_BY_TYPE: Partial<Record<GraphNode["type"], (id: string) => string>> = {
@@ -19,7 +20,7 @@ const ROUTE_BY_TYPE: Partial<Record<GraphNode["type"], (id: string) => string>> 
   page: (id) => `/pages/${id}`,
 };
 
-export function NodeDetailSheet({ open, onOpenChange, node }: Props) {
+export function NodeDetailSheet({ open, onOpenChange, node, onFocusLocal }: Props) {
   const navigate = useNavigate();
   if (!node) {
     return (
@@ -78,11 +79,18 @@ export function NodeDetailSheet({ open, onOpenChange, node }: Props) {
             </div>
           )}
 
-          {navTo && (
-            <Button className="w-full mt-4" onClick={() => navigate(navTo)}>
-              Open in app
-            </Button>
-          )}
+          <div className="mt-4 space-y-2">
+            {onFocusLocal && (
+              <Button variant="outline" className="w-full" onClick={() => onFocusLocal(node)}>
+                Focus local graph
+              </Button>
+            )}
+            {navTo && (
+              <Button className="w-full" onClick={() => navigate(navTo)}>
+                Open in app
+              </Button>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
