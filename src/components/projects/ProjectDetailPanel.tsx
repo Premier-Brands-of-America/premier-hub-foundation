@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
+import { OutlookCalendarPanel } from "@/components/integrations/outlook";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -656,6 +657,11 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
           />
 
           <BacklinksPanel targetType="project" targetId={project.id} />
+
+          <Separator />
+
+          {/* ─── Outlook calendar + email (INTEG-OUTLOOK) ─── */}
+          <OutlookCalendarPanel projectId={project.id} />
 
           <Separator />
 
