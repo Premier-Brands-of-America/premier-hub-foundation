@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AIChatPanel } from "@/components/AIChatPanel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Bell, Bot, LogOut, Sparkles, User as UserIcon } from "lucide-react";
+import { Bell, Bot, LogOut, Moon, Rows3, Sun, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,10 +27,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const { profile, role, signOut } = useAuth();
   const navigate = useNavigate();
-  const { mode, toggle } = useDesignMode();
+  const { theme, toggleTheme, density, setDensity } = useDesignMode();
   const handleSignOut = async () => {
     await signOut();
     navigate("/login", { replace: true });
+  };
+
+  const handleToggleTheme = () => {
+    toggleTheme();
+    toast.success(theme === "dark" ? "Light mode" : "Dark mode");
+  };
+
+  const handleToggleDensity = () => {
+    const next = density === "compact" ? "comfortable" : "compact";
+    setDensity(next);
+    toast.success(next === "compact" ? "Compact density" : "Comfortable density");
   };
 
   useEffect(() => {
@@ -41,15 +52,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
-        toggle();
-        toast.success(
-          mode === "modern" ? "Switched to Classic design" : "Switched to Modern design"
-        );
+        handleToggleTheme();
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [toggle, mode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
 
   const initials = (profile?.full_name ?? profile?.email ?? "?")
     .split(" ")
@@ -130,19 +139,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       Appearance
                     </DropdownMenuLabel>
                     <DropdownMenuItem
-                      onClick={() => {
-                        toggle();
-                        toast.success(
-                          mode === "modern"
-                            ? "Switched to Classic design"
-                            : "Switched to Modern design"
-                        );
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        handleToggleTheme();
                       }}
                       className="gap-2"
+                      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
                     >
-                      <Sparkles className="h-4 w-4" />
-                      <span>Use {mode === "modern" ? "Classic" : "Modern"} design</span>
+                      {theme === "dark" ? (
+                        <Sun className="h-4 w-4" />
+                      ) : (
+                        <Moon className="h-4 w-4" />
+                      )}
+                      <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
                       <kbd className="kbd ml-auto">⌘⇧D</kbd>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        handleToggleDensity();
+                      }}
+                      className="gap-2"
+                      aria-label={
+                        density === "compact"
+                          ? "Switch to comfortable density"
+                          : "Switch to compact density"
+                      }
+                    >
+                      <Rows3 className="h-4 w-4" />
+                      <span>{density === "compact" ? "Comfortable density" : "Compact density"}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="gap-2">
