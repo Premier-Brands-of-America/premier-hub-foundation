@@ -19,7 +19,7 @@ There are **two credential surfaces** — keep them separate:
 ## ✅ Quick checklist
 
 - [ ] **1.** Client `.env` — Supabase URL + publishable key
-- [ ] **2.** Supabase secret key (`sb_secret_…`) for Edge Functions
+- [ ] **2.** Supabase privileged key for Edge Functions (reuse existing `service_role`, or new `sb_secret_…`)
 - [ ] **3.** Enable RS256 JWT signing keys (dashboard toggle)
 - [ ] **4.** Microsoft Entra app — Graph scopes, client secret, redirect URI, admin consent
 - [ ] **5.** Teams **application access policy** (admin PowerShell) — required for transcripts
@@ -27,7 +27,7 @@ There are **two credential surfaces** — keep them separate:
 - [ ] **7.** AI gateway key (`LOVABLE_API_KEY` / `AI_ASSISTANT_API_KEY`)
 - [ ] **8.** (Already set) SharePoint `AZURE_*` / `SP_*` — confirm reuse for Graph
 - [ ] **9.** Set all Edge secrets, apply migrations, register the renew cron
-- [ ] **🔒** Security follow-up: rotate the committed anon key + stop tracking `.env`
+- [ ] **🔒** (Optional) stop tracking `.env` — keeping the existing anon key is fine; no rotation needed
 
 Your project ref is **`yogscxuhjalgwngefbta`** (URLs below use it; change if you point at a different project).
 
@@ -40,26 +40,28 @@ Your project ref is **`yogscxuhjalgwngefbta`** (URLs below use it; change if you
 3. Fill in `.env`:
    - `VITE_SUPABASE_URL` = **Project URL** → `https://yogscxuhjalgwngefbta.supabase.co`
    - `VITE_SUPABASE_PROJECT_ID` = the project ref → `yogscxuhjalgwngefbta`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY` = the **publishable key** (`sb_publishable_…`) under
-     **Settings → API Keys**. This is browser-safe and RLS-scoped.
-     - *Transition note:* a legacy `anon` JWT still works today, but Supabase is
-       retiring `anon`/`service_role` (new projects after Nov 1 2025 don't get them;
-       full removal late 2026). Use `sb_publishable_…`.
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` = the browser-safe, RLS-scoped key under
+     **Settings → API**.
+     - **This project (created via Lovable.ai) already has an `anon` key — keep it.**
+       It's the value already in your local `.env`; **no rotation or migration needed.**
+       It's browser-safe by design. (If you ever want to modernize, the new
+       `sb_publishable_…` family is a drop-in replacement — optional, not required here.)
 
-That's all the client needs to run (`npm run dev`).
+That's all the client needs to run (`npm run dev`) — and it's likely already set.
 
 ---
 
 ## 2. Supabase **secret** key for Edge Functions
 
-Edge Functions do privileged work (decrypt tokens, write transcripts) and need the
-**secret key**, never the publishable one.
+Edge Functions do privileged work (decrypt tokens, write transcripts) and need a
+**privileged** key, never the publishable one.
 
-1. **Settings → API Keys → Secret keys → Create new secret key** → copy the
-   `sb_secret_…` value (shown once).
-2. You'll set it as `SUPABASE_SECRET_KEY` in step 9.
-   - *Fallback:* the functions also accept the legacy `SUPABASE_SERVICE_ROLE_KEY`
-     (**Settings → API → service_role**) if you haven't migrated yet.
+1. **Use this project's existing `service_role` key** — it already has one (Settings →
+   API → Project API keys → `service_role`). The Edge Functions read `SUPABASE_SECRET_KEY`
+   and **fall back to `SUPABASE_SERVICE_ROLE_KEY`**, so set whichever you prefer:
+   - simplest (keep your current keys) → set `SUPABASE_SERVICE_ROLE_KEY` = the existing service_role value, **or**
+   - modernize (optional) → Settings → API Keys → Create secret key → set `SUPABASE_SECRET_KEY=sb_secret_…`.
+2. Either way it's set as an **Edge secret** in step 9 — **never** in a `VITE_*` var.
 
 > On the deployed Supabase platform, `SUPABASE_URL`, the key envs, and `SUPABASE_JWKS`
 > are auto-provisioned — you mainly set the **non-Supabase** secrets (steps 4–7) in prod.
@@ -80,12 +82,16 @@ So Edge Functions can verify the user's Entra→Supabase JWT locally (no Auth ro
 
 ## 4. Microsoft Entra app — Graph (Outlook + Teams)
 
-The Outlook/Teams features call Microsoft Graph on the user's behalf. You can **reuse
-the existing Entra app** that already backs the SharePoint integration (the `AZURE_*`
-secrets), just add the Graph pieces.
+The Outlook/Teams features call Microsoft Graph on the user's behalf. **Reuse the same
+Entra app registration you already created for Supabase Auth.** One app can hold the
+sign-in (OpenID) permissions *and* the Graph delegated permissions, and can list
+**multiple redirect URIs** — you just add the Graph scopes + the new callback URL to it.
+(The existing SharePoint `AZURE_*` app is also a candidate; ideally consolidate on one app
+for all Microsoft integrations.) Create a *separate* app only if you specifically want
+credential isolation / different admins.
 
-1. **Azure Portal → Microsoft Entra ID → App registrations** → open the existing app
-   (or **New registration** if starting fresh).
+1. **Azure Portal → Microsoft Entra ID → App registrations** → open the **same app that
+   backs Supabase Auth** (do not create a new one unless you want isolation).
 2. **API permissions → Add a permission → Microsoft Graph → Delegated permissions**, add:
    - `Calendars.Read`
    - `Mail.Read`
@@ -97,7 +103,8 @@ secrets), just add the Graph pieces.
    Secret ID). → `MS_GRAPH_CLIENT_SECRET`.
 4. From the app **Overview**: **Application (client) ID** → `MS_GRAPH_CLIENT_ID`;
    **Directory (tenant) ID** → `MS_GRAPH_TENANT_ID`.
-5. **Authentication → Add a platform → Web → Redirect URIs**, add **exactly**:
+5. **Authentication → Web → Redirect URIs** — **add** (don't replace; keep your existing
+   Supabase Auth callback) **exactly**:
    ```
    https://yogscxuhjalgwngefbta.supabase.co/functions/v1/ms-oauth-callback
    ```
@@ -208,22 +215,19 @@ $$);
 
 ## 🔒 Security follow-up (recommended)
 
-The repo currently **tracks a committed `.env`** containing a live Supabase **anon/publishable**
-key for project `yogscxuhjalgwngefbta`. That key is RLS-scoped and designed to be
-browser-visible, so it is **not** a `service_role`-level leak — but a tracked `.env` is
-still bad practice and invites a worse leak later. Recommended:
+The repo **tracks a committed `.env`** with the project's `anon`/publishable key for
+`yogscxuhjalgwngefbta`. **Decision: keep this key** (it's the project's existing key, kept
+on purpose). That's fine — the anon key is RLS-scoped and browser-safe by design, so this
+is **not** a `service_role`-level leak and **no rotation is needed**.
 
-1. **Stop tracking it** (keeps your local file, removes it from the repo going forward):
-   ```bash
-   git rm --cached .env
-   git commit -m "chore: stop tracking .env (use .env.example)"
-   ```
-   (`.gitignore` now ignores `.env`, `.env.*` real files, and `supabase/functions/.env`.)
-2. **Rotate the anon/publishable key** in Supabase → Settings → API Keys (the old value
-   remains in git history) and migrate to `sb_publishable_…`.
-3. *(Optional, higher effort)* scrub `.env` from git history with `git filter-repo`.
+The one rule that matters: **never commit the Edge secrets** (the `service_role` key,
+`MS_GRAPH_*`, `TOKEN_ENCRYPTION_KEY`, etc.) — those go via `supabase secrets set`, never
+into any tracked file. `.gitignore` already blocks real `.env` / `supabase/functions/.env`.
 
-> Ask the lead/owner before rewriting history or rotating a key other clients may use.
+*Optional hygiene* — stop tracking the client `.env` too (keeps your local copy):
+```bash
+git rm --cached .env && git commit -m "chore: stop tracking .env (use .env.example)"
+```
 
 ---
 
