@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Building2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAllDepartments, departmentKeys, type DepartmentRow } from "@/hooks/useDepartments";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -95,46 +97,76 @@ export default function DepartmentsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-xl text-sm text-muted-foreground">
           Manage the department list. Hard delete is blocked — use Deactivate to preserve referential integrity.
         </p>
         <Button size="sm" onClick={() => setEdit({ open: true, row: undefined })}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Add Department
+          <Plus className="mr-1 h-3.5 w-3.5" /> Add Department
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Order</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Order</TableHead>
               <TableHead>Updated</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={5} className="text-center py-6 text-sm text-muted-foreground">Loading...</TableCell></TableRow>}
+            {isLoading && (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" />
+                    <span className="ml-2 text-sm">Loading departments…</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
             {!isLoading && rows.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center py-6 text-sm text-muted-foreground">No departments.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    icon={<Building2 className="h-6 w-6" />}
+                    title="No departments yet"
+                    description="Add your first department to organize requests and people."
+                    action={
+                      <Button size="sm" onClick={() => setEdit({ open: true, row: undefined })}>
+                        <Plus className="mr-1 h-3.5 w-3.5" /> Add Department
+                      </Button>
+                    }
+                  />
+                </TableCell>
+              </TableRow>
             )}
             {rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell>{r.name}</TableCell>
+                <TableCell className="font-medium text-foreground">{r.name}</TableCell>
                 <TableCell>
-                  <Badge variant={r.is_active ? "default" : "secondary"}>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "rounded-full border-transparent px-2.5",
+                      r.is_active
+                        ? "bg-[hsl(var(--status-done)/0.14)] text-[hsl(var(--status-done))]"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
                     {r.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{r.display_order ?? "—"}</TableCell>
+                <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{r.display_order ?? "—"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {r.updated_at ? format(new Date(r.updated_at), "PP p") : "—"}
                 </TableCell>
-                <TableCell className="text-right space-x-2">
+                <TableCell className="space-x-2 text-right">
                   <Button size="sm" variant="ghost" onClick={() => setEdit({ open: true, row: r })}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                    <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
                   </Button>
                   {r.is_active ? (
                     <Button size="sm" variant="outline" onClick={() => onAttemptDeactivate(r)}>

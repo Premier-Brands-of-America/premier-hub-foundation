@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Settings, Users, BarChart3 } from "lucide-react";
+import { Loader2, Users, BarChart3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeTable } from "@/components/admin/EmployeeTable";
 import { DiagnosticsTable } from "@/components/admin/DiagnosticsTable";
+import { PageHeader } from "@/components/PageHeader";
 import { fetchAllProfiles, EmployeeProfile } from "@/services/adminService";
 
 const AdminPage = () => {
@@ -34,15 +35,14 @@ const AdminPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Settings className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Admin Tools</h1>
-          <p className="text-xs text-muted-foreground">Manage employee access, permissions, and view diagnostics</p>
-        </div>
-      </div>
+      <PageHeader title="Admin Tools" subtitle="Employee access and resource diagnostics" />
+
+      <header className="edge-rail">
+        <h1 className="text-2xl font-semibold tracking-tight">Admin Tools</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage employee access, permissions, and view resource diagnostics.
+        </p>
+      </header>
 
       <Tabs defaultValue="employees" className="space-y-4">
         <TabsList>
@@ -58,8 +58,9 @@ const AdminPage = () => {
 
         <TabsContent value="employees">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" />
+              <span className="ml-2 text-sm">Loading employees…</span>
             </div>
           ) : (
             <EmployeeTable

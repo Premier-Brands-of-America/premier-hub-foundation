@@ -25,9 +25,11 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { ChevronsUpDown, Check, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/PageHeader";
 import DepartmentsTab from "@/pages/admin/DepartmentsTab";
 
 type EntityType = "global" | "department" | "user";
@@ -188,7 +190,7 @@ function ToggleMatrix({
 
   return (
     <TooltipProvider>
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -240,7 +242,15 @@ function ToggleMatrix({
                   </TableCell>
                   {scope !== "global" && (
                     <TableCell>
-                      <Badge variant={effective ? "default" : "secondary"}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "rounded-full border-transparent px-2.5",
+                          effective
+                            ? "bg-[hsl(var(--status-done)/0.14)] text-[hsl(var(--status-done))]"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
                         {effective ? "On" : "Off"}
                       </Badge>
                     </TableCell>
@@ -418,7 +428,7 @@ function FeaturesTab() {
 function UsersTab() {
   const { data: profiles = [] } = useProfilesList();
   return (
-    <div className="rounded-md border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -426,26 +436,33 @@ function UsersTab() {
             <TableHead>Email</TableHead>
             <TableHead>Department</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>Active</TableHead>
+            <TableHead className="text-center">Active</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {profiles.map((p: any) => (
             <TableRow key={p.id}>
-              <TableCell>{p.full_name ?? "—"}</TableCell>
+              <TableCell className="font-medium text-foreground">{p.full_name ?? "—"}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{p.email}</TableCell>
-              <TableCell>{p.department ?? "—"}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{p.department ?? "—"}</TableCell>
               <TableCell>
-                <Badge variant="outline">requester</Badge>
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-transparent bg-[hsl(var(--status-info)/0.14)] px-2.5 capitalize text-[hsl(var(--status-info))]"
+                >
+                  requester
+                </Badge>
               </TableCell>
-              <TableCell>
-                <Switch checked disabled />
+              <TableCell className="text-center">
+                <Switch checked disabled aria-label="Active" />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <p className="p-3 text-xs text-muted-foreground">Role and active editing coming soon.</p>
+      <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        Role and active editing coming soon.
+      </p>
     </div>
   );
 }
@@ -454,8 +471,12 @@ function UsersTab() {
 
 function AuditLogTab() {
   return (
-    <div className="rounded-md border p-6 text-sm text-muted-foreground">
-      Audit log viewer coming soon.
+    <div className="rounded-lg border border-border py-12">
+      <EmptyState
+        icon={<ScrollText className="h-6 w-6" />}
+        title="Audit log is coming soon"
+        description="A searchable record of admin and system changes will live here."
+      />
     </div>
   );
 }
@@ -463,12 +484,14 @@ function AuditLogTab() {
 export default function AdminSettings() {
   return (
     <div className="space-y-6">
-      <div>
+      <PageHeader title="Admin Settings" subtitle="Feature flags, users, and departments" />
+
+      <header className="edge-rail">
         <h1 className="text-2xl font-semibold tracking-tight">Admin Settings</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage feature flags, users, and departments.
         </p>
-      </div>
+      </header>
 
       <Tabs defaultValue="features">
         <TabsList>
