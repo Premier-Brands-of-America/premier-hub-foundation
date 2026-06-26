@@ -7,13 +7,21 @@
     <title>Premier Project Hub</title>
     <meta name="description" content="Internal Project Management Tool for Premier Brands of America">
     <meta name="author" content="Lovable" />
+    <!-- Pre-paint theme guard — mirrors DesignModeProvider so there is no flash of
+         unstyled/light content before React hydrates. v2 has a single design ("modern");
+         dark/light is driven by the persisted `theme` (or the OS preference). -->
     <script>
       try {
         var p = JSON.parse(localStorage.getItem('phv2:design-prefs') || '{}');
-        document.documentElement.dataset.design = (p.designMode === 'modern') ? 'modern' : 'classic';
-        document.documentElement.dataset.density = (p.density === 'compact') ? 'compact' : 'comfortable';
+        var d = document.documentElement;
+        d.dataset.design = 'modern';
+        d.dataset.density = (p.density === 'compact') ? 'compact' : 'comfortable';
+        var dark = p.theme === 'dark' ||
+          (!p.theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        d.classList.toggle('dark', dark);
+        d.style.colorScheme = dark ? 'dark' : 'light';
       } catch (e) {
-        document.documentElement.dataset.design = 'classic';
+        document.documentElement.dataset.design = 'modern';
         document.documentElement.dataset.density = 'comfortable';
       }
     </script>

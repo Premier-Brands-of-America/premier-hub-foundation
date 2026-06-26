@@ -118,6 +118,9 @@ USING (
 -- ============================================================================
 -- GRANTs — clients only READ. Privileged writes use the secret key (BYPASSRLS).
 -- ============================================================================
-GRANT SELECT ON public.graph_subscriptions  TO authenticated;
+-- client_state is the shared webhook-validation secret; exclude it from the client
+-- grant (this table is server-managed, written via the secret key under BYPASSRLS, and
+-- never read by the client). Mirrors the column-scoped grant on ms_connections.
+GRANT SELECT (id, user_id, resource, subscription_id, expiration, created_at) ON public.graph_subscriptions TO authenticated;
 GRANT SELECT ON public.meeting_transcripts  TO authenticated;
 GRANT SELECT ON public.transcript_segments  TO authenticated;
