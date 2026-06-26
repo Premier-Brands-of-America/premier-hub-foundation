@@ -1,1 +1,25 @@
 project_id = "yogscxuhjalgwngefbta"
+
+# ── MS Graph / Outlook (INTEG-OUTLOOK) ──
+[functions.ms-oauth-start]
+verify_jwt = true
+[functions.ms-oauth-callback]
+verify_jwt = false      # browser redirect; authenticated via HMAC-signed state
+[functions.calendar-sync]
+verify_jwt = true
+[functions.link-event-to-project]
+verify_jwt = true
+[functions.mail-search]
+verify_jwt = true
+
+# ── Teams transcripts (INTEG-TEAMS) ──
+[functions.graph-subscribe]
+verify_jwt = true
+[functions.graph-renew]
+verify_jwt = false      # cron, secret-key authorized
+[functions.graph-webhook]
+verify_jwt = false      # Microsoft Graph notifications; validates clientState
+[functions.transcribe-summarize]
+verify_jwt = false      # server-to-server, secret-key authorized
+[functions.transcript-action-items]
+verify_jwt = true

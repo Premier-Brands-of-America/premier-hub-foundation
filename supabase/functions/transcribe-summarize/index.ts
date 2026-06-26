@@ -25,8 +25,8 @@ import {
   type TranscriptSegment,
 } from "../_shared/teams-graph.ts";
 
-const AI_GATEWAY = "https://agentic.lovable.dev/v1/chat/completions";
-const AI_MODEL = "google/gemini-3-flash-preview";
+const AI_GATEWAY = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
+const AI_MODEL = Deno.env.get("AI_MODEL") || "gpt-4o-mini";
 const MAX_TRANSCRIPT_CHARS = 24_000;
 
 function json(body: unknown, status = 200) {
