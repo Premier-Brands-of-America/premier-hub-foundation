@@ -31,16 +31,29 @@ function redirect(to: string): Response {
   return new Response(null, { status: 302, headers: { ...corsHeaders, Location: to } });
 }
 
-function safeRedirectTarget(origin: string, status: string): string {
-  // Only honour http(s) targets; preserve the return path, set ?outlook=status.
+/** Allowlisted app origins for post-OAuth redirects (ALLOWED_APP_ORIGINS, comma-separated). */
+function allowedAppOrigin(origin: string): string {
+  if (!origin) return "";
+  let candidate: string;
   try {
-    if (origin && /^https?:\/\//.test(origin)) {
-      const u = new URL(origin);
-      u.searchParams.set("outlook", status);
-      return u.toString();
-    }
+    candidate = new URL(origin).origin;
   } catch {
-    // ignore malformed origin
+    return "";
+  }
+  const allow = (Deno.env.get("ALLOWED_APP_ORIGINS") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return allow.includes(candidate) ? candidate : "";
+}
+
+function safeRedirectTarget(origin: string, status: string): string {
+  // Only redirect to an allowlisted app origin (prevents open redirect); else relative.
+  const allowed = allowedAppOrigin(origin);
+  if (allowed) {
+    const u = new URL(allowed);
+    u.searchParams.set("outlook", status);
+    return u.toString();
   }
   return `/?outlook=${status}`;
 }

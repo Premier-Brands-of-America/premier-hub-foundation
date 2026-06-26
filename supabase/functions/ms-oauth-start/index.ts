@@ -21,6 +21,22 @@ import { handleOptions, json, getAuthedUserId, signState } from "../_shared/ms-g
 
 const SCOPES = "Calendars.Read Mail.Read offline_access openid profile";
 
+/** Allowlisted app origins for post-OAuth redirects (ALLOWED_APP_ORIGINS, comma-separated). */
+function allowedAppOrigin(origin: string): string {
+  if (!origin) return "";
+  let candidate: string;
+  try {
+    candidate = new URL(origin).origin;
+  } catch {
+    return "";
+  }
+  const allow = (Deno.env.get("ALLOWED_APP_ORIGINS") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return allow.includes(candidate) ? candidate : "";
+}
+
 Deno.serve(async (req) => {
   const pre = handleOptions(req);
   if (pre) return pre;
@@ -36,6 +52,9 @@ Deno.serve(async (req) => {
     } catch {
       // body is optional
     }
+    // Only ever sign an allowlisted origin into the state (prevents an open redirect
+    // at the callback). Unknown origins → "" → callback falls back to a relative path.
+    origin = allowedAppOrigin(origin);
 
     const clientId = Deno.env.get("MS_GRAPH_CLIENT_ID");
     const tenantId = Deno.env.get("MS_GRAPH_TENANT_ID");
