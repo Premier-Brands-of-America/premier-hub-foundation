@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot } from "lucide-react";
+import { Bot, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -150,14 +150,26 @@ export function AIChat({ variant, onClose }: AIChatProps) {
   return (
     <div className={`flex flex-col ${isPanel ? "h-full" : "h-[calc(100vh-7rem)]"} bg-card`}>
       {isPanel && onClose && (
-        <div className="h-12 flex items-center justify-between px-4 border-b border-border shrink-0">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
           <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-accent" />
-            <span className="font-medium text-sm">AI Assistant</span>
-            <Badge variant="outline" className="text-[9px] h-4">Read-only</Badge>
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-md"
+              style={{ backgroundColor: "hsl(var(--primary) / 0.10)", color: "hsl(var(--primary))" }}
+              aria-hidden="true"
+            >
+              <Bot className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-sm font-medium">AI Assistant</span>
+            <Badge variant="outline" className="h-4 text-[9px]">Read-only</Badge>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
-            <span className="sr-only">Close</span>×
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            aria-label="Close assistant"
+          >
+            <X className="h-4 w-4" />
           </Button>
         </div>
       )}

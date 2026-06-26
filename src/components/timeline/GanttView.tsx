@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react";
-import { addDays, differenceInCalendarDays, format } from "date-fns";
+import { addDays, differenceInCalendarDays, format, isSameDay } from "date-fns";
+import { CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EventBar } from "./EventBar";
 import type { ColorBy, DateRange, TimelineEntityType, TimelineEvent } from "@/types/timeline";
 
@@ -82,24 +84,37 @@ export function GanttView({
     onReschedule(event.id, event.entity_type, toIso(newStart), toIso(newEnd));
   };
 
+  const today = new Date();
+
   return (
-    <div className="overflow-auto h-full">
+    <div className="h-full overflow-auto">
       <div style={{ minWidth: totalDays * DAY_PX }}>
         {/* header */}
-        <div className="sticky top-0 z-10 bg-card border-b flex">
-          {days.map((d, i) => (
-            <div
-              key={i}
-              className={cn(
-                "text-xs text-center py-1 border-r",
-                (d.getDay() === 0 || d.getDay() === 6) && "bg-muted/40",
-              )}
-              style={{ width: DAY_PX }}
-            >
-              <div className="text-muted-foreground">{format(d, "EEE")}</div>
-              <div className="font-medium">{format(d, "d")}</div>
-            </div>
-          ))}
+        <div className="sticky top-0 z-10 flex border-b border-border bg-card">
+          {days.map((d, i) => {
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+            const isToday = isSameDay(d, today);
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "border-r border-border py-1.5 text-center text-xs",
+                  isWeekend && "bg-muted/40",
+                )}
+                style={{ width: DAY_PX }}
+              >
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{format(d, "EEE")}</div>
+                <div
+                  className={cn(
+                    "mx-auto flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium tabular-nums",
+                    isToday && "bg-primary text-primary-foreground",
+                  )}
+                >
+                  {format(d, "d")}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* rows */}
@@ -110,12 +125,12 @@ export function GanttView({
           onPointerMove={handlePointerMove}
         >
           {/* day grid lines */}
-          <div className="absolute inset-0 flex pointer-events-none">
+          <div className="pointer-events-none absolute inset-0 flex">
             {days.map((d, i) => (
               <div
                 key={i}
                 className={cn(
-                  "border-r h-full",
+                  "h-full border-r border-border/60",
                   (d.getDay() === 0 || d.getDay() === 6) && "bg-muted/20",
                 )}
                 style={{ width: DAY_PX }}
@@ -164,8 +179,12 @@ export function GanttView({
           })}
 
           {visibleItems.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-              No events in this range.
+            <div className="absolute inset-0 flex items-center justify-center">
+              <EmptyState
+                icon={<CalendarRange className="h-6 w-6" />}
+                title="Nothing scheduled here"
+                description="No tasks, projects, or requests fall in this date range. Widen the range or adjust your filters."
+              />
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,15 +71,18 @@ export function EntityDetailSheet({ open, onOpenChange, entity, onUpdated }: Pro
             />
           )}
           {!loading && entity?.type === "request" && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Open this request to see full details.</p>
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+              <p className="text-sm text-muted-foreground">Open this request to see its full details and activity.</p>
               <Button asChild>
-                <Link to={`/requests/${entity.id}`}>Open request</Link>
+                <Link to={`/requests/${entity.id}`}>
+                  Open request
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Link>
               </Button>
             </div>
           )}
           {!loading && entity && entity.type !== "request" && !task && !project && (
-            <p className="text-sm text-muted-foreground">Could not load this item.</p>
+            <p className="text-sm text-muted-foreground">We couldn&apos;t load this item. It may have been moved or deleted.</p>
           )}
         </div>
       </SheetContent>

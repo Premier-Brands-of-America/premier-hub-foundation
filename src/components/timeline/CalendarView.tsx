@@ -46,27 +46,27 @@ export function CalendarView({ events, colorBy, onEventClick, initialMonth }: Pr
   const today = new Date();
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-3">
-        <h2 className="text-lg font-semibold">{format(month, "MMMM yyyy")}</h2>
-        <div className="flex gap-1">
-          <Button variant="outline" size="icon" onClick={() => setMonth(addDays(startOfMonth(month), -1))} aria-label="Previous month">
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between px-4 py-3">
+        <h2 className="font-display text-xl">{format(month, "MMMM yyyy")}</h2>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonth(addDays(startOfMonth(month), -1))} aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setMonth(new Date())}>Today</Button>
-          <Button variant="outline" size="icon" onClick={() => setMonth(addDays(endOfMonth(month), 1))} aria-label="Next month">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonth(addDays(endOfMonth(month), 1))} aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 border-t text-xs font-medium text-muted-foreground bg-muted/30">
+      <div className="grid grid-cols-7 border-y border-border bg-muted/40 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
           <div key={d} className="p-2 text-center">{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+      <div className="grid flex-1 auto-rows-fr grid-cols-7">
         {days.map((day) => {
           const dayEvents = eventsForDay(events, day);
           const visible = dayEvents.slice(0, 3);
@@ -78,12 +78,12 @@ export function CalendarView({ events, colorBy, onEventClick, initialMonth }: Pr
             <div
               key={day.toISOString()}
               className={cn(
-                "border-r border-b p-1.5 min-h-[100px] flex flex-col gap-1",
-                !inMonth && "bg-muted/20 text-muted-foreground",
+                "flex min-h-[100px] flex-col gap-1 border-b border-r border-border p-1.5 transition-colors",
+                inMonth ? "bg-card hover:bg-accent/40" : "bg-muted/30 text-muted-foreground",
               )}
             >
               <div className={cn(
-                "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full",
+                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium tabular-nums",
                 isToday && "bg-primary text-primary-foreground",
               )}>
                 {format(day, "d")}

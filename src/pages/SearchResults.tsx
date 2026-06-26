@@ -7,7 +7,9 @@ import { useSearch, useSearchPeople } from "@/hooks/use-search";
 import type { SearchEntityType, SearchHit } from "@/types/search";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/PageHeader";
+import { Search, SearchX, ChevronRight } from "lucide-react";
 
 const TABS: Array<{ value: "all" | SearchEntityType | "people"; label: string }> = [
   { value: "all", label: "All" },
@@ -17,6 +19,15 @@ const TABS: Array<{ value: "all" | SearchEntityType | "people"; label: string }>
   { value: "request", label: "Requests" },
   { value: "people", label: "People" },
 ];
+
+// Maps a search entity type to its categorical color token.
+const ENTITY_TOKEN: Record<SearchEntityType | "user", string> = {
+  project: "--entity-project",
+  task: "--entity-task",
+  request: "--entity-request",
+  page: "--status-info",
+  user: "--entity-person",
+};
 
 function routeFor(type: SearchEntityType | "user", id: string): string {
   switch (type) {
@@ -28,21 +39,35 @@ function routeFor(type: SearchEntityType | "user", id: string): string {
   }
 }
 
+function EntityBadge({ type }: { type: SearchEntityType | "user" }) {
+  const token = ENTITY_TOKEN[type];
+  return (
+    <span
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+      style={{ backgroundColor: `hsl(var(${token}) / 0.14)`, color: `hsl(var(${token}))` }}
+      aria-hidden="true"
+    >
+      <EntityIcon type={type} className="h-4 w-4" />
+    </span>
+  );
+}
+
 function HitRow({ hit, onClick }: { hit: SearchHit; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-start gap-3 rounded-md border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
+      className="group flex w-full items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <EntityIcon type={hit.entity_type} className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+      <EntityBadge type={hit.entity_type} />
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-foreground truncate">{hit.title}</div>
+        <div className="truncate text-sm font-medium text-foreground">{hit.title}</div>
         {hit.snippet && (
-          <MatchHighlight html={hit.snippet} className="block text-xs text-muted-foreground line-clamp-2" />
+          <MatchHighlight html={hit.snippet} className="mt-0.5 block text-xs text-muted-foreground line-clamp-2" />
         )}
       </div>
-      <span className="text-[10px] uppercase text-muted-foreground">{hit.entity_type}</span>
+      <span className="mt-0.5 shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{hit.entity_type}</span>
+      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/0 transition-colors group-hover:text-muted-foreground" aria-hidden="true" />
     </button>
   );
 }
@@ -65,25 +90,28 @@ export default function SearchResults() {
     setParams({ q: draft });
   };
 
+  const activeCount = tab === "people" ? people.length : hits.length;
+  const subtitle = q
+    ? `${activeCount} ${activeCount === 1 ? "result" : "results"} for “${q}”`
+    : "Find projects, tasks, requests, pages, and people";
+
   return (
-    <div className="space-y-4">
-      <header className="space-y-2">
-        <h1 className="text-xl font-semibold text-foreground">Search</h1>
-        <form onSubmit={onSubmit} className="relative max-w-xl">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader title="Search" subtitle={subtitle} />
+
+      {/* The search input is the hero — marked with the crimson edge-rail. */}
+      <header className="edge-rail space-y-2">
+        <form onSubmit={onSubmit} className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Search projects, tasks, requests, pages…"
-            className="pl-8"
+            className="h-11 pl-9 text-base"
             autoFocus
           />
         </form>
-        {q && (
-          <p className="text-xs text-muted-foreground">
-            Showing results for <span className="font-medium text-foreground">“{q}”</span>
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">{subtitle}</p>
       </header>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
@@ -94,21 +122,29 @@ export default function SearchResults() {
         </TabsList>
 
         {TABS.filter((t) => t.value !== "people").map((t) => (
-          <TabsContent key={t.value} value={t.value} className="space-y-2 mt-3">
-            {!q && <p className="text-sm text-muted-foreground">Type a query to start searching.</p>}
+          <TabsContent key={t.value} value={t.value} className="mt-4 space-y-2">
+            {!q && (
+              <EmptyState
+                icon={<Search className="h-6 w-6" />}
+                title="Start typing to search"
+                description="Search across projects, tasks, requests, and pages in one place."
+              />
+            )}
             {q && isLoading && (
               <div className="space-y-2">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
                 ))}
               </div>
             )}
             {q && !isLoading && hits.length === 0 && (
-              <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                No results. Try a broader query or remove filters.
-              </div>
+              <EmptyState
+                icon={<SearchX className="h-6 w-6" />}
+                title="No results found"
+                description="Try a broader query or remove filters to widen the search."
+              />
             )}
-            {hits.map((h) => (
+            {q && !isLoading && hits.map((h) => (
               <HitRow
                 key={`${h.entity_type}-${h.id}`}
                 hit={h}
@@ -118,36 +154,45 @@ export default function SearchResults() {
           </TabsContent>
         ))}
 
-        <TabsContent value="people" className="space-y-2 mt-3">
-          {!q && <p className="text-sm text-muted-foreground">Type a query to start searching.</p>}
+        <TabsContent value="people" className="mt-4 space-y-2">
+          {!q && (
+            <EmptyState
+              icon={<Search className="h-6 w-6" />}
+              title="Find people"
+              description="Search teammates by name, role, department, or email."
+            />
+          )}
           {q && peopleLoading && (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full" />
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
               ))}
             </div>
           )}
           {q && !peopleLoading && people.length === 0 && (
-            <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              No people match.
-            </div>
+            <EmptyState
+              icon={<SearchX className="h-6 w-6" />}
+              title="No people match"
+              description="Try a different name, role, or department."
+            />
           )}
-          {people.map((p) => (
+          {q && !peopleLoading && people.map((p) => (
             <button
               key={p.user_id}
               type="button"
               onClick={() => navigate(routeFor("user", p.user_id))}
-              className="w-full flex items-start gap-3 rounded-md border border-border bg-card p-3 text-left hover:bg-accent"
+              className="group flex w-full items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <EntityIcon type="user" className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <EntityBadge type="user" />
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-foreground truncate">
+                <div className="truncate text-sm font-medium text-foreground">
                   {p.full_name ?? p.email}
                 </div>
-                <div className="text-xs text-muted-foreground truncate">
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">
                   {p.role}{p.department ? ` · ${p.department}` : ""}{p.email ? ` · ${p.email}` : ""}
                 </div>
               </div>
+              <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/0 transition-colors group-hover:text-muted-foreground" aria-hidden="true" />
             </button>
           ))}
         </TabsContent>

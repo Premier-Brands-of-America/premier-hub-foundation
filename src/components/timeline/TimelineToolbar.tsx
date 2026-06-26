@@ -1,11 +1,11 @@
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 import type {
   ColorBy,
   DateRange,
@@ -23,6 +23,7 @@ interface Props {
   onColorByChange: (c: ColorBy) => void;
   range: DateRange;
   onRangeChange: (r: DateRange) => void;
+  count?: number;
 }
 
 const TYPE_LABELS: Record<TimelineEntityType, string> = {
@@ -33,7 +34,7 @@ const TYPE_LABELS: Record<TimelineEntityType, string> = {
 const ALL_TYPES: TimelineEntityType[] = ["task", "project", "request"];
 
 export function TimelineToolbar({
-  view, onViewChange, filters, onFiltersChange, colorBy, onColorByChange, range, onRangeChange,
+  view, onViewChange, filters, onFiltersChange, colorBy, onColorByChange, range, onRangeChange, count,
 }: Props) {
   const toggleType = (t: TimelineEntityType) => {
     const has = filters.types.includes(t);
@@ -43,7 +44,7 @@ export function TimelineToolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-3 border-b bg-card">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-border bg-card px-4 py-3">
       <ToggleGroup
         type="single"
         value={view}
@@ -54,20 +55,35 @@ export function TimelineToolbar({
         <ToggleGroupItem value="timeline" aria-label="Timeline view">Timeline</ToggleGroupItem>
       </ToggleGroup>
 
+      <div className="h-5 w-px bg-border" aria-hidden="true" />
+
       <div className="flex items-center gap-1.5" role="group" aria-label="Entity filters">
         {ALL_TYPES.map((t) => {
           const active = filters.types.includes(t);
           return (
-            <Badge
+            <button
               key={t}
-              variant={active ? "default" : "secondary"}
-              className="cursor-pointer select-none"
+              type="button"
               onClick={() => toggleType(t)}
               aria-pressed={active}
-              role="button"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                active
+                  ? "border-transparent"
+                  : "border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+              style={active ? {
+                backgroundColor: `hsl(var(--entity-${t}) / 0.14)`,
+                color: `hsl(var(--entity-${t}))`,
+              } : undefined}
             >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: `hsl(var(--entity-${t}))`, opacity: active ? 1 : 0.4 }}
+                aria-hidden="true"
+              />
               {TYPE_LABELS[t]}
-            </Badge>
+            </button>
           );
         })}
       </div>
@@ -87,7 +103,7 @@ export function TimelineToolbar({
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
-            <CalendarIcon className="h-4 w-4" />
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             {format(range.from, "MMM d")} – {format(range.to, "MMM d, yyyy")}
           </Button>
         </PopoverTrigger>
@@ -103,6 +119,13 @@ export function TimelineToolbar({
           />
         </PopoverContent>
       </Popover>
+
+      {typeof count === "number" && (
+        <div className="ml-auto flex items-baseline gap-1.5 text-xs text-muted-foreground">
+          <span className="stat-numeral text-base text-foreground">{count}</span>
+          {count === 1 ? "item" : "items"}
+        </div>
+      )}
     </div>
   );
 }

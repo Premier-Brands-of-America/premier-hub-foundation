@@ -5,6 +5,7 @@ import { CalendarView } from "@/components/timeline/CalendarView";
 import { GanttView } from "@/components/timeline/GanttView";
 import { EntityDetailSheet } from "@/components/timeline/EntityDetailSheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/PageHeader";
 import { useTimeline } from "@/hooks/use-timeline";
 import { useRescheduleEvent } from "@/hooks/use-reschedule-event";
 import { useRealtimeInvalidation } from "@/hooks/use-realtime";
@@ -50,11 +51,12 @@ export default function TimelinePage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <header className="px-4 pt-4">
-        <h1 className="text-2xl font-bold">Timeline</h1>
-        <p className="text-sm text-muted-foreground">Tasks, projects, and requests on one canvas.</p>
-      </header>
+    <div className="flex h-[calc(100vh-4rem)] flex-col">
+      <PageHeader
+        title="Timeline"
+        subtitle="Tasks, projects, and requests on one canvas"
+      />
+
       <TimelineToolbar
         view={view}
         onViewChange={setView}
@@ -64,12 +66,19 @@ export default function TimelinePage() {
         onColorByChange={setColorBy}
         range={range}
         onRangeChange={setRange}
+        count={isLoading ? undefined : events.length}
       />
-      <div className="flex-1 min-h-0 overflow-hidden">
+
+      <div className="min-h-0 flex-1 overflow-hidden">
         {isLoading ? (
-          <div className="p-4 space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-64 w-full" />
+          <div className="space-y-3 p-4">
+            <Skeleton className="h-10 w-48" />
+            <div className="grid grid-cols-7 gap-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+            <Skeleton className="h-[60vh] w-full" />
           </div>
         ) : view === "month" ? (
           <CalendarView
@@ -91,6 +100,7 @@ export default function TimelinePage() {
           />
         )}
       </div>
+
       <EntityDetailSheet
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}

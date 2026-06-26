@@ -27,23 +27,23 @@ export function AIChatInput({ input, onInputChange, onSubmit, onClear, isLoading
   };
 
   return (
-    <div className={`border-t border-border ${isPanel ? "p-2.5" : "p-3 md:p-4"}`}>
+    <div className={`border-t border-border bg-card ${isPanel ? "p-2.5" : "p-3 md:p-4"}`}>
       {hasMessages && (
-        <div className="flex justify-end mb-1.5">
-          <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-muted-foreground" onClick={onClear}>
+        <div className="mb-1.5 flex justify-end">
+          <Button variant="ghost" size="sm" className="h-6 gap-1 text-[11px] text-muted-foreground hover:text-foreground" onClick={onClear}>
             <Trash2 className="h-3 w-3" /> Clear chat
           </Button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className={`flex gap-2 ${isPanel ? "" : "max-w-3xl mx-auto"}`}>
+      <form onSubmit={handleSubmit} className={`flex gap-2 ${isPanel ? "" : "mx-auto max-w-3xl"}`}>
         <input
           type="text"
-          placeholder="Ask about your tasks, projects, activity..."
+          placeholder="Ask about your tasks, projects, activity…"
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
-          className={`flex-1 px-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 ${
+          className={`flex-1 rounded-md border border-transparent bg-muted/40 px-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 disabled:opacity-50 ${
             isPanel ? "h-8 text-xs" : "h-10 text-sm"
           }`}
         />
@@ -51,7 +51,8 @@ export function AIChatInput({ input, onInputChange, onSubmit, onClear, isLoading
           type="submit"
           size="icon"
           disabled={!input.trim() || isLoading}
-          className={isPanel ? "h-8 w-8" : "h-10 w-10"}
+          aria-label="Send message"
+          className={isPanel ? "h-8 w-8 shrink-0" : "h-10 w-10 shrink-0"}
         >
           <Send className={isPanel ? "h-3.5 w-3.5" : "h-4 w-4"} />
         </Button>

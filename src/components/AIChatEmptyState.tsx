@@ -1,4 +1,4 @@
-import { Bot, Info } from "lucide-react";
+import { Bot, Info, ArrowUpRight } from "lucide-react";
 
 const EXAMPLE_QUESTIONS = [
   "What projects am I assigned to?",
@@ -16,32 +16,41 @@ export function AIChatEmptyState({ variant, onSend }: AIChatEmptyStateProps) {
   const isPanel = variant === "panel";
 
   return (
-    <div className={`flex flex-col items-center justify-center ${isPanel ? "py-8 px-4" : "py-16 px-6"} text-center space-y-4`}>
-      <div className={`${isPanel ? "w-10 h-10" : "w-14 h-14"} rounded-full bg-accent/10 flex items-center justify-center`}>
-        <Bot className={`${isPanel ? "h-5 w-5" : "h-7 w-7"} text-accent`} />
+    <div className={`flex flex-col items-center justify-center text-center ${isPanel ? "gap-4 px-4 py-8" : "gap-5 px-6 py-16"}`}>
+      <div
+        className={`flex items-center justify-center rounded-full ${isPanel ? "h-10 w-10" : "h-14 w-14"}`}
+        style={{ backgroundColor: "hsl(var(--primary) / 0.10)", color: "hsl(var(--primary))" }}
+        aria-hidden="true"
+      >
+        <Bot className={isPanel ? "h-5 w-5" : "h-7 w-7"} />
       </div>
-      <div className="space-y-1">
-        <h3 className={`font-semibold text-foreground ${isPanel ? "text-sm" : "text-lg"}`}>
-          AI Assistant
+
+      <div className="space-y-1.5">
+        <h3 className={`font-display text-foreground ${isPanel ? "text-base" : "text-xl"}`}>
+          How can I help?
         </h3>
-        <p className={`text-muted-foreground ${isPanel ? "text-xs" : "text-sm"} max-w-md`}>
-          Ask questions about your tasks, projects, stakeholders, and activity. I can only read data — no changes will be made.
+        <p className={`mx-auto max-w-md text-muted-foreground ${isPanel ? "text-xs" : "text-sm"}`}>
+          Ask about your tasks, projects, stakeholders, and activity. I read your data only — nothing gets changed.
         </p>
       </div>
-      <div className={`flex flex-wrap gap-2 justify-center ${isPanel ? "max-w-[280px]" : "max-w-lg"}`}>
+
+      <div className={`flex w-full flex-col gap-2 ${isPanel ? "max-w-[280px]" : "max-w-md"}`}>
         {EXAMPLE_QUESTIONS.map((q) => (
           <button
             key={q}
+            type="button"
             onClick={() => onSend(q)}
-            className={`text-left px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted hover:border-muted-foreground/30 transition-colors ${isPanel ? "text-[11px]" : "text-xs"}`}
+            className={`group flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-muted-foreground transition-colors hover:border-[hsl(var(--primary)/0.30)] hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isPanel ? "text-xs" : "text-sm"}`}
           >
-            {q}
+            <span className="truncate">{q}</span>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-[hsl(var(--primary))]" aria-hidden="true" />
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-2">
-        <Info className="h-3 w-3" />
-        <span>Phase 1 — Read-only assistant. Cannot modify data.</span>
+
+      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Info className="h-3 w-3" aria-hidden="true" />
+        <span>Phase 1 — read-only. The assistant can&apos;t modify data.</span>
       </div>
     </div>
   );
