@@ -2,21 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 /* ===================================================================
- * Premier Project Hub — v2 design system
- * One coherent, revamped dark + light system (Linear / Vercel / Raycast).
+ * Premier Project Hub — v2 design system  ·  "Crimson Engineering"
+ * One coherent, revamped dark + light system (Linear / Vercel / Raycast
+ * discipline) anchored on Premier Brands' own crimson (logo #c10230).
  * Three layers: primitive palette → semantic tokens → component tokens.
  * Components never branch on theme — only the semantic layer differs
  * between :root (light) and .dark (dark). All values are HSL triples,
  * consumed via hsl(var(--token)). No hardcoded colors anywhere.
+ *
+ * Identity contract (see DESIGN_LANGUAGE.md):
+ *   · Accent  — Premier crimson, single saturated hue (~347°), derive
+ *               states by lightness, never new hex.
+ *   · Type    — Space Grotesk (display: h1–h3 + big numerals) over Inter
+ *               (body/UI), via --font-display / --font-sans.
+ *   · Signature — the crimson "edge-rail": a 2px crimson left-edge marks
+ *               the active nav item, selected rows, and section headers.
  * =================================================================== */
 
 @layer base {
   :root {
     /* ---- Shared, theme-independent tokens (type / radius / motion) ---- */
     --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace;
 
     /* Radii — sm 6 / md 8 / lg 12 / xl 16; cards lg, inputs/buttons md */
@@ -42,30 +52,32 @@
     --row-py: 0.625rem;
 
     /* =============== LIGHT — semantic tokens =============== */
-    /* Near-neutral cool grays + a single saturated indigo accent. */
-    --background: 220 20% 98%;
-    --foreground: 224 24% 11%;
+    /* Near-neutral grays warmed a hair toward the crimson, + a single
+       saturated Premier-crimson accent (logo #c10230 ≈ 347°). */
+    --background: 30 20% 98%;
+    --foreground: 340 12% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 24% 11%;
+    --card-foreground: 340 12% 11%;
 
     /* Popovers/menus/command palette sit on the brightest surface */
     --popover: 0 0% 100%;
-    --popover-foreground: 224 24% 11%;
+    --popover-foreground: 340 12% 11%;
 
-    /* Single saturated accent — derive hover/active by lightness, not new hex */
-    --primary: 234 72% 56%;
+    /* Single saturated accent — Premier crimson. Derive hover/active by
+       lightness (±4–6%), never a new hex. White text = 5.98:1 (AA). */
+    --primary: 347 84% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 16% 94%;
-    --secondary-foreground: 224 22% 20%;
+    --secondary: 24 14% 94%;
+    --secondary-foreground: 340 14% 20%;
 
-    --muted: 220 16% 95%;
-    --muted-foreground: 220 9% 44%;
+    --muted: 24 14% 95%;
+    --muted-foreground: 340 6% 42%;
 
     /* shadcn "accent" = subtle hover surface (NOT the brand accent color) */
-    --accent: 220 16% 93%;
-    --accent-foreground: 224 22% 20%;
+    --accent: 24 14% 93%;
+    --accent-foreground: 340 14% 20%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -77,26 +89,28 @@
     --warning-foreground: 30 45% 12%;
 
     /* Hairline borders — low-contrast (~rgba(0,0,0,0.08)) */
-    --border: 220 16% 90%;
-    --input: 220 16% 87%;
-    --ring: 234 72% 56%;
+    --border: 24 14% 90%;
+    --input: 24 14% 87%;
+    --ring: 347 84% 42%;
 
-    /* Sidebar — a dark rail in BOTH themes (Linear/Vercel brand anchor) */
-    --sidebar-background: 224 22% 11%;
-    --sidebar-foreground: 218 16% 82%;
-    --sidebar-primary: 234 89% 74%;
-    --sidebar-primary-foreground: 224 30% 10%;
-    --sidebar-accent: 224 16% 17%;
-    --sidebar-accent-foreground: 218 22% 96%;
-    --sidebar-border: 224 14% 19%;
-    --sidebar-ring: 234 89% 66%;
-    --sidebar-muted: 220 10% 56%;
+    /* Sidebar — a near-black crimson-tinted rail in BOTH themes
+       (the brand anchor). Active item glows Premier crimson. */
+    --sidebar-background: 340 16% 9%;
+    --sidebar-foreground: 20 10% 80%;
+    --sidebar-primary: 349 90% 66%;
+    --sidebar-primary-foreground: 345 40% 10%;
+    --sidebar-accent: 340 12% 15%;
+    --sidebar-accent-foreground: 20 14% 96%;
+    --sidebar-border: 340 12% 17%;
+    --sidebar-ring: 349 90% 62%;
+    --sidebar-muted: 20 6% 55%;
 
-    /* Entity type tokens (graph / relations) */
-    --entity-project: 234 70% 54%;
-    --entity-task: 190 75% 38%;
+    /* Entity type tokens (graph / relations). Project carries the brand
+       crimson; the rest stay categorical so the graph reads cleanly. */
+    --entity-project: 347 84% 44%;
+    --entity-task: 199 89% 42%;
     --entity-request: 262 60% 56%;
-    --entity-page: 220 9% 44%;
+    --entity-page: 340 6% 44%;
     --entity-person: 160 55% 38%;
     --entity-department: 28 80% 48%;
 
@@ -107,8 +121,8 @@
     --status-done: 150 58% 38%;
     --status-success: 150 58% 38%;
     --status-warning: 38 92% 50%;
-    --status-info: 234 70% 54%;
-    --status-neutral: 220 9% 50%;
+    --status-info: 347 84% 46%;
+    --status-neutral: 340 6% 50%;
     --status-danger: 0 72% 50%;
     --priority-low: 200 30% 50%;
     --priority-medium: 38 90% 50%;
@@ -118,28 +132,29 @@
 
   .dark {
     /* =============== DARK — semantic tokens =============== */
-    /* Not pure black: ~#0F1116 base, elevated surfaces a few % lighter,
-       hairline borders, accent brightened for contrast. */
-    --background: 222 16% 7%;
-    --foreground: 220 14% 93%;
+    /* Not pure black: ~#0E0C0E base with a whisper of crimson warmth,
+       elevated surfaces a few % lighter, hairline borders, accent
+       brightened for contrast (dark crimson 349/90/64, dark text 5.43:1). */
+    --background: 340 12% 6%;
+    --foreground: 20 12% 93%;
 
-    --card: 224 15% 10%;
-    --card-foreground: 220 14% 93%;
+    --card: 340 10% 9%;
+    --card-foreground: 20 12% 93%;
 
-    --popover: 224 16% 11%;
-    --popover-foreground: 220 14% 93%;
+    --popover: 340 10% 10%;
+    --popover-foreground: 20 12% 93%;
 
-    --primary: 234 89% 70%;
-    --primary-foreground: 224 40% 10%;
+    --primary: 349 90% 64%;
+    --primary-foreground: 345 40% 9%;
 
-    --secondary: 224 14% 15%;
-    --secondary-foreground: 220 14% 90%;
+    --secondary: 340 8% 14%;
+    --secondary-foreground: 20 12% 90%;
 
-    --muted: 224 14% 14%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 340 8% 13%;
+    --muted-foreground: 20 8% 60%;
 
-    --accent: 224 14% 16%;
-    --accent-foreground: 220 14% 92%;
+    --accent: 340 8% 15%;
+    --accent-foreground: 20 12% 92%;
 
     --destructive: 0 70% 56%;
     --destructive-foreground: 0 0% 100%;
@@ -151,28 +166,28 @@
     --warning-foreground: 38 80% 8%;
 
     /* Hairline borders — low-contrast (~rgba(255,255,255,0.08)) */
-    --border: 220 14% 17%;
-    --input: 220 14% 18%;
-    --ring: 234 89% 68%;
+    --border: 340 8% 16%;
+    --input: 340 8% 18%;
+    --ring: 349 90% 64%;
 
     /* Sidebar stays dark (same family as light — brand anchor) */
 
-    /* Entity tokens — brightened for dark surfaces */
-    --entity-project: 234 89% 72%;
-    --entity-task: 190 80% 58%;
+    /* Entity tokens — brightened for dark surfaces. Project = crimson. */
+    --entity-project: 349 90% 70%;
+    --entity-task: 199 90% 60%;
     --entity-request: 262 70% 72%;
-    --entity-page: 220 10% 68%;
+    --entity-page: 20 10% 68%;
     --entity-person: 160 55% 56%;
     --entity-department: 28 85% 62%;
 
-    --status-todo: 220 10% 62%;
+    --status-todo: 20 10% 62%;
     --status-in-progress: 38 95% 60%;
     --status-blocked: 0 70% 60%;
     --status-done: 150 55% 52%;
     --status-success: 150 55% 52%;
     --status-warning: 38 95% 60%;
-    --status-info: 234 89% 72%;
-    --status-neutral: 220 10% 62%;
+    --status-info: 349 90% 70%;
+    --status-neutral: 20 10% 62%;
     --status-danger: 0 70% 60%;
     --priority-low: 200 35% 60%;
     --priority-medium: 38 90% 58%;
@@ -197,6 +212,14 @@
     letter-spacing: -0.02em;
     font-weight: 600;
     line-height: 1.2;
+  }
+
+  /* Display face (Space Grotesk) for the largest headings + big numerals.
+     h4 stays Inter — it functions as a UI/section label, not display. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+    font-feature-settings: "ss01", "tnum";
   }
 
   code, kbd, pre, .font-mono {
@@ -486,6 +509,37 @@
     background: hsl(var(--foreground) / 0.06);
     color: hsl(var(--foreground) / 0.70);
     box-shadow: inset 0 -1px 0 0 hsl(var(--foreground) / 0.08);
+  }
+
+  /* ---- Signature: the crimson edge-rail + display numerals ----
+     The single recognizable motif. A 2px crimson left-edge marks the
+     active nav item (sidebar, above), selected table rows (above), and
+     — via .edge-rail — page/section headers and feature cards. Big
+     numbers render in the display face with tabular figures. */
+  .edge-rail {
+    position: relative;
+    padding-left: 0.875rem;
+  }
+  .edge-rail::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.125rem;
+    bottom: 0.125rem;
+    width: 2px;
+    border-radius: 2px;
+    background: hsl(var(--primary));
+  }
+  /* Display numerals — for stat/KPI numbers and big counts. */
+  .font-display,
+  .stat-numeral {
+    font-family: var(--font-display);
+  }
+  .stat-numeral {
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "ss01";
   }
 
   /* Empty states */

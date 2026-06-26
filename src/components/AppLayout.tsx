@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleBadge } from "@/components/RoleBadge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { GlobalCommandPalette } from "@/components/search/GlobalCommandPalette";
 import { SearchTrigger } from "@/components/search/SearchTrigger";
 import { useDesignMode } from "@/providers/DesignModeProvider";
+import { PageHeaderProvider, usePageHeaderState } from "@/components/PageHeader";
+import { titleForPath } from "@/lib/routeLabels";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -69,126 +71,203 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm"
-        >
-          Skip to main content
-        </a>
-        <AppSidebar />
+      <PageHeaderProvider>
+        <div className="min-h-screen flex w-full">
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm"
+          >
+            Skip to main content
+          </a>
+          <AppSidebar />
 
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="app-header h-12 modern:h-14 flex items-center justify-between border-b border-border bg-card px-3 sm:px-4 shrink-0 modern:border-b-0 modern:bg-transparent">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger aria-label="Toggle sidebar" />
-              <SearchTrigger onClick={() => setSearchOpen(true)} />
-            </div>
-            <div className="flex items-center gap-1 ml-auto pl-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground modern:hover:bg-foreground/5"
-                onClick={() => setAiOpen(!aiOpen)}
-                aria-label={aiOpen ? "Close AI Assistant" : "Open AI Assistant"}
-              >
-                <Bot className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">AI Assistant</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-muted-foreground hover:text-foreground modern:hover:bg-foreground/5"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </Button>
-              {profile && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label="Account menu"
-                    >
-                      <span className="hidden sm:inline text-xs text-muted-foreground">
-                        {profile.full_name}
-                      </span>
-                      <span className="hidden sm:inline-flex">
-                        <RoleBadge role={role} />
-                      </span>
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.full_name ?? ""} />
-                        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-60">
-                    <DropdownMenuLabel className="flex flex-col">
-                      <span className="text-sm">{profile.full_name}</span>
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {profile.email}
-                      </span>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/profile")} className="gap-2">
-                      <UserIcon className="h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                      Appearance
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        handleToggleTheme();
-                      }}
-                      className="gap-2"
-                      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                    >
-                      {theme === "dark" ? (
-                        <Sun className="h-4 w-4" />
-                      ) : (
-                        <Moon className="h-4 w-4" />
-                      )}
-                      <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
-                      <kbd className="kbd ml-auto">⌘⇧D</kbd>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        handleToggleDensity();
-                      }}
-                      className="gap-2"
-                      aria-label={
-                        density === "compact"
-                          ? "Switch to comfortable density"
-                          : "Switch to compact density"
-                      }
-                    >
-                      <Rows3 className="h-4 w-4" />
-                      <span>{density === "compact" ? "Comfortable density" : "Compact density"}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="gap-2">
-                      <LogOut className="h-4 w-4" />
-                      <span>Sign out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </header>
+          <div className="flex-1 flex flex-col min-w-0">
+            <ShellHeader
+              onOpenSearch={() => setSearchOpen(true)}
+              aiOpen={aiOpen}
+              onToggleAi={() => setAiOpen((o) => !o)}
+              theme={theme}
+              density={density}
+              profile={profile}
+              role={role}
+              initials={initials}
+              onNavigate={navigate}
+              onToggleTheme={handleToggleTheme}
+              onToggleDensity={handleToggleDensity}
+              onSignOut={handleSignOut}
+            />
 
-          <main id="main-content" className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
-            <Breadcrumbs />
-            {children}
-          </main>
+            <main id="main-content" className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
+              {children}
+            </main>
+          </div>
+
+          {aiOpen && <AIChatPanel onClose={() => setAiOpen(false)} />}
+          <GlobalCommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
         </div>
-
-        {aiOpen && <AIChatPanel onClose={() => setAiOpen(false)} />}
-        <GlobalCommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
-      </div>
+      </PageHeaderProvider>
     </SidebarProvider>
+  );
+}
+
+type AuthProfile = ReturnType<typeof useAuth>["profile"];
+type AuthRole = ReturnType<typeof useAuth>["role"];
+
+interface ShellHeaderProps {
+  onOpenSearch: () => void;
+  aiOpen: boolean;
+  onToggleAi: () => void;
+  theme: "dark" | "light";
+  density: "comfortable" | "compact";
+  profile: AuthProfile;
+  role: AuthRole;
+  initials: string;
+  onNavigate: (path: string) => void;
+  onToggleTheme: () => void;
+  onToggleDensity: () => void;
+  onSignOut: () => void;
+}
+
+/**
+ * App shell header. Left: collapse trigger + contextual page title (from
+ * PageHeader context, falling back to the route label) with breadcrumbs.
+ * Right: primary-action slot, then ⌘K search, AI Assistant, notifications,
+ * and the account menu (theme ⌘⇧D / density / profile / sign out).
+ */
+function ShellHeader({
+  onOpenSearch,
+  aiOpen,
+  onToggleAi,
+  theme,
+  density,
+  profile,
+  role,
+  initials,
+  onNavigate,
+  onToggleTheme,
+  onToggleDensity,
+  onSignOut,
+}: ShellHeaderProps) {
+  const { pathname } = useLocation();
+  const { title, subtitle, actions } = usePageHeaderState();
+  const heading = title ?? titleForPath(pathname);
+
+  return (
+    <header className="app-header h-14 flex items-center gap-3 px-3 sm:px-4 shrink-0">
+      {/* Left: collapse + contextual title / breadcrumb */}
+      <div className="flex items-center gap-2 min-w-0">
+        <SidebarTrigger aria-label="Toggle sidebar" />
+        <div className="hidden sm:block h-5 w-px bg-border/70" aria-hidden="true" />
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="font-display text-[15px] font-semibold leading-none tracking-tight text-foreground truncate">
+              {heading}
+            </h1>
+            {subtitle && (
+              <span className="hidden md:inline text-xs text-muted-foreground truncate">
+                {subtitle}
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 hidden sm:block">
+            <Breadcrumbs />
+          </div>
+        </div>
+      </div>
+
+      {/* Right: primary action + search + assistant + notifications + account */}
+      <div className="flex items-center gap-1 ml-auto pl-2">
+        {actions && <div className="mr-1 flex items-center gap-2">{actions}</div>}
+        <SearchTrigger onClick={onOpenSearch} />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+          onClick={onToggleAi}
+          aria-label={aiOpen ? "Close AI Assistant" : "Open AI Assistant"}
+        >
+          <Bot className="h-4 w-4" />
+          <span className="hidden lg:inline text-xs">AI Assistant</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+          aria-label="Notifications"
+        >
+          <Bell className="h-4 w-4" />
+        </Button>
+        {profile && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Account menu"
+              >
+                <span className="hidden sm:inline text-xs text-muted-foreground">
+                  {profile.full_name}
+                </span>
+                <span className="hidden sm:inline-flex">
+                  <RoleBadge role={role} />
+                </span>
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.full_name ?? ""} />
+                  <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel className="flex flex-col">
+                <span className="text-sm">{profile.full_name}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {profile.email}
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onNavigate("/profile")} className="gap-2">
+                <UserIcon className="h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                Appearance
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onToggleTheme();
+                }}
+                className="gap-2"
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+                <kbd className="kbd ml-auto">⌘⇧D</kbd>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onToggleDensity();
+                }}
+                className="gap-2"
+                aria-label={
+                  density === "compact"
+                    ? "Switch to comfortable density"
+                    : "Switch to compact density"
+                }
+              >
+                <Rows3 className="h-4 w-4" />
+                <span>{density === "compact" ? "Comfortable density" : "Compact density"}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onSignOut} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    </header>
   );
 }

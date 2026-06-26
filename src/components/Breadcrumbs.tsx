@@ -1,17 +1,6 @@
 import { ChevronRight, Home } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-
-const routeLabels: Record<string, string> = {
-  "/": "Dashboard",
-  "/tasks": "My Tasks",
-  "/assigned-projects": "Assigned Projects",
-  "/owned-projects": "Projects I Own",
-  "/public-projects": "Public Projects",
-  "/completed-projects": "Completed Projects",
-  "/ai-assistant": "AI Assistant",
-  "/admin": "Settings",
-  "/diagnostics": "Diagnostics",
-};
+import { routeLabels } from "@/lib/routeLabels";
 
 export function Breadcrumbs() {
   const { pathname } = useLocation();

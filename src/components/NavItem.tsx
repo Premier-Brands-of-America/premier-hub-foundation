@@ -26,12 +26,7 @@ export function NavItem({ item, collapsed }: { item: NavItemConfig; collapsed: b
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={location.pathname === item.to} tooltip={item.label}>
-        <NavLink
-          to={item.to}
-          end
-          className="hover:bg-sidebar-accent/50"
-          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-        >
+        <NavLink to={item.to} end activeClassName="font-medium">
           <Icon className="h-4 w-4 shrink-0" />
           {!collapsed && <span>{item.label}</span>}
         </NavLink>

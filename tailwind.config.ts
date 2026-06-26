@@ -16,6 +16,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['var(--font-sans)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['var(--font-display)', 'Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       transitionTimingFunction: {

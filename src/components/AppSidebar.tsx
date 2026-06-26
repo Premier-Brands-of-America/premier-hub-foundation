@@ -80,18 +80,24 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Brand */}
-        <div className={`px-4 py-5 modern:py-6 border-b border-sidebar-border ${collapsed ? "px-2 py-3" : ""}`}>
-          {collapsed ? (
-            <div className="flex items-center justify-center">
-              <BrandLogo size="sm" className="modern:opacity-90" />
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <BrandLogo size="sm" className="modern:scale-110 modern:opacity-90 modern:origin-left" />
-              <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-sidebar-primary truncate">{brand.appName}</h2>
-              </div>
+        {/* Brand — a premium product rail header. The crimson hairline under
+            the logo echoes the signature edge-rail. */}
+        <div
+          className={`flex items-center border-b border-sidebar-border ${
+            collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-4"
+          }`}
+        >
+          <div className="relative flex items-center justify-center shrink-0">
+            <BrandLogo size="sm" className="opacity-95" />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-sm font-semibold leading-tight text-sidebar-foreground truncate">
+                {brand.appName}
+              </h2>
+              <p className="text-[11px] leading-tight text-sidebar-muted truncate">
+                {brand.companyName}
+              </p>
             </div>
           )}
         </div>
@@ -108,7 +114,7 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                   >
-                    <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                    <NavLink to={item.url} end activeClassName="font-medium">
                       <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -153,7 +159,7 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                   >
-                    <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                    <NavLink to={item.url} end activeClassName="font-medium">
                       <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -177,7 +183,7 @@ export function AppSidebar() {
                       isActive={isActive(item.url)}
                       tooltip={item.title}
                     >
-                      <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                      <NavLink to={item.url} end activeClassName="font-medium">
                         <item.icon className="h-4 w-4 shrink-0" />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
