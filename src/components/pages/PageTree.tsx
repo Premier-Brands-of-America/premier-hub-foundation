@@ -62,8 +62,10 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm hover:bg-accent/60",
-                activeId === node.id && "bg-accent text-accent-foreground font-medium",
+                "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm transition-colors duration-fast hover:bg-accent",
+                activeId === node.id
+                  ? "bg-primary/10 font-medium text-foreground"
+                  : "text-muted-foreground",
               )}
               aria-current={activeId === node.id ? "page" : undefined}
             >
@@ -82,14 +84,16 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onSelect(node.id)}
-                className="flex-1 flex items-center gap-1.5 min-w-0 text-left"
+                className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
               >
-                <span className="text-base leading-none">{node.icon ?? <FileText className="h-3.5 w-3.5" />}</span>
+                <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-base leading-none">
+                  {node.icon ?? <FileText className="h-3.5 w-3.5 opacity-70" />}
+                </span>
                 <span className="truncate">{node.title || "Untitled"}</span>
               </button>
               <button
                 type="button"
-                className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-foreground"
+                className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity duration-fast hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
                 onClick={(e) => { e.stopPropagation(); handleCreate(node.id); }}
                 aria-label="Add child page"
               >
@@ -119,18 +123,30 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-2 border-b">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pages</h2>
-        <Button size="sm" variant="ghost" onClick={() => handleCreate(null)} aria-label="New page">
+    <div className="flex h-full flex-col">
+      <div className="flex h-12 items-center justify-between border-b border-border px-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          All pages
+        </h2>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          onClick={() => handleCreate(null)}
+          aria-label="New page"
+        >
           <Plus className="h-3.5 w-3.5" />
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <ul role="tree" className="p-2 space-y-0.5">
-          {isLoading && <li className="text-xs text-muted-foreground px-2 py-1">Loading…</li>}
+        <ul role="tree" className="space-y-0.5 p-2">
+          {isLoading && <li className="px-2 py-1 text-xs text-muted-foreground">Loading pages…</li>}
           {!isLoading && roots.length === 0 && (
-            <li className="text-xs text-muted-foreground px-2 py-1">No pages yet. Click + to create one.</li>
+            <li className="px-2 py-6 text-center text-xs text-muted-foreground">
+              No pages yet.
+              <br />
+              Use <span className="font-medium text-foreground">+</span> to create your first one.
+            </li>
           )}
           {roots.map(renderNode)}
         </ul>

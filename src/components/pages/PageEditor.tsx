@@ -146,25 +146,56 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
     ? `Saved · ${savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
     : value !== lastSavedRef.current ? "Saving…" : "All changes saved";
 
+  const saving = !readOnly && value !== lastSavedRef.current;
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-1 pb-1">
-        <span className="text-[11px] text-muted-foreground">{readOnly ? "Read-only" : savedLabel}</span>
-        <span className="text-[11px] text-muted-foreground">Type <kbd>/</kbd> for blocks · <kbd>[[</kbd> or <kbd>@</kbd> to link</span>
+    <div className="flex h-full flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
+        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          {readOnly ? (
+            "Read-only"
+          ) : (
+            <>
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  saving ? "bg-[hsl(var(--status-warning))]" : "bg-[hsl(var(--status-done))]",
+                )}
+                aria-hidden
+              />
+              {savedLabel}
+            </>
+          )}
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <kbd className="kbd">/</kbd> blocks
+          <span className="text-border">·</span>
+          <kbd className="kbd">[[</kbd> or <kbd className="kbd">@</kbd> to link
+        </span>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onBlur={flush}
-          readOnly={readOnly}
-          placeholder="Start writing… / for blocks, [[ to link pages/tasks/projects, /meet for meeting notes."
-          className={cn("font-mono text-sm resize-none h-full min-h-[400px]")}
-          aria-label="Page body"
-        />
-        <div className="prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-md border bg-muted/30 p-4 h-full min-h-[400px]">
-          {renderBody(value, titleMap)}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="flex min-h-0 flex-col">
+          <span className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Source
+          </span>
+          <Textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleChange}
+            onBlur={flush}
+            readOnly={readOnly}
+            placeholder="Start writing… / for blocks, [[ to link pages, tasks, and projects, /meet for meeting notes."
+            className={cn("h-full min-h-[400px] flex-1 resize-none font-mono text-sm leading-relaxed")}
+            aria-label="Page body"
+          />
+        </div>
+        <div className="flex min-h-0 flex-col">
+          <span className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Preview
+          </span>
+          <div className="prose prose-sm dark:prose-invert h-full min-h-[400px] max-w-none flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-4">
+            {renderBody(value, titleMap)}
+          </div>
         </div>
       </div>
 
@@ -190,7 +221,7 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
 
 /** Split out the `view`/`meet` fenced blocks and render the rest as markdown. */
 function renderBody(md: string, titleMap: Record<string, string>): React.ReactNode {
-  if (!md.trim()) return <p className="text-muted-foreground">Nothing yet.</p>;
+  if (!md.trim()) return <p className="text-muted-foreground">Your formatted page appears here as you write.</p>;
   const re = /```(view|meet)\n([\s\S]*?)```\n?/g;
   const parts: React.ReactNode[] = [];
   let last = 0;

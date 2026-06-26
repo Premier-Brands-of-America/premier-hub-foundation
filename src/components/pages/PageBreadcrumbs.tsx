@@ -6,8 +6,8 @@ export function PageBreadcrumbs({ pageId }: { pageId: string }) {
   const { data = [] } = usePageAncestors(pageId);
   if (data.length === 0) return null;
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-      <Link to="/pages" className="hover:text-foreground">Pages</Link>
+    <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1 text-xs text-muted-foreground">
+      <Link to="/pages" className="transition-colors duration-fast hover:text-foreground">Pages</Link>
       {data.map((node, i) => (
         <span key={node.id} className="flex items-center gap-1">
           <ChevronRight className="h-3 w-3" />

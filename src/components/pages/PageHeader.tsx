@@ -42,21 +42,29 @@ export function PageHeader({ page }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-2xl px-2" aria-label="Pick icon">
-              {page.icon ?? <Smile className="h-5 w-5 text-muted-foreground" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mt-1 h-11 w-11 shrink-0 rounded-lg text-3xl hover:bg-accent"
+              aria-label="Pick page icon"
+            >
+              {page.icon ?? <Smile className="h-6 w-6 text-muted-foreground" />}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-56 p-2">
+            <p className="px-1 pb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Page icon
+            </p>
             <div className="grid grid-cols-6 gap-1">
               {EMOJIS.map((e) => (
                 <button
                   key={e}
                   type="button"
                   onClick={() => updateMeta.mutate({ icon: e })}
-                  className="text-xl rounded hover:bg-accent p-1"
+                  className="rounded-md p-1 text-xl transition-colors duration-fast hover:bg-accent"
                 >
                   {e}
                 </button>
@@ -65,10 +73,10 @@ export function PageHeader({ page }: Props) {
             <Button
               variant="ghost"
               size="sm"
-              className="w-full mt-2"
+              className="mt-2 w-full text-muted-foreground"
               onClick={() => updateMeta.mutate({ icon: null })}
             >
-              Remove
+              Remove icon
             </Button>
           </PopoverContent>
         </Popover>
@@ -78,11 +86,11 @@ export function PageHeader({ page }: Props) {
           onBlur={flushTitle}
           onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
           placeholder="Untitled"
-          className="text-3xl font-bold border-0 px-1 focus-visible:ring-0 shadow-none h-auto"
+          className="h-auto flex-1 border-0 bg-transparent px-1 py-1 font-display text-3xl font-semibold leading-tight tracking-tight shadow-none focus-visible:ring-0"
           maxLength={200}
         />
         <Select value={page.visibility} onValueChange={(v) => handleVisibility(v as PageVisibility)}>
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="mt-1 h-9 w-32 shrink-0 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -34,7 +34,8 @@ function BlockError() {
   return (
     <Card className="not-prose my-3 border-dashed">
       <CardContent className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
-        <AlertTriangle className="h-3.5 w-3.5" /> Invalid embed config.
+        <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--status-warning))]" />
+        This linked view has an invalid configuration.
       </CardContent>
     </Card>
   );
@@ -44,21 +45,35 @@ function Shell({
   title,
   icon: Icon,
   count,
+  tint,
   children,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   count: number;
+  tint: "task" | "project";
   children: React.ReactNode;
 }) {
+  const tintVar = tint === "task" ? "--entity-task" : "--entity-project";
   return (
     <Card className="not-prose my-3">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-md"
+            style={{
+              backgroundColor: `hsl(var(${tintVar}) / 0.12)`,
+              color: `hsl(var(${tintVar}))`,
+            }}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </span>
           {title}
+          <span className="text-[11px] font-normal uppercase tracking-wide text-muted-foreground">
+            Linked view
+          </span>
         </CardTitle>
-        <Badge variant="secondary">{count}</Badge>
+        <span className="stat-numeral text-sm text-muted-foreground">{count}</span>
       </CardHeader>
       <CardContent className="space-y-1">{children}</CardContent>
     </Card>
@@ -83,7 +98,7 @@ function TasksView({ config }: { config: ViewConfig }) {
   }, [tasks, config.filter]);
 
   return (
-    <Shell title={config.title || "Tasks"} icon={LayoutList} count={rows.length}>
+    <Shell title={config.title || "Tasks"} icon={LayoutList} count={rows.length} tint="task">
       {isLoading && <p className="text-xs text-muted-foreground py-1">Loading…</p>}
       {!isLoading && rows.length === 0 && <Empty />}
       {rows.map((t) => (
@@ -91,7 +106,7 @@ function TasksView({ config }: { config: ViewConfig }) {
           key={t.id}
           type="button"
           onClick={() => navigate("/tasks")}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent/50 transition"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors duration-fast hover:bg-accent"
         >
           <CheckSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className="flex-1 truncate">{t.title}</span>
@@ -113,7 +128,7 @@ function ProjectsView({ config }: { config: ViewConfig }) {
   }, [projects, config.filter]);
 
   return (
-    <Shell title={config.title || "Projects"} icon={Folder} count={rows.length}>
+    <Shell title={config.title || "Projects"} icon={Folder} count={rows.length} tint="project">
       {isLoading && <p className="text-xs text-muted-foreground py-1">Loading…</p>}
       {!isLoading && rows.length === 0 && <Empty />}
       {rows.map((p) => (
@@ -121,7 +136,7 @@ function ProjectsView({ config }: { config: ViewConfig }) {
           key={p.id}
           type="button"
           onClick={() => navigate("/owned-projects")}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent/50 transition"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors duration-fast hover:bg-accent"
         >
           <Folder className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className="flex-1 truncate">{p.title}</span>

@@ -41,7 +41,8 @@ export function MeetingBlock({ raw }: { raw: string }) {
     return (
       <Card className="not-prose my-3 border-dashed">
         <CardContent className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5" /> Invalid meeting block.
+          <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--status-warning))]" />
+          This meeting block has an invalid configuration.
         </CardContent>
       </Card>
     );
@@ -53,9 +54,11 @@ export function MeetingBlock({ raw }: { raw: string }) {
 
   return (
     <Card className="not-prose my-3">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Video className="h-3.5 w-3.5 text-muted-foreground" />
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[hsl(var(--entity-request)/0.12)] text-[hsl(var(--entity-request))]">
+            <Video className="h-3.5 w-3.5" />
+          </span>
           {data.subject || "Meeting notes"}
         </CardTitle>
         <Badge variant={status === "failed" ? "destructive" : "secondary"}>{STATUS_LABEL[status]}</Badge>
