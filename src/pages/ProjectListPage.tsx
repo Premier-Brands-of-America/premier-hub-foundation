@@ -1,18 +1,22 @@
 import { useState, useMemo } from "react";
-import { Plus, FolderOpen, Loader2 } from "lucide-react";
+import { Plus, FolderOpen, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectsFlat } from "@/hooks/use-queries";
 import { useRealtimeInvalidation } from "@/hooks/use-realtime";
 import { ProjectListSkeleton } from "@/components/projects/ProjectListSkeleton";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/PageHeader";
 
 import * as projectService from "@/services/projectService";
 import { CreateProjectModal } from "@/components/projects/CreateProjectModal";
 import { ProjectListItem } from "@/components/projects/ProjectListItem";
 import { ProjectDetailPanel } from "@/components/projects/ProjectDetailPanel";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 type SortOption = "newest" | "oldest" | "due_date" | "title";
 
@@ -129,51 +133,92 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
   const config = viewConfig[mode];
   const remaining = total - allProjects.length;
 
+  // Stat band counts (across all loaded projects, before view/search filtering).
+  const stats = useMemo(() => {
+    const active = allProjects.filter((p) => p.status === "active").length;
+    const complete = allProjects.filter((p) => p.status === "complete").length;
+    return { total: allProjects.length, active, complete };
+  }, [allProjects]);
+
   return (
     <div className="flex h-[calc(100vh-4rem)]">
-      <div className={`flex flex-col ${selectedProject ? "hidden md:flex md:w-1/2 xl:w-3/5" : "w-full"} transition-all`}>
-        <div className="px-4 sm:px-6 py-4 border-b border-border bg-card">
-          <div className="flex items-center justify-between mb-3">
+      <PageHeader
+        title={config.title}
+        subtitle={config.description}
+        actions={
+          <Button onClick={() => setShowCreate(true)} size="sm" className="gap-2">
+            <Plus className="h-3.5 w-3.5" /> New project
+          </Button>
+        }
+      />
+
+      <div className={cn("flex flex-col", selectedProject ? "hidden md:flex md:w-1/2 xl:w-3/5" : "w-full", "transition-all")}>
+        {/* Toolbar: crimson edge-rail stat band + search/sort */}
+        <div className="border-b border-border bg-card px-4 py-4 sm:px-6">
+          {/* The one bold element — a crimson edge-rail stat band. */}
+          <section className="edge-rail flex items-center gap-6">
             <div>
-              <h1 className="text-lg font-semibold text-foreground tracking-tight">
-                {config.title} {viewProjects.length > 0 && <span className="text-muted-foreground font-normal">({viewProjects.length})</span>}
-              </h1>
-              <p className="text-xs text-muted-foreground">{config.description}</p>
+              <p className="stat-numeral text-2xl leading-none text-foreground">{stats.total}</p>
+              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Loaded</p>
             </div>
-            <Button onClick={() => setShowCreate(true)} className="gap-2" size="sm">
-              <Plus className="h-3.5 w-3.5" /> New Project
-            </Button>
+            <div>
+              <p className="stat-numeral text-2xl leading-none text-foreground">{stats.active}</p>
+              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Active</p>
+            </div>
+            <div>
+              <p className="stat-numeral text-2xl leading-none text-[hsl(var(--status-done))]">{stats.complete}</p>
+              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Complete</p>
+            </div>
+            <div className="ml-auto text-right">
+              <p className="stat-numeral text-2xl leading-none text-[hsl(var(--entity-project))]">{viewProjects.length}</p>
+              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">In view</p>
+            </div>
+          </section>
+
+          {/* Search + sort */}
+          <div className="mt-4 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search projects…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 pl-8 text-sm"
+                aria-label="Search projects"
+              />
+            </div>
+            <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+              <SelectTrigger className="h-8 w-[120px] text-xs" aria-label="Sort projects">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <SearchFilterBar
-            search={search}
-            onSearchChange={setSearch}
-            searchPlaceholder="Search projects..."
-            sortValue={sort}
-            onSortChange={(v) => setSort(v as SortOption)}
-            sortOptions={SORT_OPTIONS}
-          />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5">
+        {/* List */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {loading ? (
             <ProjectListSkeleton />
           ) : viewProjects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-center px-4">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                <FolderOpen className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground mb-1">{config.emptyMessage}</p>
-              <p className="text-xs text-muted-foreground mb-3 max-w-[280px]">
-                {search ? "Try a different search term." : config.emptyHint}
-              </p>
-              {!search && (mode === "owned") && (
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
-                  <Plus className="h-3 w-3" /> Create Project
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              icon={<FolderOpen className="h-6 w-6" />}
+              title={search ? "No matching projects" : config.emptyMessage}
+              description={search ? "Try a different search term." : config.emptyHint}
+              action={
+                !search && mode === "owned" ? (
+                  <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                    <Plus className="h-3.5 w-3.5" /> Create project
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
-            <>
+            <div className="space-y-2">
               {viewProjects.map((project) => (
                 <ProjectListItem
                   key={project.id}
@@ -193,14 +238,14 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
                     className="gap-2"
                   >
                     {isFetchingNextPage ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...</>
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</>
                     ) : (
                       `Load more (${remaining} remaining)`
                     )}
                   </Button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

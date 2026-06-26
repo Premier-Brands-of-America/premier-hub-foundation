@@ -288,10 +288,28 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
 
   return (
     <div className="flex flex-col h-full border-l border-border bg-card">
-      {/* ─── Header ─── */}
-      <div className="px-4 pt-4 pb-3 border-b border-border space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+      {/* ─── Header bar ─── */}
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--entity-project))]" aria-hidden />
+          <h3 className="truncate text-sm font-semibold text-foreground">Project detail</h3>
+          {saving && <span className="shrink-0 text-xs text-muted-foreground">Saving…</span>}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="h-9 w-9 text-muted-foreground hover:text-foreground"
+          aria-label="Close project detail"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* ─── Title + meta block ─── */}
+      <div className="border-b border-border px-4 py-3 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
             {editingHeader ? (
               <Input
                 value={title}
@@ -301,48 +319,54 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
                 autoFocus
               />
             ) : (
-              <h2 className="text-base font-semibold text-foreground truncate">{project.title}</h2>
+              <h2 className="text-base font-semibold text-foreground truncate font-display tracking-tight">{project.title}</h2>
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {canEdit && !editingHeader && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingHeader(true)} title="Edit">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setEditingHeader(true)} aria-label="Edit project">
                 <Edit3 className="h-3.5 w-3.5" />
               </Button>
             )}
             {editingHeader && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSaveHeader} title="Save">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleSaveHeader} aria-label="Save changes">
                 <Save className="h-3.5 w-3.5" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 
-        {/* Badges & actions row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="gap-1 text-xs">
+        {/* Status / visibility / owner badges */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-[hsl(var(--entity-project)/0.12)] px-2.5 py-0.5 text-[11px] font-medium text-[hsl(var(--entity-project))]">
             {project.visibility === "public" ? <><Globe className="h-3 w-3" /> Public</> : <><Lock className="h-3 w-3" /> Private</>}
-          </Badge>
-          <Badge variant={project.status === "complete" ? "secondary" : "outline"} className="text-xs">
-            {project.status === "complete" ? "Complete" : "Active"}
-          </Badge>
-          {isOwner && <Badge variant="outline" className="gap-1 text-xs"><Crown className="h-3 w-3" /> Owner</Badge>}
-          {saving && <span className="text-[10px] text-muted-foreground">Saving...</span>}
+          </span>
+          {project.status === "complete" ? (
+            <span className="inline-flex items-center rounded-full border border-transparent bg-[hsl(var(--status-done)/0.14)] px-2.5 py-0.5 text-[11px] font-medium text-[hsl(var(--status-done))]">
+              Complete
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full border border-transparent bg-[hsl(var(--status-warning)/0.14)] px-2.5 py-0.5 text-[11px] font-medium text-[hsl(var(--status-warning))]">
+              Active
+            </span>
+          )}
+          {isOwner && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              <Crown className="h-3 w-3" /> Owner
+            </span>
+          )}
         </div>
 
-        {/* Header action buttons */}
+        {/* Header action controls */}
         <div className="flex items-center gap-2 flex-wrap">
           {canEdit && (
-            <Button size="sm" variant={project.status === "complete" ? "outline" : "default"} className="gap-1.5 h-7 text-xs" onClick={handleToggleStatus}>
+            <Button size="sm" variant={project.status === "complete" ? "outline" : "default"} className="gap-1.5 h-8 text-xs" onClick={handleToggleStatus}>
               {project.status === "complete" ? <><RotateCcw className="h-3 w-3" /> Reopen</> : <><Check className="h-3 w-3" /> Complete</>}
             </Button>
           )}
           {canEdit && (
             <Select value={visibility} onValueChange={(v) => { setVisibility(v as any); saveField("visibility", v); }}>
-              <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">Private</SelectItem>
                 <SelectItem value="public">Public</SelectItem>
@@ -352,7 +376,7 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
           {/* Ownership transfer: only owner/admin, pick from stakeholders */}
           {(isOwner || isAdmin) && stakeholders.length > 1 && (
             <Select value={project.owner_id} onValueChange={handleChangeOwnership}>
-              <SelectTrigger className="h-7 text-xs w-auto gap-1">
+              <SelectTrigger className="h-8 text-xs w-auto gap-1">
                 <Crown className="h-3 w-3" />
                 <span className="max-w-[100px] truncate">{getName(project.owner_id)}</span>
               </SelectTrigger>
@@ -367,7 +391,7 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
           )}
         </div>
 
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           Owner: {getName(project.owner_id)} · Created {format(new Date(project.created_at), "MMM d, yyyy")}
           {project.completed_at && ` · Completed ${format(new Date(project.completed_at), "MMM d, yyyy")}`}
         </p>
@@ -446,9 +470,9 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
             {stakeholders.length > 0 && (
               <div className="space-y-1.5">
                 {stakeholders.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2.5 py-2 group">
+                  <div key={s.id} className="flex items-center justify-between text-sm rounded-md border border-border bg-muted/30 px-2.5 py-2 group">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-[hsl(var(--entity-person)/0.14)] flex items-center justify-center text-[10px] font-medium text-[hsl(var(--entity-person))] shrink-0">
                         {(s.full_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <Tooltip delayDuration={300}>
@@ -527,7 +551,7 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
             {updates.length > 0 && (
               <div className="space-y-2">
                 {updates.map((u) => (
-                  <div key={u.id} className="bg-muted/50 rounded p-3 space-y-1.5 group">
+                  <div key={u.id} className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5 group">
                     {editingUpdateId === u.id ? (
                       <div className="space-y-2">
                         <Textarea
@@ -592,9 +616,11 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
             {attachments.length > 0 && (
               <div className="space-y-1.5">
                 {attachments.map((att) => (
-                  <div key={att.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1.5 group">
-                    <button onClick={() => handleDownloadAttachment(att)} className="text-foreground hover:text-accent truncate text-left">
-                      {att.file_name} <span className="text-muted-foreground text-xs ml-1">({formatBytes(att.file_size)})</span>
+                  <div key={att.id} className="flex items-center justify-between text-sm rounded-md border border-border bg-muted/30 px-2.5 py-1.5 group">
+                    <button onClick={() => handleDownloadAttachment(att)} className="inline-flex items-center gap-1.5 text-foreground hover:text-primary truncate text-left transition-colors">
+                      <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{att.file_name}</span>
+                      <span className="text-muted-foreground text-xs">({formatBytes(att.file_size)})</span>
                     </button>
                     {canEdit && (
                       <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveAttachment(att)}>
@@ -607,11 +633,11 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
             )}
             {canEdit && (
               <>
-                <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-accent hover:underline">
+                <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary hover:underline">
                   <Plus className="h-3 w-3" /> Upload file
                   <input type="file" accept={FILE_EXTENSIONS} onChange={handleFileUpload} className="hidden" />
                 </label>
-                <p className="text-[10px] text-muted-foreground">Max 25 MB. PDF, Office, images, CSV, TXT</p>
+                <p className="text-[11px] text-muted-foreground">Max 25 MB. PDF, Office, images, CSV, TXT</p>
               </>
             )}
           </section>
@@ -626,9 +652,9 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
             {links.length > 0 && (
               <div className="space-y-1.5">
                 {links.map((l) => (
-                  <div key={l.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1.5 group">
-                    <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate flex items-center gap-1">
-                      <ExternalLink className="h-3 w-3 shrink-0" />{l.label || l.url}
+                  <div key={l.id} className="flex items-center justify-between text-sm rounded-md border border-border bg-muted/30 px-2.5 py-1.5 group">
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate flex items-center gap-1.5">
+                      <ExternalLink className="h-3 w-3 shrink-0" /><span className="truncate">{l.label || l.url}</span>
                     </a>
                     {canEdit && (
                       <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveLink(l)}>

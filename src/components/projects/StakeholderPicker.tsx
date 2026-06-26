@@ -133,7 +133,7 @@ export function StakeholderPicker({ existingUserIds, onSelect }: StakeholderPick
                       className="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted transition-colors flex items-center gap-2"
                       onClick={() => handleSelect(p)}
                     >
-                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-medium text-muted-foreground shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-[hsl(var(--entity-person)/0.14)] flex items-center justify-center text-[11px] font-medium text-[hsl(var(--entity-person))] shrink-0">
                         {(p.full_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
