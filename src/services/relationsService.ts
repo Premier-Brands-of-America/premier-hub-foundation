@@ -182,6 +182,61 @@ export async function searchEntities(
   return results.slice(0, limit);
 }
 
+// ─── Resolve titles for a set of entity refs (for rendering [[ ]] wikilinks) ───
+export async function resolveEntities(
+  refs: Array<{ type: EntityType; id: string }>,
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  if (refs.length === 0 || IS_PREVIEW) return out;
+
+  const idsOf = (type: EntityType) => refs.filter((r) => r.type === type).map((r) => r.id);
+  const projectIds = idsOf("project");
+  const taskIds = idsOf("task");
+  const pageIds = idsOf("page");
+  const requestIds = idsOf("request");
+  const userIds = idsOf("user");
+
+  const jobs: Promise<void>[] = [];
+  if (projectIds.length)
+    jobs.push(
+      (async () => {
+        const { data } = await supabase.from("projects").select("id,title").in("id", projectIds);
+        (data ?? []).forEach((r) => { out[`project:${r.id}`] = r.title ?? ""; });
+      })(),
+    );
+  if (taskIds.length)
+    jobs.push(
+      (async () => {
+        const { data } = await supabase.from("tasks").select("id,title").in("id", taskIds);
+        (data ?? []).forEach((r) => { out[`task:${r.id}`] = r.title ?? ""; });
+      })(),
+    );
+  if (pageIds.length)
+    jobs.push(
+      (async () => {
+        const { data } = await supabase.from("pages").select("id,title").in("id", pageIds);
+        (data ?? []).forEach((r) => { out[`page:${r.id}`] = r.title ?? ""; });
+      })(),
+    );
+  if (requestIds.length)
+    jobs.push(
+      (async () => {
+        const { data } = await supabase.from("requests").select("id,title").in("id", requestIds);
+        (data ?? []).forEach((r) => { out[`request:${r.id}`] = r.title ?? ""; });
+      })(),
+    );
+  if (userIds.length)
+    jobs.push(
+      (async () => {
+        const { data } = await supabase.from("profiles").select("user_id,full_name").in("user_id", userIds);
+        (data ?? []).forEach((r) => { out[`user:${r.user_id}`] = r.full_name ?? ""; });
+      })(),
+    );
+
+  await Promise.all(jobs);
+  return out;
+}
+
 // pages search appended via dynamic import to avoid circulars
 export async function searchPages(query: string, limit = 20): Promise<RelationRef[]> {
   if (!query.trim() || IS_PREVIEW) return [];

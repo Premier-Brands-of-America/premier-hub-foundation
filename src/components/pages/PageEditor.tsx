@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { Textarea } from "@/components/ui/textarea";
 import { MentionPicker } from "@/components/pages/MentionPicker";
-import type { RelationRef } from "@/types/relations";
+import { SlashMenu } from "@/components/pages/SlashMenu";
+import { MentionLink } from "@/components/pages/MentionLink";
+import { LinkedViewBlock } from "@/components/pages/LinkedViewBlock";
+import { MeetingBlock } from "@/components/pages/MeetingBlock";
+import { useEntityTitles } from "@/hooks/use-entity-titles";
+import { MENTION_TOKEN_RE, mentionToken, parseMentionRefs } from "@/lib/entity-links";
+import { slashInsertion, type SlashCommand } from "@/lib/slash-commands";
+import type { RelationRef, EntityType } from "@/types/relations";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -12,15 +19,21 @@ interface Props {
   readOnly?: boolean;
 }
 
+type MenuKind = "mention" | "wikilink" | "slash";
+interface MenuState {
+  kind: MenuKind;
+  start: number; // index of the trigger's first char in `value`
+  end: number; // caret index just after the trigger
+}
+
 const AUTOSAVE_MS = 800;
 
 export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props) {
   const [value, setValue] = useState(initialContent);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [mentionOpen, setMentionOpen] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState("");
+  const [menu, setMenu] = useState<MenuState | null>(null);
+  const [menuQuery, setMenuQuery] = useState("");
   const [anchor, setAnchor] = useState<{ x: number; y: number } | undefined>();
-  const mentionStartRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<number>();
   const lastSavedRef = useRef<string>(initialContent);
@@ -30,6 +43,7 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
     setValue(initialContent);
     lastSavedRef.current = initialContent;
     setSavedAt(null);
+    setMenu(null);
   }, [pageId, initialContent]);
 
   const flush = useCallback(() => {
@@ -56,42 +70,76 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
   // Flush on unmount / page change
   useEffect(() => () => { flush(); }, [flush]);
 
+  // Resolve titles for the [[ ]] wikilinks present in the body
+  const refs = useMemo(() => parseMentionRefs(value), [value]);
+  const { data: titleMap = {} } = useEntityTitles(refs);
+
+  const openMenu = (kind: MenuKind, query: string, start: number, end: number) => {
+    setMenu({ kind, start, end });
+    setMenuQuery(query);
+    const rect = textareaRef.current?.getBoundingClientRect();
+    setAnchor(rect ? { x: rect.left + 24, y: rect.top + 24 } : undefined);
+  };
+
+  const closeMenu = () => { setMenu(null); setMenuQuery(""); };
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
     setValue(v);
     const caret = e.target.selectionStart;
-    // Detect @mention trigger
     const upto = v.slice(0, caret);
-    const m = upto.match(/(?:^|\s)@([\w-]*)$/);
-    if (m) {
-      mentionStartRef.current = caret - m[1].length - 1;
-      setMentionQuery(m[1]);
-      const rect = textareaRef.current?.getBoundingClientRect();
-      setAnchor(rect ? { x: rect.left + 24, y: rect.top + 24 } : undefined);
-      setMentionOpen(true);
-    } else if (mentionOpen) {
-      setMentionOpen(false);
-    }
+    const wl = upto.match(/\[\[([^[\]\n]*)$/); // [[ not yet closed
+    const at = upto.match(/(?:^|\s)@([\w-]*)$/);
+    const sl = upto.match(/(?:^|\s)\/([\w]*)$/);
+    if (wl) openMenu("wikilink", wl[1], caret - wl[1].length - 2, caret);
+    else if (at) openMenu("mention", at[1], caret - at[1].length - 1, caret);
+    else if (sl) openMenu("slash", sl[1], caret - sl[1].length - 1, caret);
+    else if (menu) closeMenu();
   };
 
-  const handleMentionSelect = (ref: RelationRef) => {
-    const start = mentionStartRef.current;
-    if (start == null || !textareaRef.current) { setMentionOpen(false); return; }
-    const ta = textareaRef.current;
-    const caret = ta.selectionStart;
-    const before = value.slice(0, start);
-    const after = value.slice(caret);
-    const token = `[[${ref.entityType}:${ref.entityId}]] `;
-    const next = before + token + after;
-    setValue(next);
-    setMentionOpen(false);
-    setMentionQuery("");
-    mentionStartRef.current = null;
+  const placeCaret = (pos: number) => {
     requestAnimationFrame(() => {
+      const ta = textareaRef.current;
+      if (!ta) return;
       ta.focus();
-      const pos = before.length + token.length;
       ta.setSelectionRange(pos, pos);
     });
+  };
+
+  // Mention + wikilink both resolve to a [[type:id]] token
+  const handleMentionSelect = (ref: RelationRef) => {
+    if (!menu) return;
+    const token = mentionToken(ref.entityType, ref.entityId) + " ";
+    const before = value.slice(0, menu.start);
+    const after = value.slice(menu.end);
+    setValue(before + token + after);
+    closeMenu();
+    placeCaret(before.length + token.length);
+  };
+
+  const handleSlashSelect = (cmd: SlashCommand) => {
+    if (!menu) return;
+    const ins = slashInsertion(cmd.id);
+    const before = value.slice(0, menu.start);
+    const after = value.slice(menu.end);
+
+    // "/link" hands off to the wikilink picker
+    if (ins === "link") {
+      const token = "[[";
+      const pos = before.length + token.length;
+      setValue(before + token + after);
+      setMenuQuery("");
+      setMenu({ kind: "wikilink", start: before.length, end: pos });
+      placeCaret(pos);
+      return;
+    }
+
+    const prefix = ins.block && before.length > 0 && !before.endsWith("\n") ? "\n" : "";
+    const text = prefix + ins.text;
+    setValue(before + text + after);
+    closeMenu();
+    const caretPos = before.length + (ins.caret != null ? prefix.length + ins.caret : text.length);
+    placeCaret(caretPos);
   };
 
   const savedLabel = savedAt
@@ -102,7 +150,7 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-1 pb-1">
         <span className="text-[11px] text-muted-foreground">{readOnly ? "Read-only" : savedLabel}</span>
-        <span className="text-[11px] text-muted-foreground">Type @ to mention</span>
+        <span className="text-[11px] text-muted-foreground">Type <kbd>/</kbd> for blocks · <kbd>[[</kbd> or <kbd>@</kbd> to link</span>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
         <Textarea
@@ -111,52 +159,87 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
           onChange={handleChange}
           onBlur={flush}
           readOnly={readOnly}
-          placeholder="Start writing… use @ to mention pages, tasks, projects, requests."
+          placeholder="Start writing… / for blocks, [[ to link pages/tasks/projects, /meet for meeting notes."
           className={cn("font-mono text-sm resize-none h-full min-h-[400px]")}
           aria-label="Page body"
         />
         <div className="prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-md border bg-muted/30 p-4 h-full min-h-[400px]">
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p>{renderMentions(children)}</p>,
-              li: ({ children }) => <li>{renderMentions(children)}</li>,
-            }}
-          >
-            {value || "_Nothing yet._"}
-          </ReactMarkdown>
+          {renderBody(value, titleMap)}
         </div>
       </div>
+
       <MentionPicker
-        open={mentionOpen}
-        query={mentionQuery}
-        onQueryChange={setMentionQuery}
+        open={menu?.kind === "mention" || menu?.kind === "wikilink"}
+        query={menuQuery}
+        onQueryChange={setMenuQuery}
         onSelect={handleMentionSelect}
-        onClose={() => setMentionOpen(false)}
+        onClose={closeMenu}
+        anchor={anchor}
+      />
+      <SlashMenu
+        open={menu?.kind === "slash"}
+        query={menuQuery}
+        onQueryChange={setMenuQuery}
+        onSelect={handleSlashSelect}
+        onClose={closeMenu}
         anchor={anchor}
       />
     </div>
   );
 }
 
-function renderMentions(children: React.ReactNode): React.ReactNode {
+/** Split out the `view`/`meet` fenced blocks and render the rest as markdown. */
+function renderBody(md: string, titleMap: Record<string, string>): React.ReactNode {
+  if (!md.trim()) return <p className="text-muted-foreground">Nothing yet.</p>;
+  const re = /```(view|meet)\n([\s\S]*?)```\n?/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = re.exec(md))) {
+    if (m.index > last) parts.push(<Markdown key={`t${i}`} md={md.slice(last, m.index)} titleMap={titleMap} />);
+    parts.push(
+      m[1] === "view"
+        ? <LinkedViewBlock key={`b${i}`} raw={m[2]} />
+        : <MeetingBlock key={`b${i}`} raw={m[2]} />,
+    );
+    last = m.index + m[0].length;
+    i++;
+  }
+  if (last < md.length) parts.push(<Markdown key={`t${i}`} md={md.slice(last)} titleMap={titleMap} />);
+  return parts;
+}
+
+function Markdown({ md, titleMap }: { md: string; titleMap: Record<string, string> }) {
+  return (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <p>{renderMentions(children, titleMap)}</p>,
+        li: ({ children }) => <li>{renderMentions(children, titleMap)}</li>,
+      }}
+    >
+      {md}
+    </ReactMarkdown>
+  );
+}
+
+function renderMentions(children: React.ReactNode, titleMap: Record<string, string>): React.ReactNode {
   if (typeof children === "string") {
     const parts: React.ReactNode[] = [];
-    const re = /\[\[(page|project|task|request|user):([0-9a-fA-F-]{36})\]\]/g;
+    const re = new RegExp(MENTION_TOKEN_RE.source, "g");
     let last = 0;
     let m: RegExpExecArray | null;
     let i = 0;
     while ((m = re.exec(children))) {
       if (m.index > last) parts.push(children.slice(last, m.index));
-      parts.push(
-        <span key={`mention-${i++}`} className="inline-flex items-center gap-1 rounded bg-primary/10 text-primary px-1.5 py-0.5 text-xs font-medium not-prose">
-          @{m[1]}
-        </span>,
-      );
+      const type = m[1] as EntityType;
+      const id = m[2];
+      parts.push(<MentionLink key={`mention-${i++}`} type={type} id={id} title={titleMap[`${type}:${id}`]} />);
       last = m.index + m[0].length;
     }
     if (last < children.length) parts.push(children.slice(last));
     return parts;
   }
-  if (Array.isArray(children)) return children.map((c, i) => <span key={i}>{renderMentions(c)}</span>);
+  if (Array.isArray(children)) return children.map((c, i) => <span key={i}>{renderMentions(c, titleMap)}</span>);
   return children;
 }
