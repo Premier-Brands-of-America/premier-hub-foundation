@@ -24,10 +24,11 @@ export function MultiSelectChips<T extends string>({
             onClick={() => toggle(opt)}
             aria-pressed={active}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs border transition-colors",
+              "rounded-full border px-3 py-1.5 text-xs transition-colors duration-fast",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
               active
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background hover:bg-muted border-input text-foreground",
+                ? "border-primary/40 bg-[hsl(var(--primary)/0.12)] font-medium text-primary"
+                : "border-input bg-muted/40 text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground",
             )}
           >
             {opt}

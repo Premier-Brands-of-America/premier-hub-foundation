@@ -44,19 +44,27 @@ export function SharePointPanel({ requestId, folderUrl }: Props) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">SharePoint</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-[hsl(var(--entity-request)/0.12)] text-[hsl(var(--entity-request))]"
+            aria-hidden
+          >
+            <FolderSync className="h-4 w-4" />
+          </span>
+          SharePoint
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-2">
+      <CardContent className="space-y-3">
         {folderUrl ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="w-full justify-center gap-2">
             <a href={folderUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 h-4 w-4" />
+              <ExternalLink className="h-4 w-4" />
               Open folder
             </a>
           </Button>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
             No SharePoint folder yet.
           </p>
         )}
@@ -66,11 +74,12 @@ export function SharePointPanel({ requestId, folderUrl }: Props) {
             size="sm"
             onClick={handleProvision}
             disabled={busy}
+            className="w-full justify-center gap-2 text-muted-foreground hover:text-foreground"
           >
             {busy ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <FolderSync className="mr-2 h-4 w-4" />
+              <FolderSync className="h-4 w-4" />
             )}
             {folderUrl ? "Re-provision" : "Provision folder"}
           </Button>

@@ -237,7 +237,7 @@ export default function FullBriefRequest() {
       <form onSubmit={handleSubmit(onSubmit)}>
         {step < 5 && (
           <Card>
-            <CardHeader>
+            <CardHeader className="edge-rail">
               <CardTitle className="text-base">{STEP_TITLES[step]}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -426,7 +426,7 @@ export default function FullBriefRequest() {
         {step === 5 && (
           <div className="space-y-5">
             <Card>
-              <CardHeader>
+              <CardHeader className="edge-rail">
                 <CardTitle className="text-base">Approvals & Extra Context</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -461,13 +461,13 @@ export default function FullBriefRequest() {
                   <Label htmlFor="ac">Additional Context</Label>
                   <Textarea id="ac" rows={4} {...register("additional_context")} />
                 </div>
-                <div className="flex items-start gap-3 rounded-md border p-3">
+                <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
                   <Checkbox
                     id="confidential"
                     checked={watch("confidential")}
                     onCheckedChange={(c) => setValue("confidential", Boolean(c), { shouldValidate: true })}
                   />
-                  <div>
+                  <div className="space-y-0.5">
                     <Label htmlFor="confidential">This project is confidential</Label>
                     <p className="text-xs text-muted-foreground">Restrict visibility (additional rules will be enforced later).</p>
                   </div>
@@ -475,7 +475,7 @@ export default function FullBriefRequest() {
               </CardContent>
             </Card>
 
-            <h2 className="text-base font-semibold pt-2">Review & Submit</h2>
+            <h2 className="edge-rail pt-2 text-base font-semibold tracking-tight">Review &amp; Submit</h2>
             <SummarySection
               title="Basics"
               onEdit={() => setStep(0)}
@@ -530,7 +530,7 @@ export default function FullBriefRequest() {
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-6">
+        <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
           <Button type="button" variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
             Back
           </Button>

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePickerField } from "@/components/DatePickerField";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 
 const STEP_TITLES = ["Basics", "Details", "Specifics"];
 
@@ -151,16 +151,25 @@ export default function EasyRequest() {
   const errors = formState.errors;
 
   return (
-    <div className="max-w-3xl mx-auto pb-12">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b -mx-4 px-4 py-3 mb-6">
+    <div className="mx-auto max-w-3xl pb-12">
+      <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold">Easy Request — Step {step + 1} of 3</h1>
-            <p className="text-xs text-muted-foreground">{STEP_TITLES[step]}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Easy Request · Step {step + 1} of 3
+            </p>
+            <h1 className="truncate text-lg font-semibold tracking-tight">{STEP_TITLES[step]}</h1>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setShowCancel(true)}>Cancel</Button>
+          <div className="flex items-center gap-3">
+            <span className="stat-numeral hidden text-sm text-muted-foreground sm:inline">
+              {Math.round(((step + 1) / 3) * 100)}%
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => setShowCancel(true)} className="gap-1.5">
+              <X className="h-4 w-4" /> Cancel
+            </Button>
+          </div>
         </div>
-        <Progress value={((step + 1) / 3) * 100} className="mt-3 h-1.5" />
+        <Progress value={((step + 1) / 3) * 100} className="mt-3 h-1" />
       </div>
 
       {draftFound && (
@@ -183,7 +192,7 @@ export default function EasyRequest() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card>
-          <CardHeader>
+          <CardHeader className="edge-rail">
             <CardTitle className="text-base">{STEP_TITLES[step]}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -270,14 +279,23 @@ export default function EasyRequest() {
                     </Button>
                   </div>
                   {renders.fields.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No products yet.</p>
+                    <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
+                      No products yet.
+                    </p>
                   )}
                   <div className="space-y-2">
                     {renders.fields.map((f, idx) => (
                       <div key={f.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
                         <Input placeholder="Product name" {...form.register(`digital_renders.${idx}.product`)} />
                         <Input placeholder="SKU (optional)" {...form.register(`digital_renders.${idx}.sku`)} />
-                        <Button type="button" variant="ghost" size="icon" onClick={() => renders.remove(idx)}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => renders.remove(idx)}
+                          aria-label="Remove product"
+                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -300,8 +318,8 @@ export default function EasyRequest() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <div>
+                <div className="flex items-center justify-between rounded-md border border-border bg-muted/20 p-3">
+                  <div className="space-y-0.5">
                     <Label htmlFor="pm">Physical Mockups Needed</Label>
                     <p className="text-xs text-muted-foreground">Toggle on if physical samples are required.</p>
                   </div>
@@ -335,7 +353,7 @@ export default function EasyRequest() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-between mt-6">
+        <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
           <Button type="button" variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
             Back
           </Button>
