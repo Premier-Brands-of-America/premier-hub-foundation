@@ -38,13 +38,18 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
   const debounceRef = useRef<number>();
   const lastSavedRef = useRef<string>(initialContent);
 
-  // Reset when switching pages
+  // Reset ONLY when switching to a different page. The editor owns its content
+  // while open; depending on `initialContent` here caused the save→invalidate→
+  // refetch round-trip (and realtime invalidation) to call setValue mid-typing,
+  // clobbering in-progress keystrokes (fast typing → text wiped). Pages.tsx mounts
+  // this only once the page has loaded, so initialContent is correct at mount.
   useEffect(() => {
     setValue(initialContent);
     lastSavedRef.current = initialContent;
     setSavedAt(null);
     setMenu(null);
-  }, [pageId, initialContent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageId]);
 
   const flush = useCallback(() => {
     if (value !== lastSavedRef.current) {
