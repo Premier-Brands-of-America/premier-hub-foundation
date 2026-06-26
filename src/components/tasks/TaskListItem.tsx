@@ -1,7 +1,8 @@
 import type { Task } from "@/types/tasks";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, isPast, isToday } from "date-fns";
+import { CalendarClock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TaskListItemProps {
   task: Task;
@@ -12,50 +13,86 @@ interface TaskListItemProps {
 
 export function TaskListItem({ task, selected, onSelect, onToggleComplete }: TaskListItemProps) {
   const isComplete = task.status === "complete";
-  const overdue = task.due_date && !isComplete && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
+  const overdue =
+    task.due_date && !isComplete && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
+  const showProgress = task.percent_complete !== null && task.percent_complete > 0;
 
   return (
     <div
-      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all
-        focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none
-        ${selected ? "border-primary/40 bg-primary/[0.03] shadow-sm" : "border-border hover:border-primary/20 bg-card"}
-        ${isComplete ? "opacity-60" : ""}`}
+      data-state={selected ? "selected" : undefined}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-md border px-3 py-2.5 cursor-pointer",
+        "transition-colors duration-fast ease-standard outline-none",
+        "focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+        selected
+          ? "border-primary/30 bg-primary/[0.05] shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
+          : "border-border bg-card hover:border-border hover:bg-accent/40",
+      )}
       onClick={onSelect}
       tabIndex={0}
       role="button"
+      aria-pressed={selected}
       aria-label={`${task.title}${isComplete ? " (completed)" : ""}${overdue ? " (overdue)" : ""}`}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
     >
-      <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+      <div className="pt-px" onClick={(e) => e.stopPropagation()}>
         <Checkbox
           checked={isComplete}
           onCheckedChange={onToggleComplete}
-          className="data-[state=checked]:bg-success data-[state=checked]:border-success"
+          aria-label={isComplete ? "Mark task active" : "Mark task complete"}
+          className="data-[state=checked]:bg-[hsl(var(--status-done))] data-[state=checked]:border-[hsl(var(--status-done))]"
         />
       </div>
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate ${isComplete ? "line-through text-muted-foreground" : "text-foreground"}`}>
+
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            "truncate text-sm font-medium",
+            isComplete ? "text-muted-foreground line-through" : "text-foreground",
+          )}
+        >
           {task.title}
         </p>
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          {task.due_date && (
-            <span className={`text-[11px] ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-              {overdue ? "Overdue · " : "Due "}
-              {format(new Date(task.due_date), "MMM d")}
-            </span>
-          )}
-          {task.percent_complete !== null && task.percent_complete > 0 && (
-            <Badge variant="secondary" className="text-[10px] h-[18px] px-1.5 font-normal">
-              {task.percent_complete}%
-            </Badge>
-          )}
-          {isComplete && (
-            <Badge className="text-[10px] h-[18px] px-1.5 bg-success/10 text-success border-0 font-normal">
-              Done
-            </Badge>
-          )}
-        </div>
+
+        {(task.due_date || showProgress) && (
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {task.due_date && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 text-[11px] tabular-nums",
+                  overdue ? "font-medium text-destructive" : "text-muted-foreground",
+                )}
+              >
+                <CalendarClock className="h-3 w-3" />
+                {overdue ? "Overdue · " : "Due "}
+                {format(new Date(task.due_date), "MMM d")}
+              </span>
+            )}
+            {showProgress && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground tabular-nums">
+                <span className="h-1 w-12 overflow-hidden rounded-full bg-muted">
+                  <span
+                    className="block h-full rounded-full bg-[hsl(var(--entity-task))]"
+                    style={{ width: `${task.percent_complete}%` }}
+                  />
+                </span>
+                {task.percent_complete}%
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {isComplete && (
+        <span className="shrink-0 rounded-full border border-transparent bg-[hsl(var(--status-done)/0.14)] px-2.5 py-0.5 text-[11px] font-medium text-[hsl(var(--status-done))]">
+          Done
+        </span>
+      )}
     </div>
   );
 }

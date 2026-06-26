@@ -207,12 +207,19 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
   return (
     <div className="flex flex-col h-full border-l border-border bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Task Detail</h2>
-          {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--entity-task))]" aria-hidden />
+          <h3 className="truncate text-sm font-semibold text-foreground">Task detail</h3>
+          {saving && <span className="shrink-0 text-xs text-muted-foreground">Saving…</span>}
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="h-9 w-9 text-muted-foreground hover:text-foreground"
+          aria-label="Close task detail"
+        >
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -230,11 +237,11 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
               {task.status === "complete" ? (
                 <><RotateCcw className="h-3.5 w-3.5" /> Reopen</>
               ) : (
-                <><Check className="h-3.5 w-3.5" /> Mark Complete</>
+                <><Check className="h-3.5 w-3.5" /> Mark complete</>
               )}
             </Button>
             {task.status === "complete" && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="success" className="text-xs">
                 Completed {task.completed_at ? format(new Date(task.completed_at), "MMM d, yyyy") : ""}
               </Badge>
             )}
@@ -307,7 +314,7 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             </div>
           </div>
 
-          <div className="text-xs text-muted-foreground">
+          <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
             Created {format(new Date(task.created_at), "MMM d, yyyy 'at' h:mm a")}
           </div>
 
@@ -321,7 +328,7 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             {contacts.length > 0 && (
               <div className="space-y-1.5">
                 {contacts.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1.5">
+                  <div key={c.id} className="flex items-center justify-between text-sm rounded-md border border-border bg-muted/30 px-2.5 py-1.5">
                     <div>
                       <span className="text-foreground">{c.name || c.email || "Unknown"}</span>
                       {c.email && c.name && (
@@ -365,7 +372,7 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             {updates.length > 0 && (
               <div className="space-y-2">
                 {updates.map((u) => (
-                  <div key={u.id} className="bg-muted/50 rounded p-2.5">
+                  <div key={u.id} className="rounded-md border border-border bg-muted/30 p-2.5">
                     <p className="text-sm text-foreground whitespace-pre-wrap">{u.content}</p>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {format(new Date(u.created_at), "MMM d, yyyy 'at' h:mm a")}
@@ -398,8 +405,8 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             {attachments.length > 0 && (
               <div className="space-y-1.5">
                 {attachments.map((att) => (
-                  <div key={att.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1.5">
-                    <button onClick={() => handleDownloadAttachment(att)} className="text-foreground hover:text-accent truncate text-left">
+                  <div key={att.id} className="flex items-center justify-between text-sm rounded-md border border-border bg-muted/30 px-2.5 py-1.5">
+                    <button onClick={() => handleDownloadAttachment(att)} className="text-foreground hover:text-primary truncate text-left transition-colors">
                       {att.file_name}
                       <span className="text-muted-foreground text-xs ml-1">({formatBytes(att.file_size)})</span>
                     </button>
@@ -411,7 +418,7 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
               </div>
             )}
             <div>
-              <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-accent hover:underline">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary hover:underline">
                 <Plus className="h-3 w-3" /> Upload file
                 <input
                   type="file"
@@ -434,8 +441,8 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             {links.length > 0 && (
               <div className="space-y-1.5">
                 {links.map((l) => (
-                  <div key={l.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1.5">
-                    <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline truncate flex items-center gap-1">
+                  <div key={l.id} className="flex items-center justify-between text-sm rounded-md border border-border bg-muted/30 px-2.5 py-1.5">
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate flex items-center gap-1">
                       <ExternalLink className="h-3 w-3 shrink-0" />
                       {l.label || l.url}
                     </a>
@@ -476,7 +483,7 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
               <div className="space-y-1">
                 {activity.map((a) => (
                   <div key={a.id} className="flex items-start gap-2 text-xs py-1">
-                    <div className="w-1 h-1 rounded-full bg-muted-foreground mt-1.5 shrink-0" />
+                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--entity-task)/0.7)]" />
                     <div>
                       <span className="text-foreground">{activityLabel(a)}</span>
                       <span className="text-muted-foreground ml-1.5">

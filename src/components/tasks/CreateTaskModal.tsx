@@ -48,7 +48,7 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create Task</DialogTitle>
+          <DialogTitle>New task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -106,7 +106,7 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={!titleValid || submitting}>
-              {submitting ? "Creating..." : "Create Task"}
+              {submitting ? "Creating…" : "Create task"}
             </Button>
           </div>
         </form>
