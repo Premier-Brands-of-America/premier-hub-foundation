@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ALL_FEATURE_KEYS, type FeatureKey } from "@/lib/featureKeys";
+import { isPreviewEnvironment } from "@/lib/environment";
 
 type FlagMap = Partial<Record<FeatureKey, boolean>>;
 
@@ -68,13 +69,24 @@ export function FeatureFlagsProvider({ children }: { children: React.ReactNode }
     };
   }, [userId, departmentId, queryClient]);
 
-  const value = useMemo<FeatureFlagsContextValue>(
-    () => ({
+  const value = useMemo<FeatureFlagsContextValue>(() => {
+    // Preview/dev (localhost + Lovable preview) signs in via a mock profile with
+    // no real Supabase session, so resolve_features returns all-false and every
+    // feature-gated route would bounce ("Feature not available"). In preview,
+    // surface the full app so all v2 features are testable. Production (real Entra
+    // auth) keeps resolving real flags.
+    if (isPreviewEnvironment()) {
+      const all: FlagMap = {};
+      ALL_FEATURE_KEYS.forEach((k) => {
+        all[k] = true;
+      });
+      return { flags: all, loading: false };
+    }
+    return {
       flags: data ?? {},
       loading: authLoading || (!!userId && isLoading),
-    }),
-    [data, isLoading, authLoading, userId]
-  );
+    };
+  }, [data, isLoading, authLoading, userId]);
 
   return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;
 }

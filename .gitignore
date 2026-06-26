@@ -29,3 +29,7 @@ supabase/functions/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Local screenshot/debug artifacts
+.playwright-mcp/
+phv2-*.png

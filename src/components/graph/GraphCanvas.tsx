@@ -108,18 +108,22 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
   // Apply force tuning and reheat whenever sliders or data change.
   useEffect(() => {
     const fg = fgRef.current as unknown as {
-      d3Force: (n: string) => { strength?: (v: number) => void; distance?: (v: number) => void } | undefined;
-      d3VelocityDecay: (v: number) => void;
-      d3ReheatSimulation: () => void;
+      d3Force?: (n: string) => { strength?: (v: number) => void; distance?: (v: number) => void } | undefined;
+      d3VelocityDecay?: (v: number) => void;
+      d3ReheatSimulation?: () => void;
     } | undefined;
-    if (!fg) return;
-    fg.d3VelocityDecay(0.3);
+    // react-force-graph wires its imperative methods onto the ref a tick after
+    // first mount, so they can be absent on the initial effect run — calling them
+    // unguarded crashes the page. Guard on readiness (d3Force as the sentinel);
+    // this effect re-runs when graph data loads, applying the tuning once ready.
+    if (!fg || typeof fg.d3Force !== "function") return;
+    fg.d3VelocityDecay?.(0.3);
     fg.d3Force("charge")?.strength?.(forces.charge);
     const link = fg.d3Force("link");
     link?.distance?.(forces.linkDistance);
     link?.strength?.(forces.linkStrength);
     fg.d3Force("center")?.strength?.(forces.center);
-    fg.d3ReheatSimulation();
+    fg.d3ReheatSimulation?.();
   }, [forces, fgData]);
 
   // Resolve once per render so it tracks theme toggles.
