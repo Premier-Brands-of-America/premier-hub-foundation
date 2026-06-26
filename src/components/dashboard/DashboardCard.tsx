@@ -85,22 +85,28 @@ export function DashboardCard({
   return (
     <Card
       className={cn(
-        "flex h-full flex-col overflow-hidden transition-shadow",
-        editing && "cursor-grab",
+        "group/card flex h-full flex-col overflow-hidden transition-colors",
+        "hover:border-border/80",
+        editing && "cursor-grab ring-1 ring-inset ring-border/60",
         isDragging && "opacity-50 ring-2 ring-ring ring-offset-2 ring-offset-background",
       )}
     >
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+      <div className="flex items-center gap-2.5 border-b border-border px-4 py-2.5">
         {editing && (
-          <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <GripVertical
+            className="h-4 w-4 shrink-0 text-muted-foreground/70"
+            aria-hidden="true"
+          />
         )}
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <h3 className="flex-1 truncate text-sm font-semibold tracking-tight text-foreground">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground">
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-foreground">
           {title}
         </h3>
 
         {editing && (
-          <div className="flex items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-md bg-muted/50 p-0.5">
             <CtrlButton label="Move left" icon={ChevronLeft} onClick={onMovePrev} disabled={isFirst} />
             <CtrlButton label="Move right" icon={ChevronRight} onClick={onMoveNext} disabled={isLast} />
             <CtrlButton label="Narrower" icon={Minimize2} onClick={onShrink} disabled={!canShrink} />

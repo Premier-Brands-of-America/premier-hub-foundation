@@ -104,7 +104,7 @@ export function ProjectRollupCard({ config }: { config: WidgetConfig }) {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold text-foreground tabular-nums">{total}</span>
+        <span className="stat-numeral text-3xl leading-none text-foreground">{total}</span>
         <span className="text-xs text-muted-foreground">
           {scope === "owned" ? "owned" : "assigned"} project{total !== 1 ? "s" : ""}
         </span>

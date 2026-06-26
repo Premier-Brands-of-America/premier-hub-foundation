@@ -10,21 +10,14 @@ interface DashboardWidgetProps {
   className?: string;
 }
 
-const modernRail: Record<string, string> = {
-  warning: "modern:before:bg-[hsl(var(--status-warning))]",
-  accent:  "modern:before:bg-[hsl(var(--entity-project))]",
-  success: "modern:before:bg-[hsl(var(--status-done))]",
-  info:    "modern:before:bg-[hsl(var(--primary))]",
-  danger:  "modern:before:bg-[hsl(var(--destructive))]",
-};
-
-const classicBorder: Record<string, string> = {
-  default: "border-l-primary/60",
-  accent:  "border-l-accent/70",
-  warning: "border-l-warning/70",
-  info:    "border-l-primary/60",
-  success: "border-l-success/70",
-  danger:  "border-l-destructive/70",
+/** Crimson-edge rail color, keyed by semantic accent. `data-accent` also drives
+ *  the central left-gradient wash in the component layer. */
+const railColor: Record<string, string> = {
+  accent: "before:bg-[hsl(var(--entity-project))]",
+  warning: "before:bg-[hsl(var(--status-warning))]",
+  info: "before:bg-[hsl(var(--primary))]",
+  success: "before:bg-[hsl(var(--status-done))]",
+  danger: "before:bg-[hsl(var(--destructive))]",
 };
 
 export function DashboardWidget({
@@ -34,29 +27,26 @@ export function DashboardWidget({
   accentColor = "default",
   className,
 }: DashboardWidgetProps) {
-  const hasModernRail = accentColor !== "default";
+  const hasRail = accentColor !== "default";
   return (
     <Card
-      data-accent={accentColor !== "default" ? accentColor : undefined}
+      data-accent={hasRail ? accentColor : undefined}
       className={cn(
-        "shadow-sm relative overflow-hidden h-full",
-        // Classic left border
-        "border-l-[3px]",
-        classicBorder[accentColor],
-        // Modern: hide classic border, use ::before rail
-        "modern:border-l-0",
-        hasModernRail && [
-          "modern:before:absolute modern:before:left-0 modern:before:top-0 modern:before:bottom-0",
-          "modern:before:w-[3px] modern:before:rounded-l-md",
-          modernRail[accentColor],
+        "relative h-full overflow-hidden",
+        hasRail && [
+          "before:absolute before:left-0 before:top-0 before:bottom-0",
+          "before:w-[2px] before:rounded-l-lg",
+          railColor[accentColor],
         ],
         className,
       )}
     >
       <div className="p-4 md:p-5">
-        <div className="flex items-center gap-2.5 mb-3">
-          <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-          <h3 className="text-sm font-semibold text-foreground tracking-tight">{title}</h3>
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+          <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">{title}</h3>
         </div>
         <div className="text-sm text-muted-foreground">{children}</div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Pencil, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { useDashboardLayout } from "./useDashboardLayout";
 import { DashboardGrid } from "./DashboardGrid";
@@ -16,15 +17,32 @@ export function DashboardView() {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar — progressive disclosure: clean in view mode, controls in edit mode */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Dashboard</h2>
-          {editing && (
-            <span className="text-xs text-muted-foreground" aria-live="polite">
-              {layout.isSaving ? "Saving…" : "Saved"}
-            </span>
-          )}
+      {/* Section toolbar — progressive disclosure: quiet in view mode, controls in edit mode */}
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-3">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Overview</h2>
+            {editing && (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                aria-live="polite"
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    layout.isSaving
+                      ? "bg-[hsl(var(--status-warning))] animate-pulse"
+                      : "bg-[hsl(var(--status-done))]",
+                  )}
+                  aria-hidden="true"
+                />
+                {layout.isSaving ? "Saving…" : "Saved"}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {editing ? "Drag, resize, add, or remove cards." : "Your pinned cards and saved views."}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
