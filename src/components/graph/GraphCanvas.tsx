@@ -232,19 +232,29 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
 
         ctx.globalAlpha = dimmed ? 0.12 : 1;
 
-        // 1. Soft halo bloom — a cheap translucent disc behind the body (no
-        //    shadowBlur cost); brighter when the node is the focus.
-        ctx.beginPath();
-        ctx.arc(x, y, r + (isFocus ? 8 : 4.5) / globalScale, 0, 2 * Math.PI);
-        ctx.fillStyle = fade(color, isFocus ? 0.30 : 0.15);
-        ctx.fill();
-
-        // 2. Body — translucent fill + crisp 1px stroke in the entity color.
+        // 0. Glow bloom — real shadowBlur so nodes read as a glowing
+        //    constellation (the NexoString signature). Cheap at this node count.
+        ctx.save();
+        ctx.shadowColor = fade(color, 0.95);
+        ctx.shadowBlur = isFocus ? 30 : 20;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, 2 * Math.PI);
-        ctx.fillStyle = fade(color, 0.92);
+        ctx.fillStyle = fade(color, isFocus ? 1 : 0.9);
         ctx.fill();
-        ctx.lineWidth = (isFocus ? 1.6 : 1) / globalScale;
+        ctx.restore();
+
+        // 1. Soft translucent halo disc behind the body.
+        ctx.beginPath();
+        ctx.arc(x, y, r + (isFocus ? 12 : 8) / globalScale, 0, 2 * Math.PI);
+        ctx.fillStyle = fade(color, isFocus ? 0.34 : 0.22);
+        ctx.fill();
+
+        // 2. Body — translucent fill + crisp stroke in the entity color.
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = fade(color, 0.96);
+        ctx.fill();
+        ctx.lineWidth = (isFocus ? 1.8 : 1.2) / globalScale;
         ctx.strokeStyle = color;
         ctx.stroke();
 
