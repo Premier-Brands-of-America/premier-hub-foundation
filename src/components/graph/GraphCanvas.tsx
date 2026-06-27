@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useState }
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import {
   getForegroundColor, getNodeColor, getStatusColor, nodeRadius,
-  RELATION_STYLES, getEdgeColor, getPrimaryColor, getCardColor, withAlpha,
+  RELATION_STYLES, getEdgeColor, getPrimaryColor, getBackgroundColor, withAlpha,
 } from "./graphColors";
 import { DEFAULT_FORCES, type GraphEdge, type GraphForces, type GraphNode, type GraphPayload } from "@/types/graph";
 
@@ -38,12 +38,15 @@ function resolveThemeTokens() {
   return {
     labelColor: getForegroundColor(),
     primaryColor: getPrimaryColor(),
-    cardColor: getCardColor(),
-    // semi-transparent card for label backing pill
-    pillBg: withAlpha("--card", 0.82, "0, 0%, 100%"),
-    pillBorder: withAlpha("--border", 0.35, "24, 14%, 90%"),
+    // Theme background, painted as a soft outline under label text — gives
+    // legibility over nodes/edges without the old opaque "backing pill" box.
+    haloColor: getBackgroundColor(),
   };
 }
+
+/** Show labels only when zoomed in past this scale; below it, labels appear
+ *  on hover/selection only — keeps the canvas de-cluttered at overview zoom. */
+const LABEL_ZOOM_THRESHOLD = 1.4;
 
 /** Whether the user prefers reduced motion. */
 function prefersReducedMotion(): boolean {
@@ -193,7 +196,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         const isHovered = node.id === hoverId;
 
         // Resolve theme tokens per frame (cheap string lookup; handles live theme toggle)
-        const { labelColor, primaryColor, cardColor, pillBg, pillBorder } = resolveThemeTokens();
+        const { labelColor, primaryColor, haloColor } = resolveThemeTokens();
 
         ctx.globalAlpha = dimmed ? 0.15 : 1;
 
@@ -245,47 +248,32 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
           ctx.stroke();
         }
 
-        // Label — only when zoomed in enough to be legible
-        if (globalScale >= 1.1) {
+        // Label — de-cluttered: shown only when zoomed in past the threshold,
+        // OR when this node is the focus (hover/selection/highlight). No backing
+        // box: a soft background-colored halo keeps the text legible over edges.
+        const inFocus = isSelected || isHovered ||
+          (highlightedSet ? highlightedSet.has(node.id) && !dimmed : false);
+        if (globalScale >= LABEL_ZOOM_THRESHOLD || inFocus) {
           const fontSize = Math.max(9, 11 / globalScale);
           ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`;
           const label = node.label?.length > 22 ? node.label.slice(0, 22) + "…" : (node.label ?? "");
-          const textWidth = ctx.measureText(label).width;
-          const padH = 3.5 / globalScale;
-          const padV = 2 / globalScale;
-          const pillW = textWidth + padH * 2;
-          const pillH = fontSize + padV * 2;
-          const pillX = x - pillW / 2;
-          const pillY = y + r + 3 / globalScale;
-          const pillR = 3 / globalScale;
+          const ly = y + r + 4 / globalScale + fontSize / 2;
 
-          // Backing pill for readability
-          ctx.beginPath();
-          ctx.moveTo(pillX + pillR, pillY);
-          ctx.lineTo(pillX + pillW - pillR, pillY);
-          ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
-          ctx.lineTo(pillX + pillW, pillY + pillH - pillR);
-          ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pillR, pillY + pillH);
-          ctx.lineTo(pillX + pillR, pillY + pillH);
-          ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pillR);
-          ctx.lineTo(pillX, pillY + pillR);
-          ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
-          ctx.closePath();
-          ctx.fillStyle = pillBg;
-          ctx.fill();
-          ctx.strokeStyle = pillBorder;
-          ctx.lineWidth = 0.5 / globalScale;
-          ctx.stroke();
-
-          // Label text
-          ctx.fillStyle = isSelected || isHovered ? primaryColor : labelColor;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(label, x, pillY + pillH / 2);
+
+          // Halo: a thick, rounded outline in the canvas background colour drawn
+          // under the fill — readable text without an opaque pill.
+          ctx.lineJoin = "round";
+          ctx.miterLimit = 2;
+          ctx.lineWidth = 3 / globalScale;
+          ctx.strokeStyle = haloColor;
+          ctx.strokeText(label, x, ly);
+
+          ctx.fillStyle = isSelected || isHovered ? primaryColor : labelColor;
+          ctx.fillText(label, x, ly);
         }
 
-        // Suppress unused variable warning — cardColor referenced for clarity
-        void cardColor;
         ctx.globalAlpha = 1;
       }}
       nodePointerAreaPaint={(node: FGNode, color: string, ctx: CanvasRenderingContext2D) => {

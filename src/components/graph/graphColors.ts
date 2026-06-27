@@ -49,6 +49,12 @@ export function getCardColor(): string {
   return cssVar("--card", "hsl(0, 0%, 100%)");
 }
 
+/** Canvas background — used as a soft halo behind labels so text reads
+ *  cleanly over nodes/edges without an opaque backing box. */
+export function getBackgroundColor(): string {
+  return cssVar("--background", "hsl(0, 0%, 100%)");
+}
+
 /**
  * Edge color based on highlight state.
  * Active edges use --muted-foreground at 0.55 opacity; dimmed use --border at 0.12.

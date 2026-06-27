@@ -7,6 +7,16 @@
     <title>Premier Project Hub</title>
     <meta name="description" content="Internal Project Management Tool for Premier Brands of America">
     <meta name="author" content="Lovable" />
+
+    <!-- Type system: Space Grotesk (display) + Inter (body/UI). Linked here
+         (not @import'd in CSS) so the fonts actually load — a CSS @import after
+         @tailwind is invalid and silently dropped by the bundler. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    />
     <!-- Pre-paint theme guard — mirrors DesignModeProvider so there is no flash of
          unstyled/light content before React hydrates. v2 has a single design ("modern");
          dark/light is driven by the persisted `theme` (or the OS preference). -->

@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Fonts (Inter + Space Grotesk) are loaded via <link> in index.html — a CSS
+   @import after @tailwind is invalid and gets dropped, so it must not live here. */
 
 /* ===================================================================
  * Premier Project Hub — v2 design system  ·  "Crimson Engineering"
