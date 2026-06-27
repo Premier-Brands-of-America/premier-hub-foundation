@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { EntityIcon } from "@/components/common/EntityIcon";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { useNavigate } from "react-router-dom";
 import type { GraphNode } from "@/types/graph";
 
@@ -37,7 +38,14 @@ export function NodeDetailSheet({ open, onOpenChange, node, onFocusLocal }: Prop
       <SheetContent side="right" className="w-[420px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <EntityIcon type={node.type} className="h-5 w-5" />
+            <EntityAvatar
+              type={node.type}
+              seed={node.entityId || node.id}
+              name={node.label}
+              src={(node.metadata as any)?.avatar_url ?? (node.metadata as any)?.icon}
+              size="lg"
+              glow
+            />
             <span className="truncate">{node.label}</span>
           </SheetTitle>
         </SheetHeader>

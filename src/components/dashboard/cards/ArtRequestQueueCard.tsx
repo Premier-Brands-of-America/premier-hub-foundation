@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { Button } from "@/components/ui/button";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 import type { WidgetConfig } from "../types";
 import { CardLoading, CardError, CardEmpty } from "./card-states";
 
@@ -116,6 +117,7 @@ export function ArtRequestQueueCard({ config }: { config: WidgetConfig }) {
               onClick={() => navigate(`/requests/${r.id}`)}
               className="group flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left hover:bg-accent"
             >
+              <EntityAvatar type="request" seed={r.id} name={r.title} src={(r as any).icon} size="xs" />
               <span
                 className="h-2 w-2 shrink-0 rounded-full"
                 style={{ backgroundColor: `hsl(${PRIORITY_TOKEN[r.priority] ?? "var(--status-neutral)"})` }}

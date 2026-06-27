@@ -12,27 +12,46 @@ import { Badge } from "@/components/ui/badge";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PageHeader } from "@/components/PageHeader";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
+import { AvatarPicker } from "@/components/common/AvatarPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDesignMode, type Theme, type Density } from "@/providers/DesignModeProvider";
-
-function initials(name: string, email: string) {
-  const src = name.trim() || email.trim();
-  if (!src) return "?";
-  const parts = src.split(/[\s@.]+/).filter(Boolean);
-  return (parts[0]?.[0] ?? "").concat(parts[1]?.[0] ?? "").toUpperCase() || src[0].toUpperCase();
-}
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
   const qc = useQueryClient();
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [departmentId, setDepartmentId] = useState<string>(profile?.department_id ?? "");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    (profile as { avatar_url?: string | null } | null)?.avatar_url ?? null,
+  );
   const [saving, setSaving] = useState(false);
   const { theme, setTheme, density, setDensity } = useDesignMode();
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
     setDepartmentId(profile?.department_id ?? "");
+    setAvatarUrl((profile as { avatar_url?: string | null } | null)?.avatar_url ?? null);
   }, [profile?.id]);
+
+  // Persist a chosen avatar (DiceBear default, preset, or uploaded data-URL)
+  // immediately to profiles.avatar_url. (Production should swap the upload
+  // data-URL for a Supabase Storage URL — see BLOCKERS.md.)
+  const saveAvatar = async (uri: string) => {
+    if (!profile) return;
+    setAvatarUrl(uri); // optimistic
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: uri })
+        .eq("user_id", profile.user_id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["profile", user?.id] });
+      qc.invalidateQueries({ queryKey: ["admin", "profiles", "list"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update avatar");
+    }
+  };
 
   const onSave = async () => {
     if (!profile) return;
@@ -65,12 +84,23 @@ export default function ProfilePage() {
       {/* Identity banner — the one bold thing on this screen */}
       <header className="edge-rail">
         <div className="flex items-center gap-4">
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary)/0.12)] text-lg font-semibold text-primary"
-            aria-hidden="true"
-          >
-            {initials(fullName, profile.email ?? "")}
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="shrink-0 rounded-full transition-transform hover:-translate-y-0.5" aria-label="Change avatar">
+                <EntityAvatar
+                  type="user"
+                  seed={profile.user_id}
+                  name={fullName || profile.email || ""}
+                  src={avatarUrl}
+                  size="xl"
+                  glow
+                />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72">
+              <AvatarPicker type="user" value={avatarUrl ?? ""} onChange={saveAvatar} />
+            </PopoverContent>
+          </Popover>
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold tracking-tight">
               {fullName || profile.email || "My Profile"}

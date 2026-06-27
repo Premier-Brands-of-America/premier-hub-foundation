@@ -19,6 +19,9 @@ import { FILE_EXTENSIONS, MAX_FILE_SIZE } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
+import { AvatarPicker } from "@/components/common/AvatarPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface TaskDetailPanelProps {
   task: Task;
@@ -209,7 +212,16 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--entity-task))]" aria-hidden />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="shrink-0 rounded-md transition-transform hover:-translate-y-0.5" aria-label="Change task icon">
+                <EntityAvatar type="task" seed={task.id} name={task.title} src={(task as any).icon} size="sm" glow />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72">
+              <AvatarPicker type="task" value={(task as any).icon ?? ""} onChange={(uri) => saveField("icon", uri)} />
+            </PopoverContent>
+          </Popover>
           <h3 className="truncate text-sm font-semibold text-foreground">Task detail</h3>
           {saving && <span className="shrink-0 text-xs text-muted-foreground">Saving…</span>}
         </div>

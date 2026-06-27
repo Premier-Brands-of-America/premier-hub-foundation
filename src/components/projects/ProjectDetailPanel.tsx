@@ -30,6 +30,9 @@ import type {
 import { FILE_EXTENSIONS, MAX_FILE_SIZE } from "@/types/tasks";
 import * as projectService from "@/services/projectService";
 import { StakeholderPicker } from "./StakeholderPicker";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
+import { AvatarPicker } from "@/components/common/AvatarPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ProjectDetailPanelProps {
   project: ProjectWithMeta;
@@ -309,6 +312,20 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
       {/* ─── Title + meta block ─── */}
       <div className="border-b border-border px-4 py-3 space-y-3">
         <div className="flex items-start justify-between gap-2">
+          {canEdit ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="shrink-0 rounded-md transition-transform hover:-translate-y-0.5" aria-label="Change project icon">
+                  <EntityAvatar type="project" seed={project.id} name={project.title} src={(project as any).icon} size="lg" glow />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72">
+                <AvatarPicker type="project" value={(project as any).icon ?? ""} onChange={(uri) => saveField("icon", uri)} />
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <EntityAvatar type="project" seed={project.id} name={project.title} src={(project as any).icon} size="lg" glow />
+          )}
           <div className="flex-1 min-w-0">
             {editingHeader ? (
               <Input

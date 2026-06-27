@@ -5,6 +5,7 @@ export interface Project {
   owner_id: string;
   title: string;
   description: string | null;
+  icon?: string | null;
   visibility: "public" | "private";
   status: "active" | "complete";
   desired_due_date: string | null;

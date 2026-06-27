@@ -4,6 +4,7 @@ import { format, isPast, isToday } from "date-fns";
 import { Globe, Lock, Crown, Users, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DueDateBadge } from "@/components/common/DueDateBadge";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 
 interface ProjectListItemProps {
   project: ProjectWithMeta;
@@ -55,6 +56,7 @@ export function ProjectListItem({ project, selected, onSelect, currentUserId }: 
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
+          <EntityAvatar type="project" seed={project.id} name={project.title} src={(project as any).icon} size="sm" />
           <p
             className={cn(
               "truncate text-sm font-medium",

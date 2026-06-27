@@ -671,6 +671,7 @@ export type Database = {
           created_at: string
           description: string | null
           desired_due_date: string | null
+          icon: string | null
           id: string
           overall_percent_complete: number | null
           owner_id: string
@@ -686,6 +687,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           desired_due_date?: string | null
+          icon?: string | null
           id?: string
           overall_percent_complete?: number | null
           owner_id: string
@@ -701,6 +703,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           desired_due_date?: string | null
+          icon?: string | null
           id?: string
           overall_percent_complete?: number | null
           owner_id?: string
@@ -1076,6 +1079,7 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string | null
+          icon: string | null
           id: string
           percent_complete: number | null
           search_vector: unknown
@@ -1089,6 +1093,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          icon?: string | null
           id?: string
           percent_complete?: number | null
           search_vector?: unknown
@@ -1102,6 +1107,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          icon?: string | null
           id?: string
           percent_complete?: number | null
           search_vector?: unknown

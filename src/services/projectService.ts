@@ -118,7 +118,7 @@ export async function createProject(
 
 export async function updateProject(
   userId: string, projectId: string,
-  updates: Partial<Pick<Project, "title" | "description" | "visibility" | "status" | "desired_due_date" | "updated_due_date" | "overall_percent_complete" | "owner_id">>,
+  updates: Partial<Pick<Project, "title" | "description" | "visibility" | "status" | "desired_due_date" | "updated_due_date" | "overall_percent_complete" | "owner_id" | "icon">>,
   oldProject: Project
 ): Promise<Project> {
   const changes: { field: string; old: string | null; new_: string | null }[] = [];
@@ -143,6 +143,7 @@ export async function updateProject(
     title?: string; description?: string | null; visibility?: string; status?: string;
     desired_due_date?: string | null; updated_due_date?: string | null;
     overall_percent_complete?: number | null; owner_id?: string; completed_at?: string | null;
+    icon?: string | null;
   } = { ...updates };
 
   if (updates.status === "complete" && oldProject.status !== "complete") {

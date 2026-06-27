@@ -4,6 +4,7 @@ import { format, isPast, isToday } from "date-fns";
 import { CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DueDateBadge } from "@/components/common/DueDateBadge";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 
 interface TaskListItemProps {
   task: Task;
@@ -49,6 +50,15 @@ export function TaskListItem({ task, selected, onSelect, onToggleComplete }: Tas
           className="data-[state=checked]:bg-[hsl(var(--status-done))] data-[state=checked]:border-[hsl(var(--status-done))]"
         />
       </div>
+
+      <EntityAvatar
+        type="task"
+        seed={task.id}
+        name={task.title}
+        src={(task as any).icon}
+        size="xs"
+        className="shrink-0"
+      />
 
       <div className="min-w-0 flex-1">
         <p

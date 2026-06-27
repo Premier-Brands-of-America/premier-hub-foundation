@@ -270,3 +270,52 @@ Verification: `npx tsc --noEmit` clean · `npm run build` green. Card-surface
 integration + migration follow in the next batches.
 
 ---
+
+## 2026-06-27 — Round 3 (cont.): avatar/icon surfaces, pickers, icon columns
+
+### C2. Rendered avatars/icons across every card/list/detail surface
+Fanned out a 9-agent workflow (each owning one file) to drop the shared
+`EntityAvatar` onto every surface that names a person/project/task/request:
+- `KanbanCard.tsx` — assignee initials-Avatar → real `EntityAvatar` (user).
+- `ProjectListItem.tsx` / `TaskListItem.tsx` — project/task mark before the title.
+- dashboard `MyOpenTasksCard.tsx` (task icon replaces the bullet) +
+  `ArtRequestQueueCard.tsx` (request icon per row).
+- graph `NodeDetailSheet.tsx` — large glowing `EntityAvatar` header mark.
+- `ProjectDetailPanel.tsx` / `TaskDetailPanel.tsx` — glowing header marks.
+All seeded by entity id with `metadata.avatar_url`/`icon` overriding the default.
+
+### C3. Icon columns + pickers (create/detail editing)
+- Migration `supabase/migrations/20260627130000_entity_icons.sql` adds
+  `projects.icon` + `tasks.icon` (text). Hand-written `Project`/`Task` types and
+  the generated `supabase/types.ts` (projects + tasks Row/Insert/Update) gained
+  the optional `icon` field. The agent also correctly filled a real gap —
+  `pages.icon` (which exists in the schema, migration `…192630`) was missing from
+  the generated types — so the pages Row/Insert/Update now type it too.
+- `projectService.updateProject` + `taskService.updateTask` signatures extended to
+  accept `icon`, so the preview mock path persists a chosen icon live (and prod
+  writes the column once the migration is pushed).
+- **Pickers wired**: `ProjectDetailPanel` + `TaskDetailPanel` headers now open an
+  `AvatarPicker` (Popover) to choose a seeded icon → `saveField("icon", uri)`.
+  `ProfilePage` identity banner replaced its initials disc with a glowing
+  `EntityAvatar` + an `AvatarPicker` (people presets **+ image upload**) that
+  persists to `profiles.avatar_url`.
+- Storage-upload persistence + the `icon` migration push are logged in
+  `BLOCKERS.md` as deploy follow-ups (preview works on defaults + the demo path).
+
+### Verification
+- `npx tsc --noEmit` clean · `npm run build` green (both batches).
+- Live dev server on :8080 serves the new dark tokens (`--background: 228 12% 3%`,
+  `--primary: 168 88% 60%` signal-cyan, `--selection: 246 92% 72%`, `cortex-pulse`)
+  — HMR reflects every edit. GraphCanvas confirmed to draw shadowBlur bloom + idle
+  bob + always-on particles + curved source→target gradient edges + avatar/icon
+  `drawImage` clipped into nodes.
+
+### Round 3 status: COMPLETE
+Dark mode = NexoString near-black 228° constellation (signal-cyan primary, violet
+selection, neuron entity hues, crimson retired from dark). Graph replicates the
+NexoString ForceGraph/CompanyGraph look (bloom, bob, hub rings, curved gradient
+edges, mono backplate labels, avatars/icons in nodes). DiceBear avatars/icons are
+defaulted everywhere, pickable in detail UIs, and rendered in graph nodes AND on
+cards. main untouched; nothing deployed.
+
+---

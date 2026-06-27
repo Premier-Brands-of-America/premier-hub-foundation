@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { MessageSquare, Paperclip, ListChecks, Users } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { DueDateBadge } from "@/components/common/DueDateBadge";
 import { cn } from "@/lib/utils";
 import type { PlannerCard, CardPriority } from "./types";
@@ -20,15 +20,6 @@ const KIND_LABEL: Record<PlannerCard["kind"], string> = {
   request: "Art Request",
   project: "Project",
 };
-
-function initials(name?: string | null) {
-  if (!name) return "?";
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function KanbanCard({
   card,
@@ -103,11 +94,12 @@ export function KanbanCard({
         )}
         <span className="ml-auto">
           {card.assigneeName && (
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px]">
-                {initials(card.assigneeName)}
-              </AvatarFallback>
-            </Avatar>
+            <EntityAvatar
+              type="user"
+              seed={card.assigneeId ?? card.assigneeName ?? "u"}
+              name={card.assigneeName}
+              size="sm"
+            />
           )}
         </span>
       </div>

@@ -5,6 +5,7 @@ export interface Task {
   user_id: string;
   title: string;
   description: string | null;
+  icon?: string | null;
   due_date: string | null;
   percent_complete: number | null;
   status: "active" | "complete";

@@ -88,7 +88,7 @@ export async function createTask(
 
 export async function updateTask(
   userId: string, taskId: string,
-  updates: Partial<Pick<Task, "title" | "description" | "due_date" | "percent_complete" | "status">>,
+  updates: Partial<Pick<Task, "title" | "description" | "due_date" | "percent_complete" | "status" | "icon">>,
   oldTask: Task
 ): Promise<Task> {
   const changes: { field: string; old: string | null; new_: string | null }[] = [];
@@ -109,6 +109,7 @@ export async function updateTask(
   const dbUpdates: {
     title?: string; description?: string | null; due_date?: string | null;
     percent_complete?: number | null; status?: string; completed_at?: string | null;
+    icon?: string | null;
   } = { ...updates };
 
   if (updates.status === "complete" && oldTask.status !== "complete") {

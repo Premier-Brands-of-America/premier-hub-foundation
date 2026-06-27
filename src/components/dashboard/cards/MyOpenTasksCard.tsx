@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Circle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { Button } from "@/components/ui/button";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { cn } from "@/lib/utils";
 import type { WidgetConfig } from "../types";
 import { CardLoading, CardError, CardEmpty } from "./card-states";
@@ -78,7 +79,7 @@ export function MyOpenTasksCard({ config }: { config: WidgetConfig }) {
               onClick={() => navigate("/tasks")}
               className="group flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left hover:bg-accent"
             >
-              <Circle className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <EntityAvatar type="task" seed={t.id} name={t.title} src={(t as any).icon} size="xs" />
               <span className="flex-1 truncate text-sm text-foreground">{t.title}</span>
               {t.due_date && (
                 <span
