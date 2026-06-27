@@ -26,3 +26,11 @@ Autonomous functional + design revamp. Branched from feat/v2.
 - Phase 4 polish: Kanban card dragging state (council quick win).
 - Phase 5/6 docs: GRAPH-PERMISSIONS.md, REVAMP-SUMMARY.md, REVIEW-GUIDE.md, calendar-create-event edge fn, start-review.sh, BLOCKERS updated.
 - 57 tests pass; tsc+build green. Next: final verify + start detached server + .run markers.
+
+## 6/27/2026, 1:20:55 AM — DONE. Review server live.
+- Final verify: tsc clean · 57 tests pass · build green.
+- Started detached review server (nohup, 0.0.0.0:8080) — HTTP 200 confirmed.
+- URL: http://mac-studio.taildde06a.ts.net:8080 (also http://localhost:8080).
+- Wrote $HOME/Developer/PremierHubv3/.run/REVIEW_URL and .run/DONE.
+- 10 conventional commits on top of feat/v2; main untouched; nothing deployed/pushed.
+- Reviewer guide: docs/REVIEW-GUIDE.md. Summary: docs/REVAMP-SUMMARY.md.

@@ -37,3 +37,6 @@ phv2-*.png
 # Project-local design skills (cloned tooling, not app code)
 .claude/skills/
 .claude/workflows-tmp/
+
+# Local review server runtime
+.run/
