@@ -33,3 +33,7 @@ supabase/functions/.env
 # Local screenshot/debug artifacts
 .playwright-mcp/
 phv2-*.png
+
+# Project-local design skills (cloned tooling, not app code)
+.claude/skills/
+.claude/workflows-tmp/
