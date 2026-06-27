@@ -6,6 +6,8 @@ export interface Task {
   title: string;
   description: string | null;
   icon?: string | null;
+  /** Row-level visibility (Feature 5). New tasks default to private. */
+  visibility?: "public" | "private";
   due_date: string | null;
   percent_complete: number | null;
   status: "active" | "complete";

@@ -326,6 +326,20 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
             </div>
           </div>
 
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Visibility</Label>
+            <Select
+              value={task.visibility ?? "private"}
+              onValueChange={(v) => saveField("visibility", v)}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Private — only you, your manager, and admins</SelectItem>
+                <SelectItem value="public">Public — anyone in the org</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
             Created {format(new Date(task.created_at), "MMM d, yyyy 'at' h:mm a")}
           </div>

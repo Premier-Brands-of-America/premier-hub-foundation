@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { AuthContext, type Profile } from "@/contexts/AuthContext";
+import { setPreviewViewer } from "@/lib/previewViewer";
 
 export interface MockUserOption {
   label: string;
@@ -89,12 +90,21 @@ export function PreviewAuthProvider({ children }: { children: React.ReactNode })
     setMockUser(fakeUser);
     setMockSession(fakeSession);
     setProfile(p);
+    // Mirror the viewer so the service layer can scope the ACL demo path.
+    setPreviewViewer({
+      userId: p.user_id,
+      email: p.email ?? "",
+      isAdmin: !!p.is_admin,
+      departmentId: (p as { department_id?: string | null }).department_id ?? null,
+      managerEmail: p.manager_email ?? null,
+    });
   }, []);
 
   const signOut = useCallback(async () => {
     setMockUser(null);
     setMockSession(null);
     setProfile(null);
+    setPreviewViewer(null);
   }, []);
 
   const signInWithMicrosoft = useCallback(async () => {

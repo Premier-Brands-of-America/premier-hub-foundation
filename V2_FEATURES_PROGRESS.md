@@ -36,3 +36,24 @@ presets and a live WCAG AA contrast guardrail.
   `preferences.color_overrides` shape (nested in existing JSONB; reuses profile RLS).
 - **Preview:** fully working — pick colors / presets on /profile, see them apply live;
   contrast guardrail demonstrable by choosing a low-contrast text color.
+
+## Feature 5 — ACL / row-level visibility (2026-06-27 2:28pm EDT)
+Owner / project-lead / assignee / stakeholder / member + public; managers see their
+direct reports' items (M365 hierarchy); admins see all; new items default to private.
+- Migration `20260627150000_feature5_acl_visibility.sql` — adds `tasks.visibility`
+  (default private), `is_manager_of(_user,_target)` (matches `manager_email`), rewrites
+  `can_view_project` / `can_view_task` / `can_view_page` to add owner + manager-of-report
+  rules (SECURITY DEFINER, EXISTS subqueries, no N+1; manager indexes added); enables RLS
+  + SELECT/INSERT/UPDATE/DELETE policies on tasks.
+- `src/lib/visibility.ts` (+ test) — row adapters over the tested `acl.ts`/`pageShare.ts`
+  resolvers (project/task/page), mirroring the SQL rules.
+- `src/lib/previewViewer.ts` + PreviewAuthContext — mirror the signed-in mock viewer to
+  localStorage so the service layer can scope the demo path.
+- `src/lib/aclDemo.ts` — preview demo dataset (5 projects, 4 tasks) demonstrating every
+  rule; a synthetic direct report ("Riley Cho") always reports to the current viewer so
+  the manager rule is observable. Re-seeds per signed-in user.
+- `projectService` / `taskService` preview branches now seed + filter through the
+  resolver; `createTask` + CreateTaskModal default to private; visibility toggle added to
+  TaskDetailPanel (projects already had it).
+- **Preview:** sign in as Standard vs Admin → the visible project/task set changes
+  (admin sees all; standard sees own + public + stakeholder + direct-report items).

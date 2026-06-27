@@ -11,7 +11,7 @@ import { CharacterCount } from "@/components/CharacterCount";
 interface CreateTaskModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { title: string; description?: string; due_date?: string; percent_complete?: number | null }) => Promise<void>;
+  onSubmit: (data: { title: string; description?: string; due_date?: string; percent_complete?: number | null; visibility?: "public" | "private" }) => Promise<void>;
 }
 
 export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModalProps) {
@@ -19,6 +19,7 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [percentComplete, setPercentComplete] = useState<string>("na");
+  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [submitting, setSubmitting] = useState(false);
 
   const titleValid = title.trim().length > 0 && title.length <= 200;
@@ -33,11 +34,13 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
         description: description.trim() || undefined,
         due_date: dueDate || undefined,
         percent_complete: percentComplete === "na" ? null : Number(percentComplete),
+        visibility,
       });
       setTitle("");
       setDescription("");
       setDueDate("");
       setPercentComplete("na");
+      setVisibility("private");
       onOpenChange(false);
     } finally {
       setSubmitting(false);
@@ -101,6 +104,17 @@ export function CreateTaskModal({ open, onOpenChange, onSubmit }: CreateTaskModa
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Visibility</Label>
+            <Select value={visibility} onValueChange={(v) => setVisibility(v as "public" | "private")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Private — only you, your manager, and admins</SelectItem>
+                <SelectItem value="public">Public — anyone in the org</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

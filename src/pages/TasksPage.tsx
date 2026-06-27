@@ -50,7 +50,7 @@ const TasksPage = () => {
 
   const invalidateTasks = () => queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
-  const handleCreate = async (input: { title: string; description?: string; due_date?: string; percent_complete?: number | null }) => {
+  const handleCreate = async (input: { title: string; description?: string; due_date?: string; percent_complete?: number | null; visibility?: "public" | "private" }) => {
     await taskService.createTask(userId, input);
     invalidateTasks();
     toast({ title: "Task created" });

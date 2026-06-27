@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { isValidUrl } from "@/lib/validation";
+import { getPreviewViewer } from "@/lib/previewViewer";
+import { buildDemoProjects, currentDemoViewer } from "@/lib/aclDemo";
+import { canViewProjectRow } from "@/lib/visibility";
 import type {
   Project, ProjectStakeholder, ProjectUpdate, ProjectActivity,
   ProjectAttachment, ProjectLink, ProjectWithMeta, EnrichedStakeholder,
@@ -22,6 +25,21 @@ let mockAttachments: ProjectAttachment[] = [];
 let mockLinks: ProjectLink[] = [];
 let mockIdCounter = 1;
 const mockId = () => `mock-proj-${mockIdCounter++}`;
+
+// Re-seed the ACL demo dataset for whoever is signed in (Feature 5). Demo items
+// are prefixed `demo-acl-`; user-created mock projects are left untouched.
+let aclSeededFor: string | null = null;
+function ensureAclDemo() {
+  if (!IS_PREVIEW) return;
+  const pv = getPreviewViewer();
+  if (!pv || aclSeededFor === pv.userId) return;
+  mockProjects = mockProjects.filter((p) => !p.id.startsWith("demo-acl-"));
+  mockStakeholders = mockStakeholders.filter((s) => !s.project_id.startsWith("demo-acl-"));
+  const { projects, stakeholders } = buildDemoProjects({ userId: pv.userId, email: pv.email });
+  mockProjects.push(...projects);
+  mockStakeholders.push(...stakeholders);
+  aclSeededFor = pv.userId;
+}
 
 // ─── Profile cache for display names ───
 const profileCache = new Map<string, { full_name: string | null; email: string | null }>();
@@ -47,10 +65,15 @@ export async function resolveProfileName(userId: string): Promise<string> {
 
 export async function fetchProjects(page = 0): Promise<PaginatedResult<ProjectWithMeta>> {
   if (IS_PREVIEW) {
-    const items = mockProjects.map((p) => ({
+    ensureAclDemo();
+    const viewer = currentDemoViewer();
+    const all = mockProjects.map((p) => ({
       ...p,
       stakeholders: mockStakeholders.filter((s) => s.project_id === p.id),
     }));
+    const items = viewer
+      ? all.filter((p) => canViewProjectRow(viewer, p, p.stakeholders.map((s) => s.user_id)))
+      : all;
     return { items, total: items.length, page, pageSize: PROJECT_PAGE_SIZE };
   }
 
@@ -68,9 +91,13 @@ export async function fetchProjects(page = 0): Promise<PaginatedResult<ProjectWi
 
 export async function fetchProject(id: string): Promise<ProjectWithMeta | null> {
   if (IS_PREVIEW) {
+    ensureAclDemo();
     const p = mockProjects.find((p) => p.id === id);
     if (!p) return null;
-    return { ...p, stakeholders: mockStakeholders.filter((s) => s.project_id === id) };
+    const stakeholders = mockStakeholders.filter((s) => s.project_id === id);
+    const viewer = currentDemoViewer();
+    if (viewer && !canViewProjectRow(viewer, p, stakeholders.map((s) => s.user_id))) return null;
+    return { ...p, stakeholders };
   }
   const { data, error } = await supabase.from("projects").select(PROJECT_FIELDS).eq("id", id).single();
   if (error) throw error;

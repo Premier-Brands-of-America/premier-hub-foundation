@@ -1,12 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
 import { isValidUrl } from "@/lib/validation";
+import { getPreviewViewer } from "@/lib/previewViewer";
+import { buildDemoTasks, currentDemoViewer } from "@/lib/aclDemo";
+import { canViewTaskRow } from "@/lib/visibility";
 import type { Task, TaskContact, TaskUpdate, TaskActivity, TaskAttachment, TaskLink } from "@/types/tasks";
 
 const IS_PREVIEW = isPreviewEnvironment();
 export const TASK_PAGE_SIZE = 25;
 
-const TASK_FIELDS = "id, title, status, due_date, percent_complete, created_at, completed_at, description, updated_at, user_id";
+const TASK_FIELDS = "id, title, status, due_date, percent_complete, created_at, completed_at, description, updated_at, user_id, visibility";
 
 // ─── Mock data for preview mode ───
 let mockTasks: Task[] = [];
@@ -17,6 +20,18 @@ let mockAttachments: TaskAttachment[] = [];
 let mockLinks: TaskLink[] = [];
 let mockIdCounter = 1;
 const mockId = () => `mock-task-${mockIdCounter++}`;
+
+// Re-seed the ACL demo tasks for whoever is signed in (Feature 5). Demo tasks
+// are prefixed `demo-acl-`; user-created mock tasks are left untouched.
+let aclSeededFor: string | null = null;
+function ensureAclDemo() {
+  if (!IS_PREVIEW) return;
+  const pv = getPreviewViewer();
+  if (!pv || aclSeededFor === pv.userId) return;
+  mockTasks = mockTasks.filter((t) => !t.id.startsWith("demo-acl-"));
+  mockTasks.push(...buildDemoTasks({ userId: pv.userId }));
+  aclSeededFor = pv.userId;
+}
 
 // ─── Paginated response type ───
 export interface PaginatedResult<T> {
@@ -30,7 +45,10 @@ export interface PaginatedResult<T> {
 
 export async function fetchTasks(page = 0): Promise<PaginatedResult<Task>> {
   if (IS_PREVIEW) {
-    return { items: [...mockTasks], total: mockTasks.length, page, pageSize: TASK_PAGE_SIZE };
+    ensureAclDemo();
+    const viewer = currentDemoViewer();
+    const items = viewer ? mockTasks.filter((t) => canViewTaskRow(viewer, t)) : [...mockTasks];
+    return { items, total: items.length, page, pageSize: TASK_PAGE_SIZE };
   }
 
   const from = page * TASK_PAGE_SIZE;
@@ -46,7 +64,14 @@ export async function fetchTasks(page = 0): Promise<PaginatedResult<Task>> {
 }
 
 export async function fetchTask(id: string): Promise<Task | null> {
-  if (IS_PREVIEW) return mockTasks.find((t) => t.id === id) ?? null;
+  if (IS_PREVIEW) {
+    ensureAclDemo();
+    const t = mockTasks.find((t) => t.id === id) ?? null;
+    if (!t) return null;
+    const viewer = currentDemoViewer();
+    if (viewer && !canViewTaskRow(viewer, t)) return null;
+    return t;
+  }
   const { data, error } = await supabase.from("tasks").select(TASK_FIELDS).eq("id", id).single();
   if (error) throw error;
   return data as Task;
@@ -54,7 +79,7 @@ export async function fetchTask(id: string): Promise<Task | null> {
 
 export async function createTask(
   userId: string,
-  input: { title: string; description?: string; due_date?: string; percent_complete?: number | null }
+  input: { title: string; description?: string; due_date?: string; percent_complete?: number | null; visibility?: "public" | "private" }
 ): Promise<Task> {
   if (IS_PREVIEW) {
     const now = new Date().toISOString();
@@ -62,6 +87,7 @@ export async function createTask(
       id: mockId(), user_id: userId, title: input.title,
       description: input.description ?? null, due_date: input.due_date ?? null,
       percent_complete: input.percent_complete ?? null, status: "active",
+      visibility: input.visibility ?? "private",
       completed_at: null, created_at: now, updated_at: now,
     };
     mockTasks.unshift(task);
@@ -78,6 +104,7 @@ export async function createTask(
       user_id: userId, title: input.title,
       description: input.description || null, due_date: input.due_date || null,
       percent_complete: input.percent_complete ?? null,
+      visibility: input.visibility ?? "private",
     })
     .select()
     .single();
@@ -88,7 +115,7 @@ export async function createTask(
 
 export async function updateTask(
   userId: string, taskId: string,
-  updates: Partial<Pick<Task, "title" | "description" | "due_date" | "percent_complete" | "status" | "icon">>,
+  updates: Partial<Pick<Task, "title" | "description" | "due_date" | "percent_complete" | "status" | "icon" | "visibility">>,
   oldTask: Task
 ): Promise<Task> {
   const changes: { field: string; old: string | null; new_: string | null }[] = [];
@@ -106,10 +133,13 @@ export async function updateTask(
       new_: updates.percent_complete === null ? "N/A" : String(updates.percent_complete),
     });
 
+  if (updates.visibility !== undefined && updates.visibility !== oldTask.visibility)
+    changes.push({ field: "visibility", old: oldTask.visibility ?? "private", new_: updates.visibility });
+
   const dbUpdates: {
     title?: string; description?: string | null; due_date?: string | null;
     percent_complete?: number | null; status?: string; completed_at?: string | null;
-    icon?: string | null;
+    icon?: string | null; visibility?: "public" | "private";
   } = { ...updates };
 
   if (updates.status === "complete" && oldTask.status !== "complete") {
