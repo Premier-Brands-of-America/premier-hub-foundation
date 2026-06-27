@@ -49,7 +49,7 @@ synthesized decision live in `docs/design-review/`.
 - **Demo/seed board:** `src/features/planner/demoData.ts`.
 
 ## Tests
-56 Vitest unit tests (routing + CC rule, due-date urgency/justification, @mention
+57 Vitest unit tests (routing + CC rule, due-date urgency/justification, @mention
 parse/insert, notification triggers, Outlook prefill, Kanban board ops, planner
 metrics). `npx tsc --noEmit` clean; `npm run build` clean (chunk-size advisory only).
 

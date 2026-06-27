@@ -101,7 +101,7 @@ These same capabilities also appear on existing surfaces:
 
 ## Automated tests (proof without a DB)
 ```bash
-npm run test     # 56 unit tests: routing, CC rule, due-date, mentions,
+npm run test     # 57 unit tests: routing, CC rule, due-date, mentions,
                  # notification triggers, Outlook prefill, Kanban ops, metrics
 npx tsc --noEmit # clean
 npm run build    # clean (pre-existing chunk-size advisory only)
