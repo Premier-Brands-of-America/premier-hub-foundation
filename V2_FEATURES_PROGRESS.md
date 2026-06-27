@@ -78,3 +78,19 @@ Extends page visibility (private/department/public) with named per-person grants
   from a new "Share" button in `PageHeader`; StakeholderPicker gained a `triggerLabel`.
 - **Preview:** open a page → Share → add people, set view/edit, remove; the
   "Shared with you: Q3 brief" demo page is visible only because it's shared to you.
+
+## Feature 3 — project documents (2026-06-27 2:38pm EDT)
+A dedicated, richer "Documents" surface on projects (uploader + type + size + date),
+distinct from the existing lightweight Attachments list (kept; see DECISIONS.md).
+- Migration `20260627170000_project_documents.sql` — `project_documents` table +
+  `project-documents` Storage bucket (25MB, common MIME types) + RLS mirroring
+  project_attachments (view if can_view_project; add if stakeholder/admin; delete by
+  uploader/admin) for both table and storage.objects.
+- types: `ProjectDocument`; generated types.ts gains `project_documents`.
+- `src/services/projectDocuments.ts` — list/upload/remove + signed-URL/`getUrl`.
+  Preview stores file content as inline data-URLs so upload→preview→download works
+  with NO Storage; seeds 2 sample docs on the demo projects.
+- `src/components/projects/ProjectDocuments.tsx` — type icons, size, uploader, date,
+  upload (multi-file, 25MB guard), open/download, remove; mounted in ProjectDetailPanel.
+- **Preview:** open a demo project → Documents shows seeded files (open them), upload a
+  file and download it back, remove it. Real Storage wiring logged in BLOCKERS.md.

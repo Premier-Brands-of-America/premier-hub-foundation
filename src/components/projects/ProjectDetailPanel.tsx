@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RelationsSection } from "@/components/relations/RelationsSection";
+import { ProjectDocuments } from "@/components/projects/ProjectDocuments";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { OutlookCalendarPanel } from "@/components/integrations/outlook";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -657,6 +658,13 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
                 <p className="text-[11px] text-muted-foreground">Max 25 MB. PDF, Office, images, CSV, TXT</p>
               </>
             )}
+          </section>
+
+          <Separator />
+
+          {/* ─── Documents (Feature 3) ─── */}
+          <section>
+            <ProjectDocuments projectId={project.id} />
           </section>
 
           <Separator />

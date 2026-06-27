@@ -56,3 +56,18 @@ Verified that Microsoft Entra OAuth is the ONLY real authentication path.
 - **Infra follow-up (owner):** keep the Supabase Auth provider settings locked to
   Azure only (do not enable email/password or magic-link in the Supabase console).
   Logged in BLOCKERS.md.
+
+## Project documents vs attachments (Feature 3, 2026-06-27)
+The owner's brief explicitly asked for a `project_documents` table + `project-documents`
+Storage bucket with rich metadata (uploader + date + type icons + size). A lightweight
+`project_attachments` table/bucket already existed. Rather than silently re-interpret the
+spec onto the existing table, we built the requested dedicated **Documents** surface
+(richer metadata, multi-file upload, preview/download) and left the existing minimal
+**Attachments** list intact. Both appear in the project detail panel; the owner can
+consolidate later if desired. Preview keeps documents working with inline data-URLs.
+
+## Per-user colors persistence (Feature 2, 2026-06-27)
+Chose to nest `color_overrides` inside the existing `profiles.preferences` JSONB rather
+than add a separate `user_theme_prefs` table: it reuses the established preferences
+read/write path + RLS (owner updates own row), avoiding duplicate policies. localStorage
+mirrors it for instant apply + the preview path.

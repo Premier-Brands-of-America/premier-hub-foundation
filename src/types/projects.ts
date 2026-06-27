@@ -56,6 +56,22 @@ export interface ProjectAttachment {
   created_at: string;
 }
 
+/** Feature 3 — richer per-project documents (uploader + type + size + date). */
+export interface ProjectDocument {
+  id: string;
+  project_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_type: string;
+  size_bytes: number;
+  storage_path: string;
+  created_at: string;
+  /** Enriched for display (uploader name). */
+  uploader_name?: string | null;
+  /** Preview-only inline content so download/preview works without Storage. */
+  preview_data_url?: string | null;
+}
+
 export interface ProjectLink {
   id: string;
   project_id: string;
