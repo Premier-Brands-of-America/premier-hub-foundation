@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useState } from "react";
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
-import { getForegroundColor, getNodeColor, getStatusColor, nodeRadius, RELATION_STYLES } from "./graphColors";
+import {
+  getForegroundColor, getNodeColor, getStatusColor, nodeRadius,
+  RELATION_STYLES, getEdgeColor, getPrimaryColor, getCardColor, withAlpha,
+} from "./graphColors";
 import { DEFAULT_FORCES, type GraphEdge, type GraphForces, type GraphNode, type GraphPayload } from "@/types/graph";
 
 export interface GraphCanvasHandle {
@@ -28,6 +31,24 @@ function edgeEnds(e: GraphEdge): [string, string] {
   const s = typeof e.source === "string" ? e.source : (e.source as unknown as GraphNode).id;
   const t = typeof e.target === "string" ? e.target : (e.target as unknown as GraphNode).id;
   return [s, t];
+}
+
+/** Resolve once per render call so theme-toggling is reflected without remount. */
+function resolveThemeTokens() {
+  return {
+    labelColor: getForegroundColor(),
+    primaryColor: getPrimaryColor(),
+    cardColor: getCardColor(),
+    // semi-transparent card for label backing pill
+    pillBg: withAlpha("--card", 0.82, "0, 0%, 100%"),
+    pillBorder: withAlpha("--border", 0.35, "24, 14%, 90%"),
+  };
+}
+
+/** Whether the user prefers reduced motion. */
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
 export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCanvas(
@@ -112,10 +133,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       d3VelocityDecay?: (v: number) => void;
       d3ReheatSimulation?: () => void;
     } | undefined;
-    // react-force-graph wires its imperative methods onto the ref a tick after
-    // first mount, so they can be absent on the initial effect run — calling them
-    // unguarded crashes the page. Guard on readiness (d3Force as the sentinel);
-    // this effect re-runs when graph data loads, applying the tuning once ready.
     if (!fg || typeof fg.d3Force !== "function") return;
     fg.d3VelocityDecay?.(0.3);
     fg.d3Force("charge")?.strength?.(forces.charge);
@@ -126,12 +143,11 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
     fg.d3ReheatSimulation?.();
   }, [forces, fgData]);
 
-  // Resolve once per render so it tracks theme toggles.
-  const labelColor = getForegroundColor();
-
   // Perf: freeze layout sooner as the graph grows; offload to worker past ~800 nodes.
   const n = data.nodes.length;
-  const cooldownTicks = n > 500 ? 80 : n > 200 ? 120 : 200;
+  // Reduce animation ticks for prefers-reduced-motion
+  const reducedMotion = prefersReducedMotion();
+  const cooldownTicks = reducedMotion ? 50 : (n > 500 ? 80 : n > 200 ? 120 : 200);
   const useWorker = n > 800;
   const FG = ForceGraph2D as unknown as React.ComponentType<Record<string, unknown>>;
 
@@ -157,18 +173,38 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       linkColor={(l: GraphEdge) => {
         const [s, t] = edgeEnds(l);
         const active = !highlightedSet || (highlightedSet.has(s) && highlightedSet.has(t));
-        return active ? "rgba(120,120,120,0.55)" : "rgba(120,120,120,0.10)";
+        return getEdgeColor(active);
       }}
       linkLineDash={(l: GraphEdge) => RELATION_STYLES[l.type]?.dash ?? null}
       linkWidth={(l: GraphEdge) => RELATION_STYLES[l.type]?.weight ?? 1}
-      linkDirectionalArrowLength={4}
-      linkDirectionalArrowRelPos={0.95}
+      linkDirectionalArrowLength={5}
+      linkDirectionalArrowRelPos={0.92}
+      linkDirectionalArrowColor={(l: GraphEdge) => {
+        const [s, t] = edgeEnds(l);
+        const active = !highlightedSet || (highlightedSet.has(s) && highlightedSet.has(t));
+        return getEdgeColor(active);
+      }}
       nodeCanvasObject={(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const x = node.x ?? 0;
         const y = node.y ?? 0;
         const r = nodeRadius(node.__deg ?? 0, forces.nodeSize);
         const dimmed = highlightedSet ? !highlightedSet.has(node.id) : false;
-        ctx.globalAlpha = dimmed ? 0.18 : 1;
+        const isSelected = node.id === selectedId;
+        const isHovered = node.id === hoverId;
+
+        // Resolve theme tokens per frame (cheap string lookup; handles live theme toggle)
+        const { labelColor, primaryColor, cardColor, pillBg, pillBorder } = resolveThemeTokens();
+
+        ctx.globalAlpha = dimmed ? 0.15 : 1;
+
+        // Drop shadow / halo for depth — only on non-dimmed nodes
+        if (!dimmed) {
+          ctx.save();
+          ctx.shadowColor = node.__color ?? "hsl(220,12%,50%)";
+          ctx.shadowBlur = isSelected || isHovered ? 14 / globalScale : 6 / globalScale;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+        }
 
         // Body — color by type
         ctx.beginPath();
@@ -176,27 +212,80 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         ctx.fillStyle = node.__color ?? "hsl(220,12%,50%)";
         ctx.fill();
 
-        // Border — tint by status (selection ring overrides)
-        if (node.id === selectedId) {
+        if (!dimmed) {
+          ctx.restore(); // clear shadow for rings/labels
+        }
+
+        // Selection ring (primary color, thick)
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 3.5 / globalScale, 0, 2 * Math.PI);
           ctx.lineWidth = 2.5 / globalScale;
-          ctx.strokeStyle = "#fff";
+          ctx.strokeStyle = primaryColor;
+          ctx.stroke();
+          // Outer glow ring
+          ctx.beginPath();
+          ctx.arc(x, y, r + 6.5 / globalScale, 0, 2 * Math.PI);
+          ctx.lineWidth = 1 / globalScale;
+          ctx.strokeStyle = withAlpha("--primary", 0.28, "347, 84%, 42%");
+          ctx.stroke();
+        } else if (isHovered) {
+          // Hover ring — slightly smaller, primary color
+          ctx.beginPath();
+          ctx.arc(x, y, r + 2.5 / globalScale, 0, 2 * Math.PI);
+          ctx.lineWidth = 1.8 / globalScale;
+          ctx.strokeStyle = withAlpha("--primary", 0.7, "347, 84%, 42%");
           ctx.stroke();
         } else if (node.__border) {
+          // Status ring
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, 2 * Math.PI);
           ctx.lineWidth = Math.max(1.5, r * 0.28);
           ctx.strokeStyle = node.__border;
           ctx.stroke();
         }
 
         // Label — only when zoomed in enough to be legible
-        if (globalScale >= 1.2) {
-          const fontSize = 11 / globalScale;
-          ctx.font = `${fontSize}px sans-serif`;
-          ctx.fillStyle = labelColor;
+        if (globalScale >= 1.1) {
+          const fontSize = Math.max(9, 11 / globalScale);
+          ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`;
+          const label = node.label?.length > 22 ? node.label.slice(0, 22) + "…" : (node.label ?? "");
+          const textWidth = ctx.measureText(label).width;
+          const padH = 3.5 / globalScale;
+          const padV = 2 / globalScale;
+          const pillW = textWidth + padH * 2;
+          const pillH = fontSize + padV * 2;
+          const pillX = x - pillW / 2;
+          const pillY = y + r + 3 / globalScale;
+          const pillR = 3 / globalScale;
+
+          // Backing pill for readability
+          ctx.beginPath();
+          ctx.moveTo(pillX + pillR, pillY);
+          ctx.lineTo(pillX + pillW - pillR, pillY);
+          ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
+          ctx.lineTo(pillX + pillW, pillY + pillH - pillR);
+          ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pillR, pillY + pillH);
+          ctx.lineTo(pillX + pillR, pillY + pillH);
+          ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pillR);
+          ctx.lineTo(pillX, pillY + pillR);
+          ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
+          ctx.closePath();
+          ctx.fillStyle = pillBg;
+          ctx.fill();
+          ctx.strokeStyle = pillBorder;
+          ctx.lineWidth = 0.5 / globalScale;
+          ctx.stroke();
+
+          // Label text
+          ctx.fillStyle = isSelected || isHovered ? primaryColor : labelColor;
           ctx.textAlign = "center";
-          ctx.textBaseline = "top";
-          const label = node.label?.length > 18 ? node.label.slice(0, 18) + "…" : (node.label ?? "");
-          ctx.fillText(label, x, y + r + 2 / globalScale);
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, x, pillY + pillH / 2);
         }
+
+        // Suppress unused variable warning — cardColor referenced for clarity
+        void cardColor;
         ctx.globalAlpha = 1;
       }}
       nodePointerAreaPaint={(node: FGNode, color: string, ctx: CanvasRenderingContext2D) => {

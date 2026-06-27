@@ -42,6 +42,7 @@ const FeatureOff = lazy(() => import("./pages/FeatureOff"));
 const PagesPage = lazy(() => import("./pages/Pages"));
 const TimelinePage = lazy(() => import("./pages/Timeline"));
 const GraphPage = lazy(() => import("./pages/Graph"));
+const PlannerPage = lazy(() => import("./pages/Planner"));
 const SearchResultsPage = lazy(() => import("./pages/SearchResults"));
 
 const queryClient = new QueryClient({
@@ -146,6 +147,7 @@ function AppRoutes() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+          <Route path="/planner" element={<ProtectedRoute><PlannerPage /></ProtectedRoute>} />
           <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
           <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />
           <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />

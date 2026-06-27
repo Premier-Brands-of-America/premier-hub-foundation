@@ -17,6 +17,7 @@ import {
   FileType2,
   CalendarRange,
   Network,
+  KanbanSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -41,6 +42,7 @@ import { NavItem, type NavItemConfig } from "@/components/NavItem";
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "My Tasks", url: "/tasks", icon: CheckSquare },
+  { title: "Planner", url: "/planner", icon: KanbanSquare },
   { title: "Pages", url: "/pages", icon: FileType2 },
   { title: "Timeline", url: "/timeline", icon: CalendarRange },
   { title: "My Assigned Projects", url: "/assigned-projects", icon: FolderKanban },

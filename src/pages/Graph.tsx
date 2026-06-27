@@ -8,10 +8,10 @@ import { GraphLegend } from "@/components/graph/GraphLegend";
 import { NodeDetailSheet } from "@/components/graph/NodeDetailSheet";
 import { GraphListFallback } from "@/components/graph/GraphListFallback";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
 import { DEFAULT_FORCES } from "@/types/graph";
+import { Network, SlidersHorizontal } from "lucide-react";
 import type { GraphEdge, GraphFilters, GraphForces, GraphNode, GraphPayload, GraphViewFilters, NodeType, RelationType } from "@/types/graph";
 
 const ALL_NODE_TYPES: NodeType[] = ["project", "task", "request", "page", "user"];
@@ -71,6 +71,131 @@ function applyViewFilters(payload: GraphPayload, view: GraphViewFilters): GraphP
   return { nodes, edges, truncated: payload.truncated };
 }
 
+/** Polished loading shimmer for the graph canvas area. */
+function GraphLoadingShimmer({ width, height }: { width: number; height: number }) {
+  return (
+    <div
+      className="absolute inset-0 overflow-hidden bg-background"
+      style={{ width, height }}
+      aria-label="Loading graph…"
+    >
+      {/* Animated gradient sweep using the design-system shimmer keyframe */}
+      <div
+        className="absolute inset-0 animate-shimmer"
+        style={{
+          background: "linear-gradient(90deg, transparent 0%, hsl(var(--muted)/0.7) 50%, transparent 100%)",
+          backgroundSize: "200% 100%",
+        }}
+      />
+
+      {/* Faint node placeholders scattered across the canvas */}
+      <svg width={width} height={height} className="absolute inset-0 opacity-20">
+        {/* Simulated node clusters */}
+        {[
+          { cx: 0.35, cy: 0.4, r: 18 }, { cx: 0.55, cy: 0.3, r: 12 }, { cx: 0.65, cy: 0.55, r: 22 },
+          { cx: 0.45, cy: 0.65, r: 10 }, { cx: 0.25, cy: 0.55, r: 15 }, { cx: 0.72, cy: 0.38, r: 8 },
+          { cx: 0.5,  cy: 0.5,  r: 28 }, { cx: 0.3,  cy: 0.28, r: 9 },  { cx: 0.78, cy: 0.62, r: 13 },
+          { cx: 0.18, cy: 0.42, r: 7 },  { cx: 0.6,  cy: 0.7,  r: 11 }, { cx: 0.42, cy: 0.22, r: 16 },
+        ].map(({ cx, cy, r }, i) => (
+          <circle
+            key={i}
+            cx={cx * width}
+            cy={cy * height}
+            r={r}
+            fill="hsl(var(--muted-foreground))"
+            opacity={0.4 + (i % 3) * 0.15}
+          />
+        ))}
+        {/* Simulated edges */}
+        {[
+          [0.35, 0.4, 0.5, 0.5], [0.5, 0.5, 0.65, 0.55], [0.5, 0.5, 0.55, 0.3],
+          [0.55, 0.3, 0.35, 0.4], [0.25, 0.55, 0.35, 0.4], [0.45, 0.65, 0.5, 0.5],
+          [0.72, 0.38, 0.65, 0.55], [0.78, 0.62, 0.65, 0.55], [0.3, 0.28, 0.35, 0.4],
+        ].map(([x1, y1, x2, y2], i) => (
+          <line
+            key={i}
+            x1={(x1 ?? 0) * width}
+            y1={(y1 ?? 0) * height}
+            x2={(x2 ?? 0) * width}
+            y2={(y2 ?? 0) * height}
+            stroke="hsl(var(--border))"
+            strokeWidth={1.5}
+            opacity={0.6}
+          />
+        ))}
+      </svg>
+
+      {/* Centre status chip */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="flex items-center gap-2.5 bg-card/90 border border-border/60 rounded-full px-4 py-2 shadow-sm backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="text-xs text-muted-foreground font-medium tracking-wide">
+            Building graph…
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Desktop empty state when the filtered graph has no nodes. */
+function GraphEmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 pointer-events-none select-none">
+      {/* Icon with ring */}
+      <div className="relative flex items-center justify-center">
+        <div className="absolute w-24 h-24 rounded-full bg-muted/50 animate-pulse" />
+        <div className="relative w-16 h-16 rounded-full bg-muted flex items-center justify-center border border-border/60">
+          <Network className="h-7 w-7 text-muted-foreground/60" />
+        </div>
+      </div>
+
+      <div className="text-center space-y-1.5">
+        <h3 className="text-base font-semibold text-foreground/80">No nodes to display</h3>
+        <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+          The current filters returned an empty graph. Try broadening your entity types, removing status filters, or disabling "hide orphans".
+        </p>
+      </div>
+
+      <div className="pointer-events-auto">
+        <Button variant="outline" size="sm" className="gap-2" onClick={onReset}>
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Reset filters
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Small stats pill — node count by type + edge total. */
+function GraphStats({ payload }: { payload: GraphPayload }) {
+  const typeOrder: NodeType[] = ["project", "task", "request", "page", "user"];
+  const counts = useMemo(() => {
+    const m: Partial<Record<NodeType, number>> = {};
+    for (const n of payload.nodes) {
+      if (n.type in m) { m[n.type] = (m[n.type] ?? 0) + 1; }
+      else { m[n.type] = 1; }
+    }
+    return m;
+  }, [payload.nodes]);
+
+  const parts = typeOrder
+    .filter((t) => (counts[t] ?? 0) > 0)
+    .map((t) => `${counts[t]} ${t}${(counts[t] ?? 0) !== 1 ? "s" : ""}`);
+
+  if (parts.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 bg-card/80 border border-border/50 rounded-full px-3 py-1 text-[11px] text-muted-foreground backdrop-blur-sm shadow-sm select-none">
+      <span className="font-medium">{payload.nodes.length}</span>
+      <span>nodes</span>
+      <span className="opacity-40">·</span>
+      <span className="font-medium">{payload.edges.length}</span>
+      <span>edges</span>
+    </div>
+  );
+}
+
 export default function GraphPage() {
   const [params, setParams] = useSearchParams();
   const [filters, setFilters] = useState<GraphFilters>(() => filtersFromParams(params));
@@ -124,6 +249,15 @@ export default function GraphPage() {
     return new Set(ids);
   }, [view.search, payload.nodes]);
 
+  // Node counts per type (passed to legend for count badges)
+  const nodeCounts = useMemo(() => {
+    const m: Partial<Record<NodeType, number>> = {};
+    for (const n of payload.nodes) {
+      m[n.type] = (m[n.type] ?? 0) + 1;
+    }
+    return m;
+  }, [payload.nodes]);
+
   const rooted = !!filters.center_id;
 
   const handleNodeClick = (n: GraphNode) => {
@@ -138,6 +272,11 @@ export default function GraphPage() {
   const handleClearFocus = () =>
     setFilters((f) => ({ ...f, center_type: undefined, center_id: undefined, depth: undefined }));
 
+  const handleResetFilters = () => {
+    setFilters({ entity_types: undefined, relation_types: undefined });
+    setView({});
+  };
+
   const handleExport = () => {
     const dataUrl = canvasRef.current?.exportPng();
     if (!dataUrl) return;
@@ -147,18 +286,24 @@ export default function GraphPage() {
     a.click();
   };
 
+  const isEmpty = !isLoading && payload.nodes.length === 0;
+
   return (
     <div ref={containerRef} className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-background">
+      {/* Truncation banner */}
       {payload.truncated && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-warning/90 text-warning-foreground text-xs px-3 py-1 rounded shadow">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-warning/90 text-warning-foreground text-xs px-3 py-1 rounded-full shadow font-medium">
           Showing {payload.nodes.length} of many — refine filters or focus a local graph
         </div>
       )}
 
+      {/* Rooted / local graph badge */}
       {rooted && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 mt-8 flex items-center gap-2 bg-card text-xs px-3 py-1 rounded shadow border">
-          <span>Local graph · depth {filters.depth ?? 1}</span>
-          <Button variant="ghost" size="sm" className="h-6 px-2" onClick={handleClearFocus}>
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 mt-8 flex items-center gap-2 bg-card/95 text-xs px-3 py-1.5 rounded-full shadow border border-border/60 backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+          <span className="text-muted-foreground">Local graph</span>
+          <span className="font-medium">depth {filters.depth ?? 1}</span>
+          <Button variant="ghost" size="sm" className="h-5 px-2 text-xs" onClick={handleClearFocus}>
             See everything
           </Button>
         </div>
@@ -171,23 +316,24 @@ export default function GraphPage() {
       ) : (
         <>
           {isLoading ? (
-            <div className="p-4 space-y-2">
-              <Skeleton className="h-6 w-1/3" />
-              <Skeleton className="h-[60vh] w-full" />
-            </div>
+            <GraphLoadingShimmer width={size.w} height={size.h} />
           ) : (
-            <GraphCanvas
-              ref={canvasRef}
-              data={payload}
-              forces={forces}
-              width={size.w}
-              height={size.h}
-              selectedId={selected?.id ?? null}
-              highlightIds={searchHighlight}
-              onNodeClick={handleNodeClick}
-            />
+            <>
+              <GraphCanvas
+                ref={canvasRef}
+                data={payload}
+                forces={forces}
+                width={size.w}
+                height={size.h}
+                selectedId={selected?.id ?? null}
+                highlightIds={searchHighlight}
+                onNodeClick={handleNodeClick}
+              />
+              {isEmpty && <GraphEmptyState onReset={handleResetFilters} />}
+            </>
           )}
 
+          {/* Left panel: Filters + Forces */}
           <div className="absolute top-3 left-3 z-10 space-y-3">
             <GraphFiltersPanel
               filters={filters}
@@ -204,6 +350,8 @@ export default function GraphPage() {
               rooted={rooted}
             />
           </div>
+
+          {/* Top-right: Toolbar */}
           <div className="absolute top-3 right-3 z-10">
             <GraphToolbar
               nodes={payload.nodes}
@@ -217,8 +365,13 @@ export default function GraphPage() {
               }}
             />
           </div>
-          <div className="absolute bottom-3 right-3 z-10">
-            <GraphLegend />
+
+          {/* Bottom-right: Stats + Legend */}
+          <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
+            {!isLoading && payload.nodes.length > 0 && (
+              <GraphStats payload={payload} />
+            )}
+            <GraphLegend counts={nodeCounts} />
           </div>
         </>
       )}

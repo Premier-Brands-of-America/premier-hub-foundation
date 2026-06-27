@@ -16,6 +16,20 @@ function cssVar(name: string, fallback: string): string {
   return v ? `hsl(${v})` : fallback;
 }
 
+/** Returns a raw HSL string (no `hsl()` wrapper) for alpha blending. */
+function cssVarRaw(name: string, fallback: string): string {
+  const root = typeof document !== "undefined" ? document.documentElement : null;
+  if (!root) return fallback;
+  const v = getComputedStyle(root).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+/** Build an `hsla(…, alpha)` string from a CSS variable that holds `H S% L%`. */
+export function withAlpha(cssVarName: string, alpha: number, fallbackHsl = "220, 12%, 50%"): string {
+  const raw = cssVarRaw(cssVarName, fallbackHsl);
+  return `hsla(${raw}, ${alpha})`;
+}
+
 export function getNodeColor(type: NodeType): string {
   return cssVar(NODE_COLOR_VAR[type], "hsl(220, 12%, 50%)");
 }
@@ -23,6 +37,27 @@ export function getNodeColor(type: NodeType): string {
 /** Resolved theme foreground — for canvas labels (canvas can't read CSS vars). */
 export function getForegroundColor(): string {
   return cssVar("--foreground", "hsl(220, 15%, 20%)");
+}
+
+/** Primary color for selection/hover rings. */
+export function getPrimaryColor(): string {
+  return cssVar("--primary", "hsl(347, 84%, 42%)");
+}
+
+/** Card background for label backing pills. */
+export function getCardColor(): string {
+  return cssVar("--card", "hsl(0, 0%, 100%)");
+}
+
+/**
+ * Edge color based on highlight state.
+ * Active edges use --muted-foreground at 0.55 opacity; dimmed use --border at 0.12.
+ */
+export function getEdgeColor(active: boolean): string {
+  if (active) {
+    return withAlpha("--muted-foreground", 0.55, "340, 6%, 42%");
+  }
+  return withAlpha("--border", 0.12, "24, 14%, 90%");
 }
 
 /** Map a free-text entity status onto a design-system status token. */
