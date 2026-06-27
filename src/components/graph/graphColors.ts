@@ -51,14 +51,16 @@ export function getCardColor(): string {
 }
 
 /**
- * Edge color based on highlight state.
- * Active edges use --muted-foreground at 0.55 opacity; dimmed use --border at 0.12.
+ * Edge color based on highlight state. Kept calm and low-key so the warm-dark
+ * canvas reads quietly: active edges use the warm-neutral --muted-foreground at
+ * 0.45 opacity; dimmed use --border at 0.12. Fallbacks are warm-neutral grays
+ * (never a pink hue) in case a CSS var fails to resolve on the canvas.
  */
 export function getEdgeColor(active: boolean): string {
   if (active) {
-    return withAlpha("--muted-foreground", 0.55, "340, 6%, 42%");
+    return withAlpha("--muted-foreground", 0.45, "28, 6%, 60%");
   }
-  return withAlpha("--border", 0.12, "24, 14%, 90%");
+  return withAlpha("--border", 0.12, "24, 6%, 18%");
 }
 
 /** Map a free-text entity status onto a design-system status token. */

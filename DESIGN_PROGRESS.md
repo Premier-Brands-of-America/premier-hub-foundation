@@ -174,3 +174,31 @@ stated direction. `npx tsc --noEmit` clean · `npm run build` green.
 - `npx tsc --noEmit` clean · `npm run build` green.
 
 ---
+
+## 2026-06-27 — Round 2: Live visual verification + final graph edge calm
+
+Drove the running app on :8080 via headless Chrome (CDP), forced dark mode, and
+captured every target surface logged in as the Admin test profile:
+- **Dashboard** — warm charcoal canvas, deep (non-neon) crimson CTA + Admin badge,
+  refined empty-state chips, icon-chip card headers. ✓
+- **Planner › Insights** — donut charts render center "TOTAL" labels (via recharts
+  `<Label position="center">`), rounded arcs + bottom legends; bar charts have
+  gridlines, clean axes, value labels, per-priority colored bars; muted cohesive
+  palette. ✓ (confirmed 12 chart surfaces + 2 donut totals in the DOM)
+- **Graph** — entity nodes desaturated/cohesive (rose project, calm blue task,
+  teal person, soft purple request, gray page); edges resolve to warm-neutral
+  `hsla(28 6% 60% / …)` (probed live), not the old red/magenta. ✓
+- **Pages editor** — created a page; SOURCE/PREVIEW columns now fill the wider pane
+  (editor pane 62%, backlinks 18%), comfortable line length. ✓
+
+Final tweak: `graphColors.ts` `getEdgeColor` active opacity 0.55→0.45 and replaced
+the legacy pink (`340°`) fallback with a warm-neutral gray so edges can never
+resolve to a pink hue even if a CSS var fails on the canvas.
+- `npx tsc --noEmit` clean · `npm run build` green.
+
+### Round 2 status: COMPLETE
+Dark mode is warm + calm (hue ~24°, not cold 240°); crimson de-neoned (62% sat,
+not ~90%); graph + chart palettes muted/cohesive; planner & dashboard polished;
+pages editor widened. All committed to feat/premier-hub-revamp; main untouched.
+
+---
