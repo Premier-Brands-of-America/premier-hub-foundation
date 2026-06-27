@@ -26,7 +26,7 @@ interface Props {
   height: number;
 }
 
-type FGNode = GraphNode & { __color?: string; __raw?: string; __border?: string | null; __deg?: number };
+type FGNode = GraphNode & { __color?: string; __raw?: string; __border?: string | null; __deg?: number; __uri?: string | null };
 type FGData = { nodes: FGNode[]; links: GraphEdge[] };
 
 /** Entity types that render a real avatar/icon image inside the node circle.
@@ -130,6 +130,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       base.__raw = getNodeColorRaw(n.type);
       base.__border = getStatusColor(n.status);
       base.__deg = degree.get(n.id) ?? 0;
+      // Resolve the avatar/icon data-URI ONCE per data change (DiceBear's
+      // toDataUri() is expensive — never call it inside the per-frame painter).
+      base.__uri = imageUriFor(base);
       return base;
     });
     const next: FGData = { nodes: nextNodes, links: data.edges.map((e) => ({ ...e })) };
@@ -390,8 +393,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
           ctx.fill();
 
           // 2. Body — avatar/icon image clipped to the circle, else colored disc.
-          const uri = imageUriFor(node);
-          const img = uri ? getImg(uri) : null;
+          //    URI was resolved once at data-build time (see __uri).
+          const img = node.__uri ? getImg(node.__uri) : null;
           if (img) {
             // tinted backing so a still-loading or transparent image still glows
             ctx.beginPath();
