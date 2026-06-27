@@ -12,3 +12,10 @@ Autonomous functional + design revamp. Branched from feat/v2.
 - Built config/artOwnership.ts, lib/{artRouting,dueDate,mentions,notificationTriggers,outlookPrefill}.ts + tests.
 - 37 unit tests pass; tsc clean; build was green at baseline.
 - Committed. Next: migrations (buckets/kanban/comment-mentions/request fields/notifications enrichment).
+
+## 6/27/2026, 1:04:21 AM — Phase 1 batches B-D + Phase 4 graph ✅
+- Shared components: DueDateBadge, DueDateJustificationField, AttachmentGallery, CommentsThread(@mentions), MeetingScheduler.
+- Kanban: features/planner (pure ops + 9 tests, demo data, hook, Card/Column/Board/CardDetailDialog), /planner route + sidebar nav.
+- Graph enterprise redesign delivered by background agent (token edges, node glow, legend w/ relation styles, empty/loading states, stats). tsc+build green.
+- 46 tests pass; build green. Committed.
+- Next: Planner dashboard charts (recharts), then Art Request routing in form.

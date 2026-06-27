@@ -14,8 +14,16 @@ import { CardDetailDialog } from "./CardDetailDialog";
 import { DEMO_USERS } from "./demoData";
 import type { PlannerCard } from "./types";
 
-export function KanbanBoard({ projectId = "demo-project" }: { projectId?: string }) {
-  const board = usePlannerBoard(projectId);
+export function KanbanBoard({
+  projectId = "demo-project",
+  controller,
+}: {
+  projectId?: string;
+  controller?: ReturnType<typeof usePlannerBoard>;
+}) {
+  // Use a provided controller (shared with the charts view) or create our own.
+  const own = usePlannerBoard(projectId);
+  const board = controller ?? own;
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [addingBucket, setAddingBucket] = useState(false);
   const [bucketName, setBucketName] = useState("");
