@@ -35,3 +35,24 @@
   a DnD library, bespoke chart lib.
 - Phase 4 applied: token-based Graph edges + node polish (already), Kanban dragging
   visual state. Remaining nice-to-haves logged.
+
+## Auth model — M365-only (Feature 4, verified 2026-06-27 2:15pm EDT)
+Verified that Microsoft Entra OAuth is the ONLY real authentication path.
+- **Production** (lovable.app, `import.meta.env.DEV === false`): the app mounts
+  `AuthProvider` + `Login` (App.tsx lines 140/187). `AuthContext` exposes exactly one
+  sign-in: `signInWithMicrosoft()` → `supabase.auth.signInWithOAuth({ provider: "azure" })`.
+  The Entra authorize URL for the Outlook/Graph connection is built server-side in the
+  `ms-oauth-start` edge fn (HMAC-signed state) and never exposed in the client bundle.
+- **Preview/dev only** (`isPreviewEnvironment()` — Vite dev, localhost, *.lovableproject.com,
+  Tailscale `.ts.net`/`100.x`): mounts `PreviewAuthProvider` + `PreviewLogin` with mock
+  user cards. `signInWithMicrosoft()` is a no-op there. This path is unreachable in prod
+  because `import.meta.env.DEV` is false and the host is `lovable.app`.
+- **No alternative auth exists.** Grep across `src/` for `signInWithPassword`,
+  `signInWithOtp`, `signUp`, `resetPasswordForEmail`, `magicLink` → zero matches. The
+  Supabase client is a vanilla `createClient` with default session storage; no custom
+  providers. User rows are created only by the `handle_new_user` trigger on
+  `auth.users` INSERT (extracts `azure_oid` from OIDC metadata); `profiles` RLS forbids
+  direct inserts. No code change required — verification + documentation only.
+- **Infra follow-up (owner):** keep the Supabase Auth provider settings locked to
+  Azure only (do not enable email/password or magic-link in the Supabase console).
+  Logged in BLOCKERS.md.
