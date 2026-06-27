@@ -46,7 +46,7 @@ export default function PagesPage() {
 
   const Editor = page ? (
     <div className="flex h-full flex-col overflow-auto px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+      <div className="flex w-full flex-1 flex-col">
         <PageBreadcrumbs pageId={page.id} />
         {/* The one bold element on this screen: the crimson edge-rail document header. */}
         <div className="edge-rail">
