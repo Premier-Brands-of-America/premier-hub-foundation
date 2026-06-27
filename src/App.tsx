@@ -171,9 +171,9 @@ function AppRoutes() {
           <Route path="/pages" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages/:id" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/timeline" element={<ProtectedRoute><FeatureRoute feature="timeline"><TimelinePage /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/graph" element={<ProtectedRoute requireRole={["admin","designer"]}><FeatureRoute feature="graph"><GraphPage /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/org" element={<ProtectedRoute><GraphPage initialMode="org" /></ProtectedRoute>} />
-          <Route path="/memory" element={<ProtectedRoute><GraphPage initialMode="memory" /></ProtectedRoute>} />
+          <Route path="/graph" element={<ProtectedRoute requireRole={["admin","designer"]}><FeatureRoute feature="graph"><GraphPage key="graph" /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/org" element={<ProtectedRoute><GraphPage key="org" initialMode="org" /></ProtectedRoute>} />
+          <Route path="/memory" element={<ProtectedRoute><GraphPage key="memory" initialMode="memory" /></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
           <Route path="/403" element={<ProtectedRoute><Forbidden /></ProtectedRoute>} />
           <Route path="/feature-off" element={<ProtectedRoute><FeatureOff /></ProtectedRoute>} />
