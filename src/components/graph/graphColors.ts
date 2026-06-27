@@ -44,15 +44,10 @@ export function getPrimaryColor(): string {
   return cssVar("--primary", "hsl(347, 84%, 42%)");
 }
 
-/** Card background for label backing pills. */
+/** Card surface — used as a subtle, translucent label backplate (not an
+ *  opaque box) so text reads cleanly over nodes/edges in either theme. */
 export function getCardColor(): string {
-  return cssVar("--card", "hsl(0, 0%, 100%)");
-}
-
-/** Canvas background — used as a soft halo behind labels so text reads
- *  cleanly over nodes/edges without an opaque backing box. */
-export function getBackgroundColor(): string {
-  return cssVar("--background", "hsl(0, 0%, 100%)");
+  return cssVar("--card", "hsl(0 0% 100%)");
 }
 
 /**

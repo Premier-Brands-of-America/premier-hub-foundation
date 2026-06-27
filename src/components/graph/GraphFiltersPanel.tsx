@@ -46,7 +46,7 @@ export function GraphFiltersPanel({ filters, onChange, view, onViewChange, statu
   };
 
   return (
-    <Card className="w-64 shadow-lg">
+    <Card className="w-64 shadow-md bg-card/95 backdrop-blur-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">Filters</CardTitle>
       </CardHeader>

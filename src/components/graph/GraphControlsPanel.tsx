@@ -36,7 +36,7 @@ export function GraphControlsPanel({ forces, onChange, depth = 1, onDepthChange,
     onChange({ ...forces, [key]: invert ? -v : v });
 
   return (
-    <Card className="w-60 shadow-lg">
+    <Card className="w-60 shadow-md bg-card/95 backdrop-blur-sm">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm">Forces</CardTitle>
         <Button

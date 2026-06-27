@@ -15,7 +15,7 @@ interface Props {
 
 export function GraphToolbar({ nodes, onFit, onZoomIn, onZoomOut, onExport, onSearchSelect }: Props) {
   return (
-    <Card className="p-2 shadow-lg flex items-center gap-1">
+    <Card className="p-2 shadow-md bg-card/95 backdrop-blur-sm flex items-center gap-1">
       <GraphSearch nodes={nodes} onSelect={onSearchSelect} />
       <Button variant="ghost" size="icon" onClick={onZoomOut} aria-label="Zoom out">
         <ZoomOut className="h-4 w-4" />

@@ -36,7 +36,7 @@ interface Props {
 
 export function GraphLegend({ counts }: Props) {
   return (
-    <Card className="p-3 shadow-xl border border-border/60 bg-card/95 backdrop-blur-sm w-48 space-y-3">
+    <Card className="p-3 shadow-md bg-card/95 backdrop-blur-sm w-48 space-y-3">
       {/* Entity types */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">

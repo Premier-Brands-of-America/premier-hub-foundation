@@ -451,8 +451,8 @@
     background: hsl(var(--foreground) / 0.025);
   }
   [data-design="modern"] table tbody tr[data-state="selected"] {
-    background: hsl(var(--accent) / 0.06);
-    box-shadow: inset 2px 0 0 0 hsl(var(--accent));
+    background: hsl(var(--primary) / 0.06);
+    box-shadow: inset 2px 0 0 0 hsl(var(--primary));
   }
 
   /* Skeletons — shimmer */

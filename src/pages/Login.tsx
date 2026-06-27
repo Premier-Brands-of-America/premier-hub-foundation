@@ -16,7 +16,7 @@ const Login = () => {
       />
 
       <div className="relative w-full max-w-sm">
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-md">
           {/* Branded crest header */}
           <div className="edge-rail border-b border-border px-8 pb-7 pt-9">
             <div className="flex flex-col items-center text-center">

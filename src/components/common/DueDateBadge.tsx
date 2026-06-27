@@ -9,7 +9,7 @@ import { dueUrgency, dueLabel, type DueUrgency } from "@/lib/dueDate";
 const TONE: Record<DueUrgency, string> = {
   overdue:
     "bg-destructive/15 text-destructive border-destructive/30",
-  soon: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  soon: "bg-warning/15 text-warning border-warning/30",
   normal: "bg-muted text-foreground/80 border-border",
   none: "bg-muted/50 text-muted-foreground border-border/60",
 };

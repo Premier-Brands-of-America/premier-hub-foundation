@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useState }
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import {
   getForegroundColor, getNodeColor, getStatusColor, nodeRadius,
-  RELATION_STYLES, getEdgeColor, getPrimaryColor, getBackgroundColor, withAlpha,
+  RELATION_STYLES, getEdgeColor, getPrimaryColor, getCardColor, withAlpha,
 } from "./graphColors";
 import { DEFAULT_FORCES, type GraphEdge, type GraphForces, type GraphNode, type GraphPayload } from "@/types/graph";
 
@@ -38,10 +38,29 @@ function resolveThemeTokens() {
   return {
     labelColor: getForegroundColor(),
     primaryColor: getPrimaryColor(),
-    // Theme background, painted as a soft outline under label text — gives
-    // legibility over nodes/edges without the old opaque "backing pill" box.
-    haloColor: getBackgroundColor(),
+    // Card surface for the subtle, translucent label backplate.
+    cardColor: getCardColor(),
   };
+}
+
+/** Append an alpha to a resolved `hsl(H S% L%)` string → `hsl(H S% L% / a)`.
+ *  Node/token colors resolve space-separated at runtime, so the modern slash
+ *  syntax is valid. */
+function fade(hsl: string, alpha: number): string {
+  return hsl.replace(/\)\s*$/, ` / ${alpha})`);
+}
+
+/** Trace a rounded-rect path (arcTo — universally supported/typed). */
+function roundRectPath(
+  ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 /** Show labels only when zoomed in past this scale; below it, labels appear
@@ -187,6 +206,17 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         const active = !highlightedSet || (highlightedSet.has(s) && highlightedSet.has(t));
         return getEdgeColor(active);
       }}
+      /* Subtle "alive" drift — crimson particles only on edges within the
+         focused (hover/selected) neighbourhood; none at rest, none for
+         reduced-motion. Keeps the overview calm and performance-safe. */
+      linkDirectionalParticles={(l: GraphEdge) => {
+        if (reducedMotion || !highlightedSet) return 0;
+        const [s, t] = edgeEnds(l);
+        return highlightedSet.has(s) && highlightedSet.has(t) ? 2 : 0;
+      }}
+      linkDirectionalParticleSpeed={0.005}
+      linkDirectionalParticleWidth={2}
+      linkDirectionalParticleColor={() => withAlpha("--primary", 0.8, "347 84% 42%")}
       nodeCanvasObject={(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const x = node.x ?? 0;
         const y = node.y ?? 0;
@@ -196,82 +226,81 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         const isHovered = node.id === hoverId;
 
         // Resolve theme tokens per frame (cheap string lookup; handles live theme toggle)
-        const { labelColor, primaryColor, haloColor } = resolveThemeTokens();
+        const { labelColor, primaryColor, cardColor } = resolveThemeTokens();
+        const color = node.__color ?? "hsl(220 12% 50%)";
+        const isFocus = isSelected || isHovered;
 
-        ctx.globalAlpha = dimmed ? 0.15 : 1;
+        ctx.globalAlpha = dimmed ? 0.12 : 1;
 
-        // Drop shadow / halo for depth — only on non-dimmed nodes
-        if (!dimmed) {
-          ctx.save();
-          ctx.shadowColor = node.__color ?? "hsl(220,12%,50%)";
-          ctx.shadowBlur = isSelected || isHovered ? 14 / globalScale : 6 / globalScale;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
-        }
-
-        // Body — color by type
+        // 1. Soft halo bloom — a cheap translucent disc behind the body (no
+        //    shadowBlur cost); brighter when the node is the focus.
         ctx.beginPath();
-        ctx.arc(x, y, r, 0, 2 * Math.PI);
-        ctx.fillStyle = node.__color ?? "hsl(220,12%,50%)";
+        ctx.arc(x, y, r + (isFocus ? 8 : 4.5) / globalScale, 0, 2 * Math.PI);
+        ctx.fillStyle = fade(color, isFocus ? 0.30 : 0.15);
         ctx.fill();
 
-        if (!dimmed) {
-          ctx.restore(); // clear shadow for rings/labels
-        }
+        // 2. Body — translucent fill + crisp 1px stroke in the entity color.
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = fade(color, 0.92);
+        ctx.fill();
+        ctx.lineWidth = (isFocus ? 1.6 : 1) / globalScale;
+        ctx.strokeStyle = color;
+        ctx.stroke();
 
-        // Selection ring (primary color, thick)
-        if (isSelected) {
+        // 3. Status ring — thin accent just outside the body when status known.
+        if (node.__border && !isSelected) {
           ctx.beginPath();
-          ctx.arc(x, y, r + 3.5 / globalScale, 0, 2 * Math.PI);
-          ctx.lineWidth = 2.5 / globalScale;
-          ctx.strokeStyle = primaryColor;
-          ctx.stroke();
-          // Outer glow ring
-          ctx.beginPath();
-          ctx.arc(x, y, r + 6.5 / globalScale, 0, 2 * Math.PI);
-          ctx.lineWidth = 1 / globalScale;
-          ctx.strokeStyle = withAlpha("--primary", 0.28, "347, 84%, 42%");
-          ctx.stroke();
-        } else if (isHovered) {
-          // Hover ring — slightly smaller, primary color
-          ctx.beginPath();
-          ctx.arc(x, y, r + 2.5 / globalScale, 0, 2 * Math.PI);
-          ctx.lineWidth = 1.8 / globalScale;
-          ctx.strokeStyle = withAlpha("--primary", 0.7, "347, 84%, 42%");
-          ctx.stroke();
-        } else if (node.__border) {
-          // Status ring
-          ctx.beginPath();
-          ctx.arc(x, y, r, 0, 2 * Math.PI);
-          ctx.lineWidth = Math.max(1.5, r * 0.28);
+          ctx.arc(x, y, r + 2 / globalScale, 0, 2 * Math.PI);
+          ctx.lineWidth = 1.5 / globalScale;
           ctx.strokeStyle = node.__border;
           ctx.stroke();
         }
 
-        // Label — de-cluttered: shown only when zoomed in past the threshold,
-        // OR when this node is the focus (hover/selection/highlight). No backing
-        // box: a soft background-colored halo keeps the text legible over edges.
-        const inFocus = isSelected || isHovered ||
+        // 4. Selection / hover ring — Premier crimson, the focus accent.
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 4.5 / globalScale, 0, 2 * Math.PI);
+          ctx.lineWidth = 2 / globalScale;
+          ctx.strokeStyle = primaryColor;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, y, r + 7 / globalScale, 0, 2 * Math.PI);
+          ctx.lineWidth = 1 / globalScale;
+          ctx.strokeStyle = withAlpha("--primary", 0.25, "347 84% 42%");
+          ctx.stroke();
+        } else if (isHovered) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 3.5 / globalScale, 0, 2 * Math.PI);
+          ctx.lineWidth = 1.6 / globalScale;
+          ctx.strokeStyle = withAlpha("--primary", 0.7, "347 84% 42%");
+          ctx.stroke();
+        }
+
+        // 5. Label — de-cluttered (zoom threshold OR focus) with a SUBTLE
+        //    translucent card backplate, not an opaque box.
+        const inFocus = isFocus ||
           (highlightedSet ? highlightedSet.has(node.id) && !dimmed : false);
         if (globalScale >= LABEL_ZOOM_THRESHOLD || inFocus) {
           const fontSize = Math.max(9, 11 / globalScale);
           ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`;
           const label = node.label?.length > 22 ? node.label.slice(0, 22) + "…" : (node.label ?? "");
-          const ly = y + r + 4 / globalScale + fontSize / 2;
+          const padX = 4 / globalScale;
+          const padY = 2 / globalScale;
+          const tw = ctx.measureText(label).width;
+          const bpW = tw + padX * 2;
+          const bpH = fontSize + padY * 2;
+          const bpX = x - bpW / 2;
+          const bpY = y + r + 5 / globalScale;
 
+          roundRectPath(ctx, bpX, bpY, bpW, bpH, 3 / globalScale);
+          ctx.fillStyle = fade(cardColor, 0.7);
+          ctx.fill();
+
+          ctx.fillStyle = isFocus ? primaryColor : labelColor;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-
-          // Halo: a thick, rounded outline in the canvas background colour drawn
-          // under the fill — readable text without an opaque pill.
-          ctx.lineJoin = "round";
-          ctx.miterLimit = 2;
-          ctx.lineWidth = 3 / globalScale;
-          ctx.strokeStyle = haloColor;
-          ctx.strokeText(label, x, ly);
-
-          ctx.fillStyle = isSelected || isHovered ? primaryColor : labelColor;
-          ctx.fillText(label, x, ly);
+          ctx.fillText(label, x, bpY + bpH / 2);
         }
 
         ctx.globalAlpha = 1;
