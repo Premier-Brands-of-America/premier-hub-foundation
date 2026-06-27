@@ -57,3 +57,24 @@ direct reports' items (M365 hierarchy); admins see all; new items default to pri
   TaskDetailPanel (projects already had it).
 - **Preview:** sign in as Standard vs Admin → the visible project/task set changes
   (admin sees all; standard sees own + public + stakeholder + direct-report items).
+
+## Feature 6 — Pages sharing per-person (2026-06-27 2:33pm EDT)
+Extends page visibility (private/department/public) with named per-person grants.
+- Migration `20260627160000_feature6_page_shares.sql` — `page_shares` table
+  (page_id, grantee_user_id, role view/edit, unique per page+grantee, indexed),
+  `has_page_share()` / `can_edit_page()` helpers, `can_view_page()` rewritten to also
+  honor shares, pages UPDATE policy now allows edit-grantees, page_shares RLS (owner/
+  admin manage; grantee reads own).
+- types: `PageShare` / `EnrichedPageShare` / `PageShareRole`; generated types.ts gains
+  `page_shares` so the typed client stays green.
+- `src/lib/directory.ts` — shared M365 people directory (preview mock + real query),
+  reused by the picker and to resolve grant names.
+- `pagesService` — `fetchPageShares` / `addPageShare` / `updatePageShareRole` /
+  `removePageShare` (preview + real); preview pages now filter through `canViewPageRow`
+  (with shares); `createPage` owns pages as the real viewer; demo seeds 4 pages + 2
+  shares demonstrating owner / public / shared-to-you / hidden.
+- hooks: `usePageShares` + `usePageShareMutations` in use-page.ts.
+- `PageShareDialog` (people list + role selector + remove + directory picker) opened
+  from a new "Share" button in `PageHeader`; StakeholderPicker gained a `triggerLabel`.
+- **Preview:** open a page → Share → add people, set view/edit, remove; the
+  "Shared with you: Q3 brief" demo page is visible only because it's shared to you.

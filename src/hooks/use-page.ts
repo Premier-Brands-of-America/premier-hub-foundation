@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { archivePage, fetchAncestors, fetchPage, savePageBody, updatePageMeta, updatePageTitle } from "@/services/pagesService";
+import {
+  archivePage, fetchAncestors, fetchPage, savePageBody, updatePageMeta, updatePageTitle,
+  fetchPageShares, addPageShare, removePageShare, updatePageShareRole,
+} from "@/services/pagesService";
 import { useRealtimeInvalidation } from "@/hooks/use-realtime";
-import type { Page, PageVisibility } from "@/types/pages";
+import type { Page, PageVisibility, PageShareRole } from "@/types/pages";
 
 export function usePage(id: string | undefined) {
   useRealtimeInvalidation("pages", ["page"]);
@@ -62,6 +65,38 @@ export function useArchivePage() {
       qc.invalidateQueries({ queryKey: ["pageTree"] });
     },
   });
+}
+
+export function usePageShares(pageId: string | undefined) {
+  return useQuery({
+    queryKey: ["pageShares", pageId],
+    queryFn: () => fetchPageShares(pageId!),
+    enabled: !!pageId,
+  });
+}
+
+export function usePageShareMutations(pageId: string | undefined) {
+  const qc = useQueryClient();
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["pageShares", pageId] });
+    qc.invalidateQueries({ queryKey: ["pageTree"] });
+    qc.invalidateQueries({ queryKey: ["page", pageId] });
+  };
+  const add = useMutation({
+    mutationFn: ({ granteeUserId, role }: { granteeUserId: string; role: PageShareRole }) =>
+      addPageShare(pageId!, granteeUserId, role),
+    onSuccess: invalidate,
+  });
+  const updateRole = useMutation({
+    mutationFn: ({ shareId, role }: { shareId: string; role: PageShareRole }) =>
+      updatePageShareRole(shareId, role),
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: (shareId: string) => removePageShare(shareId),
+    onSuccess: invalidate,
+  });
+  return { add, updateRole, remove };
 }
 
 export type { Page, PageVisibility };

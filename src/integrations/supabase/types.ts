@@ -324,6 +324,41 @@ export type Database = {
           },
         ]
       }
+      page_shares: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          grantee_user_id: string
+          id: string
+          page_id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          grantee_user_id: string
+          id?: string
+          page_id: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          grantee_user_id?: string
+          id?: string
+          page_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_shares_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pages: {
         Row: {
           archived_at: string | null

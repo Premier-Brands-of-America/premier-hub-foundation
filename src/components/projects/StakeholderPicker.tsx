@@ -32,9 +32,11 @@ const MOCK_PROFILES: StakeholderProfile[] = [
 interface StakeholderPickerProps {
   existingUserIds: string[];
   onSelect: (profile: StakeholderProfile) => void;
+  /** Override the trigger button label (defaults to "Add Stakeholder"). */
+  triggerLabel?: string;
 }
 
-export function StakeholderPicker({ existingUserIds, onSelect }: StakeholderPickerProps) {
+export function StakeholderPicker({ existingUserIds, onSelect, triggerLabel = "Add Stakeholder" }: StakeholderPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [profiles, setProfiles] = useState<StakeholderProfile[]>([]);
@@ -91,7 +93,7 @@ export function StakeholderPicker({ existingUserIds, onSelect }: StakeholderPick
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-          <UserPlus className="h-3.5 w-3.5" /> Add Stakeholder
+          <UserPlus className="h-3.5 w-3.5" /> {triggerLabel}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">

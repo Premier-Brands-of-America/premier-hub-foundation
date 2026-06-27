@@ -11,12 +11,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Smile } from "lucide-react";
+import { Share2, Smile } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import type { Page, PageVisibility } from "@/types/pages";
 import { useUpdatePageMeta, useUpdatePageTitle } from "@/hooks/use-page";
 import { useAuth } from "@/contexts/AuthContext";
+import { PageShareDialog } from "@/components/pages/PageShareDialog";
 
 const EMOJIS = ["📄","📝","📚","📌","✅","⭐","🚀","🎯","💡","🔧","🎨","📊"];
 
@@ -25,6 +26,7 @@ interface Props { page: Page }
 export function PageHeader({ page }: Props) {
   const [title, setTitle] = useState(page.title);
   const [pendingVis, setPendingVis] = useState<PageVisibility | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const updateTitle = useUpdatePageTitle(page.id);
   const updateMeta = useUpdatePageMeta(page.id);
   const { profile } = useAuth();
@@ -99,7 +101,23 @@ export function PageHeader({ page }: Props) {
             <SelectItem value="public">Public</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-1 h-9 shrink-0 gap-1.5 text-xs"
+          onClick={() => setShareOpen(true)}
+        >
+          <Share2 className="h-3.5 w-3.5" /> Share
+        </Button>
       </div>
+
+      <PageShareDialog
+        pageId={page.id}
+        ownerId={page.owner_id}
+        visibility={page.visibility}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
 
       <AlertDialog open={!!pendingVis} onOpenChange={(o) => !o && setPendingVis(null)}>
         <AlertDialogContent>

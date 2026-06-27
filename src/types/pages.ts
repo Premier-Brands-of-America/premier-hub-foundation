@@ -34,3 +34,21 @@ export interface BacklinkRow {
 }
 
 export type BacklinkTargetType = "page" | "project" | "task" | "request" | "user";
+
+export type PageShareRole = "view" | "edit";
+
+export interface PageShare {
+  id: string;
+  page_id: string;
+  grantee_user_id: string;
+  role: PageShareRole;
+  created_at: string;
+}
+
+/** A page share enriched with the grantee's directory profile for display. */
+export interface EnrichedPageShare extends PageShare {
+  full_name: string | null;
+  email: string | null;
+  title: string | null;
+  department: string | null;
+}
