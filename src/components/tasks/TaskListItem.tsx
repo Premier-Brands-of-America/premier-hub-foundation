@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format, isPast, isToday } from "date-fns";
 import { CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DueDateBadge } from "@/components/common/DueDateBadge";
 
 interface TaskListItemProps {
   task: Task;
@@ -61,15 +62,10 @@ export function TaskListItem({ task, selected, onSelect, onToggleComplete }: Tas
 
         {(task.due_date || showProgress) && (
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            {task.due_date && (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 text-[11px] tabular-nums",
-                  overdue ? "font-medium text-destructive" : "text-muted-foreground",
-                )}
-              >
+            {task.due_date && !isComplete && <DueDateBadge due={task.due_date} />}
+            {task.due_date && isComplete && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
                 <CalendarClock className="h-3 w-3" />
-                {overdue ? "Overdue · " : "Due "}
                 {format(new Date(task.due_date), "MMM d")}
               </span>
             )}

@@ -14,6 +14,7 @@ import { AttachmentUploader } from "@/components/attachments/AttachmentUploader"
 import { SharePointPanel } from "@/components/request-detail/SharePointPanel";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
+import { DueDateBadge } from "@/components/common/DueDateBadge";
 import { canUploadFiles } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { ATTACHMENT_KINDS, type AttachmentKind } from "@/types/attachment";
@@ -146,6 +147,7 @@ export default function RequestDetail() {
             <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-medium capitalize text-muted-foreground">
               {typeLabel}
             </span>
+            {request.due_date && <DueDateBadge due={request.due_date} />}
           </div>
         </div>
       </header>
@@ -163,6 +165,49 @@ export default function RequestDetail() {
               </p>
             </CardContent>
           </Card>
+
+          {(() => {
+            const meta = (request.metadata ?? {}) as Record<string, unknown>;
+            const customer = typeof meta.customer === "string" ? meta.customer : null;
+            const lead = typeof meta.project_lead === "string" ? meta.project_lead : null;
+            const keyPoints = Array.isArray(meta.key_points)
+              ? (meta.key_points as unknown[]).filter((p): p is string => typeof p === "string")
+              : [];
+            const meeting = meta.meeting_required === true;
+            if (!customer && keyPoints.length === 0 && !meeting) return null;
+            return (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Request summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {customer && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded bg-muted px-2 py-0.5 text-xs">{customer}</span>
+                      {lead && (
+                        <span className="text-muted-foreground">
+                          → Lead: <span className="font-medium capitalize text-foreground">{lead}</span>
+                        </span>
+                      )}
+                      {meeting && (
+                        <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          Meeting requested
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {keyPoints.length > 0 && (
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-muted-foreground">Key points</p>
+                      <ul className="list-disc space-y-1 pl-5">
+                        {keyPoints.map((p, i) => <li key={i}>{p}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           <RelationsSection
             ownerRef={{ entityType: "request", entityId: request.id, title: request.title }}

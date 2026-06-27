@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, isPast, isToday } from "date-fns";
 import { Globe, Lock, Crown, Users, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DueDateBadge } from "@/components/common/DueDateBadge";
 
 interface ProjectListItemProps {
   project: ProjectWithMeta;
@@ -70,15 +71,10 @@ export function ProjectListItem({ project, selected, onSelect, currentUserId }: 
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-          {dueDate && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 text-[11px] tabular-nums",
-                overdue ? "font-medium text-destructive" : "text-muted-foreground",
-              )}
-            >
+          {dueDate && !isComplete && <DueDateBadge due={dueDate} />}
+          {dueDate && isComplete && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
               <CalendarClock className="h-3 w-3" />
-              {overdue ? "Overdue · " : "Due "}
               {format(new Date(dueDate), "MMM d")}
             </span>
           )}
