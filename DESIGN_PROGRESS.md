@@ -138,3 +138,39 @@ stated direction. `npx tsc --noEmit` clean · `npm run build` green.
 - `npx tsc --noEmit` clean · `npm run build` green.
 
 ---
+
+## 2026-06-27 — Round 2: Component polish (Tasks C & D)
+
+### C. Planner + Dashboard charts & chrome
+- `src/features/planner/PlannerCharts.tsx` (full restyle):
+  - BEFORE: flat single-color (neon-pink primary) charts; hardcoded raw HSL
+    (`hsl(142 70% 42%)`, `hsl(38 92% 50%)`); no gridlines, axes lines, value
+    labels, legends; donuts with no center total; blank box when empty.
+  - AFTER: all colors tokenized. Donuts (Status, Due-date health) → per-Cell
+    meaning-mapped fills, rounded arcs (cornerRadius 4, paddingAngle 2),
+    innerRadius 56 / outerRadius 80, a centered big-number TOTAL label in the
+    hole, and a compact bottom legend. Bars (bucket/priority/assignee) →
+    CartesianGrid "3 3", axisLine/tickLine off with muted ticks, LabelList
+    value labels, maxBarSize 40, proper margins; priority bars colored per
+    priority token. ChartCard gained icon + muted description + refined "No
+    data yet" empty state; height 52→64.
+  - `src/pages/Planner.tsx`: padded the chart grid inside its scroll container.
+- `src/components/dashboard/DashboardCard.tsx`: refined header (rounded-lg icon
+  chip w/ hairline outline, larger icon, softer divider, tighter title leading),
+  aligned body padding. Editing controls untouched.
+- `src/components/dashboard/cards/card-states.tsx`: empty/error states
+  redesigned to centered blocks with soft rounded icon chips, consistent py-8
+  padding, refined copy; loading row spacing loosened.
+- `src/pages/Index.tsx`: looser page rhythm (space-y-6→8), hero subtitle/action
+  spacing tuned. Crimson edge-rail hero + functionality intact.
+
+### D. Pages editor widened
+- `src/pages/Pages.tsx`: editor pane defaultSize 55→62, backlinks 25→18
+  (minSize 15→16), tree 20 (sums to 100). Inner clamp max-w-3xl (768)→max-w-5xl
+  (1024); horizontal padding sm:px-8/lg:px-10 → sm:px-6/lg:px-8.
+- `src/components/pages/PageEditor.tsx`: no change needed — SOURCE/PREVIEW are a
+  `lg:grid-cols-2` (50/50, min-h-0, max-w-none) that now expands with the wider
+  pane automatically.
+- `npx tsc --noEmit` clean · `npm run build` green.
+
+---

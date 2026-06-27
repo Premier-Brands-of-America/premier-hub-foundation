@@ -45,8 +45,8 @@ export default function PagesPage() {
   );
 
   const Editor = page ? (
-    <div className="flex h-full flex-col overflow-auto px-4 py-6 sm:px-8 lg:px-10">
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
+    <div className="flex h-full flex-col overflow-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
         <PageBreadcrumbs pageId={page.id} />
         {/* The one bold element on this screen: the crimson edge-rail document header. */}
         <div className="edge-rail">
@@ -107,11 +107,11 @@ export default function PagesPage() {
             <div className="h-full border-r border-border bg-card">{Tree}</div>
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={55} minSize={30}>
+          <ResizablePanel defaultSize={62} minSize={30}>
             <div className="h-full bg-background">{Editor}</div>
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={15}>
+          <ResizablePanel defaultSize={18} minSize={16}>
             <div className="h-full border-l border-border bg-card">{Back}</div>
           </ResizablePanel>
         </ResizablePanelGroup>

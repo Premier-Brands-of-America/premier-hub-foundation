@@ -36,7 +36,9 @@ const PlannerPage = () => {
         {view === "board" ? (
           <KanbanBoard controller={controller} />
         ) : (
-          <PlannerCharts board={controller.board} />
+          <div className="p-4">
+            <PlannerCharts board={controller.board} />
+          </div>
         )}
       </div>
     </div>

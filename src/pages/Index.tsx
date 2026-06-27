@@ -25,7 +25,7 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Dashboard"
         subtitle="Your command center"
@@ -45,12 +45,12 @@ const Dashboard = () => {
         <h1 className="mt-1 text-3xl font-display font-semibold tracking-tight text-foreground">
           {greeting()}, {firstName}
         </h1>
-        <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
           Here's what's happening across your projects, tasks, and pages.
         </p>
 
         {/* Quick actions */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-5 flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
