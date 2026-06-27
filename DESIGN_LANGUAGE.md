@@ -16,8 +16,11 @@ on theme.
 ## 1. Palette
 
 One saturated accent (Premier crimson, hue ≈ 347°). Derive hover/active/subtle
-states by **lightness or alpha**, never a new hex. Everything else is a
-near-neutral gray warmed a hair toward the crimson.
+states by **lightness or alpha**, never a new hex. Everything else is a precise
+**neutral carbon** gray ramp — a faint cool cast (hue ≈ 240°, very low
+saturation), deliberately *not* tinted toward the crimson, so the accent is the
+only saturated colour in the system. (Token tables below show the original warm
+ramp; the live carbon values are the source of truth in `src/index.css`.)
 
 All values are HSL triples consumed as `hsl(var(--token))` and exposed through
 Tailwind (`bg-primary`, `text-muted-foreground`, `border-border`, …).
@@ -54,7 +57,7 @@ Derived states (compute, don't invent):
 | `--border` | `24 14% 90%` | `340 8% 16%` | Hairline borders (~8% contrast) |
 | `--input` | `24 14% 87%` | `340 8% 18%` | Input border |
 
-### Sidebar (a near-black crimson-tinted rail in BOTH themes — the brand anchor)
+### Sidebar (a near-black neutral CARBON rail in BOTH themes — crimson only on the active item)
 
 | Token | Value (theme-independent) | Role |
 | --- | --- | --- |

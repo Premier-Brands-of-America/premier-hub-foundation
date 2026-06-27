@@ -53,32 +53,34 @@
     --row-py: 0.625rem;
 
     /* =============== LIGHT — semantic tokens =============== */
-    /* Near-neutral grays warmed a hair toward the crimson, + a single
-       saturated Premier-crimson accent (logo #c10230 ≈ 347°). */
-    --background: 30 20% 98%;
-    --foreground: 340 12% 11%;
+    /* A precise, near-neutral CARBON gray ramp (a whisper of cool 240° cast,
+       very low saturation) so the surface reads enterprise-neutral. The only
+       saturated hue in the system is the Premier-crimson accent (logo
+       #c10230 ≈ 347°) — crimson never tints the grays. */
+    --background: 240 6% 98%;
+    --foreground: 240 8% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 340 12% 11%;
+    --card-foreground: 240 8% 10%;
 
     /* Popovers/menus/command palette sit on the brightest surface */
     --popover: 0 0% 100%;
-    --popover-foreground: 340 12% 11%;
+    --popover-foreground: 240 8% 10%;
 
     /* Single saturated accent — Premier crimson. Derive hover/active by
        lightness (±4–6%), never a new hex. White text = 5.98:1 (AA). */
     --primary: 347 84% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 14% 94%;
-    --secondary-foreground: 340 14% 20%;
+    --secondary: 240 5% 95%;
+    --secondary-foreground: 240 8% 22%;
 
-    --muted: 24 14% 95%;
-    --muted-foreground: 340 6% 42%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 44%;
 
     /* shadcn "accent" = subtle hover surface (NOT the brand accent color) */
-    --accent: 24 14% 93%;
-    --accent-foreground: 340 14% 20%;
+    --accent: 240 5% 94%;
+    --accent-foreground: 240 8% 22%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -90,28 +92,28 @@
     --warning-foreground: 30 45% 12%;
 
     /* Hairline borders — low-contrast (~rgba(0,0,0,0.08)) */
-    --border: 24 14% 90%;
-    --input: 24 14% 87%;
+    --border: 240 6% 90%;
+    --input: 240 6% 86%;
     --ring: 347 84% 42%;
 
-    /* Sidebar — a near-black crimson-tinted rail in BOTH themes
-       (the brand anchor). Active item glows Premier crimson. */
-    --sidebar-background: 340 16% 9%;
-    --sidebar-foreground: 20 10% 80%;
+    /* Sidebar — a near-black CARBON rail in BOTH themes (neutral, not
+       crimson-tinted). Crimson appears ONLY on the active item. */
+    --sidebar-background: 240 7% 9%;
+    --sidebar-foreground: 240 6% 80%;
     --sidebar-primary: 349 90% 66%;
     --sidebar-primary-foreground: 345 40% 10%;
-    --sidebar-accent: 340 12% 15%;
-    --sidebar-accent-foreground: 20 14% 96%;
-    --sidebar-border: 340 12% 17%;
+    --sidebar-accent: 240 5% 15%;
+    --sidebar-accent-foreground: 240 8% 96%;
+    --sidebar-border: 240 5% 17%;
     --sidebar-ring: 349 90% 62%;
-    --sidebar-muted: 20 6% 55%;
+    --sidebar-muted: 240 4% 55%;
 
     /* Entity type tokens (graph / relations). Project carries the brand
        crimson; the rest stay categorical so the graph reads cleanly. */
     --entity-project: 347 84% 44%;
     --entity-task: 199 89% 42%;
     --entity-request: 262 60% 56%;
-    --entity-page: 340 6% 44%;
+    --entity-page: 240 5% 46%;
     --entity-person: 160 55% 38%;
     --entity-department: 28 80% 48%;
 
@@ -123,7 +125,7 @@
     --status-success: 150 58% 38%;
     --status-warning: 38 92% 50%;
     --status-info: 347 84% 46%;
-    --status-neutral: 340 6% 50%;
+    --status-neutral: 240 5% 52%;
     --status-danger: 0 72% 50%;
     --priority-low: 200 30% 50%;
     --priority-medium: 38 90% 50%;
@@ -133,29 +135,29 @@
 
   .dark {
     /* =============== DARK — semantic tokens =============== */
-    /* Not pure black: ~#0E0C0E base with a whisper of crimson warmth,
-       elevated surfaces a few % lighter, hairline borders, accent
-       brightened for contrast (dark crimson 349/90/64, dark text 5.43:1). */
-    --background: 340 12% 6%;
-    --foreground: 20 12% 93%;
+    /* Neutral CARBON, not pure black: ~#0F0F11 base with a faint cool cast
+       (240°, very low saturation — no crimson tint), elevated surfaces a few
+       % lighter, hairline borders, accent brightened for contrast. */
+    --background: 240 7% 6%;
+    --foreground: 240 8% 94%;
 
-    --card: 340 10% 9%;
-    --card-foreground: 20 12% 93%;
+    --card: 240 7% 9%;
+    --card-foreground: 240 8% 94%;
 
-    --popover: 340 10% 10%;
-    --popover-foreground: 20 12% 93%;
+    --popover: 240 7% 10%;
+    --popover-foreground: 240 8% 94%;
 
     --primary: 349 90% 64%;
     --primary-foreground: 345 40% 9%;
 
-    --secondary: 340 8% 14%;
-    --secondary-foreground: 20 12% 90%;
+    --secondary: 240 5% 14%;
+    --secondary-foreground: 240 8% 90%;
 
-    --muted: 340 8% 13%;
-    --muted-foreground: 20 8% 60%;
+    --muted: 240 5% 13%;
+    --muted-foreground: 240 5% 62%;
 
-    --accent: 340 8% 15%;
-    --accent-foreground: 20 12% 92%;
+    --accent: 240 5% 15%;
+    --accent-foreground: 240 8% 92%;
 
     --destructive: 0 70% 56%;
     --destructive-foreground: 0 0% 100%;
@@ -167,8 +169,8 @@
     --warning-foreground: 38 80% 8%;
 
     /* Hairline borders — low-contrast (~rgba(255,255,255,0.08)) */
-    --border: 340 8% 16%;
-    --input: 340 8% 18%;
+    --border: 240 5% 16%;
+    --input: 240 5% 18%;
     --ring: 349 90% 64%;
 
     /* Sidebar stays dark (same family as light — brand anchor) */
@@ -177,18 +179,18 @@
     --entity-project: 349 90% 70%;
     --entity-task: 199 90% 60%;
     --entity-request: 262 70% 72%;
-    --entity-page: 20 10% 68%;
+    --entity-page: 240 5% 70%;
     --entity-person: 160 55% 56%;
     --entity-department: 28 85% 62%;
 
-    --status-todo: 20 10% 62%;
+    --status-todo: 240 5% 64%;
     --status-in-progress: 38 95% 60%;
     --status-blocked: 0 70% 60%;
     --status-done: 150 55% 52%;
     --status-success: 150 55% 52%;
     --status-warning: 38 95% 60%;
     --status-info: 349 90% 70%;
-    --status-neutral: 20 10% 62%;
+    --status-neutral: 240 5% 64%;
     --status-danger: 0 70% 60%;
     --priority-low: 200 35% 60%;
     --priority-medium: 38 90% 58%;
