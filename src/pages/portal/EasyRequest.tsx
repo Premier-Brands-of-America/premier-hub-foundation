@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePickerField } from "@/components/DatePickerField";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
+import { ArtRequestRouting } from "@/components/request-form/ArtRequestRouting";
+import { routeRequest, resolveRecipients } from "@/lib/artRouting";
+import type { ManagerId } from "@/config/artOwnership";
 import { Plus, Trash2, X } from "lucide-react";
 
 const STEP_TITLES = ["Basics", "Details", "Specifics"];
@@ -82,14 +85,24 @@ export default function EasyRequest() {
   const projectType = watch("project_type");
   const physicalMockups = watch("physical_mockups");
 
+  // Routing completeness: a multi-owner customer needs a chosen manager.
+  const customerVal = watch("customer");
+  const managerVal = watch("assigned_manager") ?? "";
+  const routingIncomplete = useMemo(() => {
+    if (!customerVal) return false;
+    const r = routeRequest(customerVal, (managerVal || null) as ManagerId | null);
+    return r.requiresManagerSelection && !r.lead;
+  }, [customerVal, managerVal]);
+
   const stepFields: Array<Array<keyof EasyRequestValues>> = useMemo(() => [
-    ["title", "department_id", "due_date", "priority"],
+    ["title", "department_id", "customer", "assigned_manager", "due_date", "priority"],
     ["description", "project_type", "project_type_other", "notes"],
     ["digital_renders", "package_type", "responsible_dept", "physical_mockups", "mockup_qty", "shipping_info"],
   ], []);
 
   const handleNext = async () => {
     const ok = await trigger(stepFields[step] as never);
+    if (step === 0 && routingIncomplete) return; // block until manager chosen
     if (ok) setStep((s) => Math.min(s + 1, 2));
   };
 
@@ -99,7 +112,20 @@ export default function EasyRequest() {
       setSubmitError("You must be signed in to submit a request.");
       return;
     }
+    // Resolve routing: chosen customer → owning manager (lead) + email recipients.
+    const route = routeRequest(
+      values.customer,
+      (values.assigned_manager || null) as ManagerId | null,
+    );
+    const recipients = route.lead ? resolveRecipients(route.lead) : null;
     const metadata: Record<string, unknown> = {
+      customer: values.customer,
+      assigned_manager: route.lead,
+      project_lead: route.lead,
+      notify_to: recipients?.to ?? [],
+      notify_cc: recipients?.cc ?? [],
+      key_points: (values.key_points ?? []).filter((p) => p.trim()),
+      meeting_required: values.meeting_required,
       project_type: values.project_type,
       ...(values.project_type === "Other" && { project_type_other: values.project_type_other }),
       notes: values.notes || null,
@@ -216,6 +242,27 @@ export default function EasyRequest() {
                   </p>
                   {errors.department_id && <p className="text-xs text-destructive">{errors.department_id.message}</p>}
                 </div>
+
+                <ArtRequestRouting
+                  customer={watch("customer")}
+                  manager={watch("assigned_manager") ?? ""}
+                  keyPoints={watch("key_points") ?? []}
+                  meetingRequired={!!watch("meeting_required")}
+                  onCustomerChange={(v) => {
+                    setValue("customer", v, { shouldValidate: true });
+                    setValue("assigned_manager", "", { shouldValidate: true });
+                  }}
+                  onManagerChange={(v) => setValue("assigned_manager", v, { shouldValidate: true })}
+                  onKeyPointsChange={(v) => setValue("key_points", v, { shouldValidate: true })}
+                  onMeetingChange={(v) => setValue("meeting_required", v, { shouldValidate: true })}
+                />
+                {errors.customer && <p className="text-xs text-destructive">{errors.customer.message}</p>}
+                {routingIncomplete && (
+                  <p className="text-xs text-destructive">
+                    This customer has multiple owners — select the responsible manager.
+                  </p>
+                )}
+
                 <div className="space-y-1.5">
                   <Label>Due Date <span className="text-destructive">*</span></Label>
                   <DatePickerField

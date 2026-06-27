@@ -20,6 +20,14 @@ const today = () => {
 export const basicsSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120, "Max 120 characters"),
   department_id: z.string().min(1, "Department required"),
+  // Routing: the chosen customer determines the owning creative manager (lead).
+  customer: z.string().min(1, "Customer is required"),
+  // Manager chosen by the requester for multi-owner customers (e.g. Master Dielines).
+  assigned_manager: z.string().optional().or(z.literal("")),
+  // Concise, scannable summary points for the art request.
+  key_points: z.array(z.string().trim().min(1)).default([]),
+  // "Meet to discuss" flag, visible to the project lead regardless of integration.
+  meeting_required: z.boolean().default(false),
   due_date: z
     .string()
     .min(1, "Due date is required")
@@ -78,6 +86,10 @@ export type EasyRequestValues = BasicsValues & DetailsValues & SpecificsValues;
 export const defaultEasyValues: EasyRequestValues = {
   title: "",
   department_id: "",
+  customer: "",
+  assigned_manager: "",
+  key_points: [],
+  meeting_required: false,
   due_date: "",
   priority: "medium",
   description: "",
