@@ -7,6 +7,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Label,
   LabelList,
   Legend,
   Pie,
@@ -112,32 +113,39 @@ function ChartCard({
   );
 }
 
-/** Centered big-number total drawn in the donut hole. */
-function DonutCenter({ total }: { total: number }) {
-  return (
-    <>
-      <text
-        x="50%"
-        y="50%"
-        dy={-2}
-        textAnchor="middle"
-        className="fill-foreground tabular-nums"
-        style={{ fontSize: 24, fontWeight: 600 }}
-      >
-        {total}
-      </text>
-      <text
-        x="50%"
-        y="50%"
-        dy={16}
-        textAnchor="middle"
-        className="fill-muted-foreground"
-        style={{ fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase" }}
-      >
-        Total
-      </text>
-    </>
-  );
+/** Centered big-number total drawn in the donut hole. Rendered as recharts
+ *  <Label> content so it's positioned at the pie's true center (cx/cy from the
+ *  viewBox) and reliably mounts — raw SVG fragments passed straight to PieChart
+ *  are dropped by recharts' child filter. */
+function donutCenter(total: number) {
+  return ({ viewBox }: { viewBox?: { cx?: number; cy?: number } }) => {
+    const cx = viewBox?.cx ?? 0;
+    const cy = viewBox?.cy ?? 0;
+    return (
+      <g>
+        <text
+          x={cx}
+          y={cy}
+          dy={-2}
+          textAnchor="middle"
+          className="fill-foreground tabular-nums"
+          style={{ fontSize: 24, fontWeight: 600 }}
+        >
+          {total}
+        </text>
+        <text
+          x={cx}
+          y={cy}
+          dy={16}
+          textAnchor="middle"
+          className="fill-muted-foreground"
+          style={{ fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase" }}
+        >
+          Total
+        </text>
+      </g>
+    );
+  };
 }
 
 const sum = (data: CountDatum[]) => data.reduce((acc, d) => acc + d.value, 0);
@@ -174,8 +182,8 @@ export function PlannerCharts({ board }: { board: Board }) {
             {status.map((_, i) => (
               <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
             ))}
+            <Label position="center" content={donutCenter(statusTotal)} />
           </Pie>
-          <DonutCenter total={statusTotal} />
           <Tooltip contentStyle={tooltipStyle} />
           <Legend
             iconType="circle"
@@ -205,8 +213,8 @@ export function PlannerCharts({ board }: { board: Board }) {
             {health.map((_, i) => (
               <Cell key={i} fill={HEALTH_COLORS[i % HEALTH_COLORS.length]} />
             ))}
+            <Label position="center" content={donutCenter(healthTotal)} />
           </Pie>
-          <DonutCenter total={healthTotal} />
           <Tooltip contentStyle={tooltipStyle} />
           <Legend
             iconType="circle"
