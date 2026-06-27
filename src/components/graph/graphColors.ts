@@ -50,6 +50,32 @@ export function getCardColor(): string {
   return cssVar("--card", "hsl(0 0% 100%)");
 }
 
+/** Selection ring — electric-violet (NexoString inspector/selected accent). */
+export function getSelectionColor(): string {
+  return cssVar("--selection", "hsl(246 92% 72%)");
+}
+
+/** Hover ring — signal-cyan (NexoString active accent). */
+export function getHoverColor(): string {
+  return cssVar("--signal-cyan-300", "hsl(168 88% 58%)");
+}
+
+/** The graph canvas backdrop — surface-void (near-black in dark mode). */
+export function getVoidColor(): string {
+  return cssVar("--surface-void", "hsl(228 12% 3%)");
+}
+
+/** Raw `H S% L%` triplet of any CSS var — for building canvas gradients and
+ *  per-stop alpha (`hsl(<raw> / a)`), which the canvas resolves at runtime. */
+export function rawVar(name: string, fallback: string): string {
+  return cssVarRaw(name, fallback);
+}
+
+/** Raw triplet for a node's entity hue (for glow + edge gradients). */
+export function getNodeColorRaw(type: NodeType): string {
+  return cssVarRaw(NODE_COLOR_VAR[type], "228 12% 64%");
+}
+
 /**
  * Edge color based on highlight state. Kept calm and low-key so the warm-dark
  * canvas reads quietly: active edges use the warm-neutral --muted-foreground at

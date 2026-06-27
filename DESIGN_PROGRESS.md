@@ -202,3 +202,71 @@ not ~90%); graph + chart palettes muted/cohesive; planner & dashboard polished;
 pages editor widened. All committed to feat/premier-hub-revamp; main untouched.
 
 ---
+
+## 2026-06-27 — Round 3: REPLICATE NEXOSTRING (dark palette + graph) + avatars
+
+Owner directive after reviewing rounds 1–2: stop iterating on warm-charcoal and
+**replicate his NexoString project exactly** for (a) dark colors and (b) the
+graph, PLUS add avatars/icons (new — NexoString-style DiceBear). Read the
+NexoString sources in full first: `docs/redesign/02_design_system.md`,
+`03_graph_design.md`, `components/cortex/ForceGraph.tsx`,
+`components/company/CompanyGraph.tsx` (the avatar-in-node reference),
+`lib/avatars/dicebear.ts`, `NeuronAvatar.tsx`, `AvatarPicker.tsx`.
+
+### A. Dark tokens = NexoString constellation palette (`src/index.css`)
+- BEFORE (round 2): warm charcoal hue 24°, de-neoned crimson `--primary 347 62% 49%`.
+- AFTER: rebuilt the entire `.dark` block to NexoString's **near-black cool-slate
+  ramp (228° / 12% sat)** — `--background: 228 12% 3%` (surface-void ≈ #070709),
+  card `228 12% 8%`, popover `228 12% 12%`, border `228 12% 18%`, text `228 12% 92%`.
+- **Primary accent = signal-cyan** (`--primary: 168 88% 60%`) with a near-black
+  label (`--primary-foreground: 228 12% 6%`) — the NexoString signature.
+  `--ring` = `168 88% 58%`. **Crimson fully retired from dark** (sidebar active
+  item, edge-rail, focus all resolve to cyan now).
+- **Selection accent = electric-violet** — new `--selection: 246 92% 72%`.
+- Status: success mint-lime `150 60% 56%`, error/danger warm-rose `354 78% 62%`,
+  warning saffron-amber `42 92% 60%`.
+- Entity hues → NexoString neuron palette (desaturated-but-glowing): project=
+  signal-cyan, task=azure, request=saffron, page=slate, person=rose-magenta,
+  department=lime. Electric-violet deliberately reserved for selection only.
+- Added theme-independent accent ramps (`--signal-cyan-200/300/400`,
+  `--electric-violet-200/300`) so the canvas can resolve them directly, plus
+  `--surface-void` / `--graph-grid` (dark = void/neutral-400; light keeps a bone
+  canvas + crimson selection). Light mode keeps Premier crimson per directive.
+- Added the `cortex-pulse` + `cortex-orbital-spin` keyframes and an
+  `.animate-cortex-pulse` utility; `prefers-reduced-motion` already honored.
+
+### B. Graph = port of NexoString ForceGraph/CompanyGraph (`GraphCanvas.tsx`, `graphColors.ts`)
+- Near-black canvas: container painted `--surface-void`, ForceGraph
+  `backgroundColor="transparent"`, with a dot-grid overlay + radial vignette
+  showing through (straight from CompanyGraph).
+- Nodes: real **shadowBlur bloom** + translucent **halo disc** + crisp entity-hue
+  stroke; idle **bob/breathe** (sine, seeded per id) so the constellation
+  "respira"; **hub nodes** (degree ≥ 4) get a dashed **orbital ring + rotating
+  tick**. Selection ring = electric-violet, hover ring = signal-cyan.
+- Edges: thin **curved (quadratic)** lines with a source→target **gradient**
+  (entity hue → signal-cyan), calm low-alpha at rest, weighted by relation type;
+  dropped the bright straight lines + arrowheads.
+- **Directional particles** drift on every edge even at rest (subtle), brighter
+  within the focused neighbourhood; none under reduced-motion (the resting
+  particles also keep the frame loop warm so the bob animates).
+- Labels: **JetBrains Mono, uppercase, letter-spaced**, with a subtle translucent
+  card backplate; de-cluttered (zoom threshold OR focus).
+- `graphColors.ts`: added `getSelectionColor` (violet), `getHoverColor` (cyan),
+  `getVoidColor`, `rawVar`, `getNodeColorRaw` for canvas gradients/glow.
+
+### C. Avatars/icons foundation (this batch)
+- Added `@dicebear/core@^9` + `@dicebear/collection@^9` (same as NexoString).
+- `src/lib/avatars/dicebear.ts` — ported (deterministic `toDataUri()`, soft
+  premium bg tints, preset seeds); added the `icons` style for entity icons.
+- `src/lib/avatars/entityAvatars.ts` — maps entity types to a default DiceBear
+  style (user→person portrait, project→shapes, task/request→icons) + hue token;
+  explicit `avatar_url`/`icon` always wins.
+- Graph nodes now render the avatar/icon **clipped into the node circle**
+  (person→avatar, project/task→icon) with the glowing bloom/halo AROUND it, and
+  fall back to the colored glowing disc while loading / for other types — exactly
+  CompanyGraph's `getImg` + `ctx.drawImage` pattern.
+
+Verification: `npx tsc --noEmit` clean · `npm run build` green. Card-surface
+integration + migration follow in the next batches.
+
+---

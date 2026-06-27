@@ -48,6 +48,18 @@
     --duration-base:      200ms;
     --duration-slow:      260ms;
     --duration-deliberate: 420ms;
+    --motion-ambient:     2400ms; /* idle neuron pulse / particle drift cycle */
+
+    /* ---- NexoString accent ramps (theme-independent) ----
+       Fixed chromatic accents reused by the force-graph + selection/hover
+       rings. signal-cyan = active/hover + brand hub; electric-violet =
+       inspector/selected state. Defined once so the canvas (which can't read
+       Tailwind) can resolve hsl(var(--signal-cyan-300)) directly. */
+    --signal-cyan-200: 168 88% 72%;
+    --signal-cyan-300: 168 88% 58%;
+    --signal-cyan-400: 168 88% 42%;
+    --electric-violet-200: 246 92% 72%;
+    --electric-violet-300: 246 92% 58%;
 
     /* Density — comfortable defaults (compact overrides under [data-density]) */
     --row-py: 0.625rem;
@@ -133,77 +145,107 @@
     --priority-medium: 36 86% 48%;
     --priority-high: 26 80% 48%;
     --priority-urgent: 4 72% 48%;
+
+    /* Graph canvas — light mode keeps a bright bone canvas; selection stays
+       on the crimson brand. (Dark mode overrides these to the NexoString
+       near-black void + electric-violet selection below.) */
+    --surface-void: 30 14% 98%;
+    --graph-grid: 28 6% 56%;
+    --selection: 347 80% 41%;
   }
 
   .dark {
-    /* =============== DARK — semantic tokens =============== */
-    /* WARM charcoal, not pure black and not cold-blue: a warm near-black
-       base (~#14110F ≈ hsl(24 9% 7%)) with a subtle warm undertone (~24°,
-       very low saturation), elevated surfaces a few % lighter and still
-       warm, hairline borders. Text is a warm off-white (never pure #FFF)
-       for a calm, low-fatigue reading contrast. */
-    --background: 24 9% 7%;
-    --foreground: 30 10% 91%;
+    /* =============== DARK — NexoString "constellation" palette ===========
+       Replicates the owner's NexoString design system (02_design_system.md):
+       a deep near-black NEUTRAL ramp on a cool-slate hue (228°, 12% sat — the
+       minimum that survives night-shift filters without reading dead-blue),
+       with signal-cyan (168 88) as the single primary/active accent and
+       electric-violet (246 92) reserved for selection. Crimson is RETIRED
+       from dark mode entirely. */
 
-    --card: 24 8% 10%;
-    --card-foreground: 30 10% 91%;
+    /* Near-black neutral ramp (228 12 *): void → panel → elevated → popover */
+    --background: 228 12% 3%;          /* surface-void  ≈ #070709 */
+    --foreground: 228 12% 92%;         /* primary text  (16.6:1)  */
 
-    --popover: 24 8% 11%;
-    --popover-foreground: 30 10% 91%;
+    --card: 228 12% 8%;                /* elevated card ≈ #121317 */
+    --card-foreground: 228 12% 92%;
 
-    /* De-neoned crimson: a deep, refined Premier crimson (sat dropped from
-       ~90% to ~62%) — reads as crimson, never neon pink. Appears only on
-       active nav, primary CTAs, focus/selection. */
-    --primary: 347 62% 49%;
-    --primary-foreground: 0 0% 100%;
+    --popover: 228 12% 12%;            /* overlay/popover ≈ #1b1c22 */
+    --popover-foreground: 228 12% 92%;
 
-    --secondary: 24 6% 15%;
-    --secondary-foreground: 30 8% 87%;
+    /* Primary accent = SIGNAL-CYAN (the active path + brand hub). Near-black
+       label on the cyan fill — the NexoString signature that makes the accent
+       read as chosen, not a default. */
+    --primary: 168 88% 60%;
+    --primary-foreground: 228 12% 6%;
 
-    --muted: 24 6% 14%;
-    --muted-foreground: 28 6% 60%;
+    --secondary: 228 12% 12%;
+    --secondary-foreground: 228 12% 88%;
 
-    --accent: 24 6% 17%;
-    --accent-foreground: 30 8% 89%;
+    --muted: 228 12% 12%;
+    --muted-foreground: 228 12% 58%;   /* tertiary text */
 
-    --destructive: 4 62% 52%;
-    --destructive-foreground: 0 0% 100%;
+    /* shadcn "accent" = subtle hover surface (NOT the brand accent) */
+    --accent: 228 12% 16%;
+    --accent-foreground: 228 12% 92%;
 
-    --success: 152 42% 48%;
-    --success-foreground: 152 60% 8%;
+    /* Destructive/error = warm danger-red 354 (distinct from rose nodes) */
+    --destructive: 354 80% 58%;
+    --destructive-foreground: 228 12% 96%;
 
-    --warning: 36 80% 56%;
-    --warning-foreground: 36 70% 8%;
+    /* Success = mint-lime 150; warning = saffron-amber 42 */
+    --success: 150 60% 56%;
+    --success-foreground: 150 60% 7%;
 
-    /* Hairline borders — low-contrast (~rgba(255,255,255,0.07)), warm */
-    --border: 24 6% 18%;
-    --input: 24 6% 21%;
-    --ring: 347 62% 49%;
+    --warning: 42 92% 62%;
+    --warning-foreground: 42 70% 8%;
 
-    /* Sidebar stays warm-dark (same family as light — brand anchor) */
+    /* Hairline borders — neutral-600 / divider on near-black */
+    --border: 228 12% 18%;
+    --input: 228 12% 22%;
+    --ring: 168 88% 58%;               /* signal-cyan focus ring */
 
-    /* Entity tokens — desaturated + slightly warmed for the warm-dark
-       canvas. Project = crimson. No fully-saturated primaries. */
-    --entity-project: 348 58% 60%;
-    --entity-task: 200 52% 56%;
-    --entity-request: 258 38% 66%;
-    --entity-page: 30 6% 64%;
-    --entity-person: 162 40% 52%;
-    --entity-department: 32 58% 58%;
+    /* Selection/focus accent = ELECTRIC-VIOLET (inspector/selected state) */
+    --selection: 246 92% 72%;
 
-    --status-todo: 28 6% 62%;
-    --status-in-progress: 36 80% 56%;
-    --status-blocked: 4 62% 56%;
-    --status-done: 150 46% 50%;
-    --status-success: 150 46% 50%;
-    --status-warning: 36 80% 56%;
-    --status-info: 348 58% 62%;
-    --status-neutral: 28 6% 62%;
-    --status-danger: 4 62% 56%;
-    --priority-low: 205 30% 56%;
-    --priority-medium: 36 78% 56%;
-    --priority-high: 26 70% 56%;
-    --priority-urgent: 4 64% 56%;
+    /* Graph canvas void + dot-grid hue (neutral-400) */
+    --surface-void: 228 12% 3%;
+    --graph-grid: 228 12% 42%;
+
+    /* Sidebar — near-black rail, signal-cyan active item (crimson retired) */
+    --sidebar-background: 228 12% 5%;
+    --sidebar-foreground: 228 12% 72%;
+    --sidebar-primary: 168 88% 62%;
+    --sidebar-primary-foreground: 228 12% 6%;
+    --sidebar-accent: 228 12% 12%;
+    --sidebar-accent-foreground: 228 12% 92%;
+    --sidebar-border: 228 12% 16%;
+    --sidebar-ring: 168 88% 58%;
+    --sidebar-muted: 228 12% 52%;
+
+    /* Entity tokens → NexoString neuron hues, desaturated-but-glowing on
+       near-black so the constellation reads cohesive, not flat. Electric-
+       violet is intentionally NOT used here — it is reserved for selection. */
+    --entity-project: 168 78% 60%;     /* signal-cyan — hub/brand */
+    --entity-task: 200 78% 64%;        /* azure */
+    --entity-request: 38 90% 64%;      /* saffron-amber */
+    --entity-page: 228 12% 64%;        /* neutral slate */
+    --entity-person: 338 82% 72%;      /* rose-magenta */
+    --entity-department: 86 62% 62%;   /* electric-lime */
+
+    --status-todo: 228 12% 62%;
+    --status-in-progress: 42 92% 60%;
+    --status-blocked: 354 78% 62%;
+    --status-done: 150 60% 56%;
+    --status-success: 150 60% 56%;
+    --status-warning: 42 92% 60%;
+    --status-info: 168 78% 60%;
+    --status-neutral: 228 12% 60%;
+    --status-danger: 354 78% 62%;
+    --priority-low: 205 60% 62%;
+    --priority-medium: 42 90% 60%;
+    --priority-high: 28 88% 62%;
+    --priority-urgent: 354 78% 62%;
   }
 }
 
@@ -598,6 +640,31 @@
   0%, 100% { transform: translateX(0); }
   25%      { transform: translateX(-4px); }
   75%      { transform: translateX(4px); }
+}
+
+/* NexoString signature — phosphor "breathing" glow for neuron/entity tiles.
+   Set --neuron-color inline (e.g. var(--entity-project)) so one keyframe
+   serves every hue. Used by glowing avatar/icon tiles around the app. */
+@keyframes cortex-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px hsl(var(--neuron-color) / 0.35),
+      0 0 20px 0 hsl(var(--neuron-color) / 0.25),
+      0 0 48px 6px hsl(var(--neuron-color) / 0.10);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px hsl(var(--neuron-color) / 0.65),
+      0 0 36px 4px hsl(var(--neuron-color) / 0.45),
+      0 0 80px 16px hsl(var(--neuron-color) / 0.22);
+  }
+}
+@keyframes cortex-orbital-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-cortex-pulse {
+  animation: cortex-pulse var(--motion-ambient) var(--ease-in-out-smooth) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
