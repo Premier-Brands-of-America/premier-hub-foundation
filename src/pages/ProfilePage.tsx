@@ -16,6 +16,7 @@ import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { AvatarPicker } from "@/components/common/AvatarPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDesignMode, type Theme, type Density } from "@/providers/DesignModeProvider";
+import { AppearanceColors } from "@/components/AppearanceColors";
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
@@ -223,6 +224,8 @@ export default function ProfilePage() {
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
+
+          <AppearanceColors />
         </CardContent>
       </Card>
     </div>
