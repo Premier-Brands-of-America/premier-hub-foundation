@@ -23,3 +23,15 @@
 - Ownership matrix stored as config data (src/config/artOwnership.ts), seedable/editable later — not inline conditionals.
 - Art Lead identity is config/env: VITE_ART_LEAD_EMAIL (documented; real value supplied by owner). CC rule: CC art lead by default, except when assigned manager IS the art lead.
 - Multi-owner customers (owned by >1 manager, detected generically) → required manager selector at request time.
+
+## Phase 3 council (6/27/2026, 1:19:47 AM)
+- Ran a 7-lens multi-agent design council (Workflow). Its strict structured-output
+  synthesis exceeded the schema retry cap; to keep the unattended run moving, the
+  per-lens reports + decision were authored from the same code inspection.
+  Artifacts: docs/design-review/agent-01..07 + decision.md.
+- Selected direction: "refined v2 enterprise" — consolidate on the v2 token system,
+  keep restraint + subtle motion, invest polish in legibility (Graph done; charts +
+  keyboard a11y are logged nice-to-haves). Rejected: flashy/3D, palette swap, adding
+  a DnD library, bespoke chart lib.
+- Phase 4 applied: token-based Graph edges + node polish (already), Kanban dragging
+  visual state. Remaining nice-to-haves logged.

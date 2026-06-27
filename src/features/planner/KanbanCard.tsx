@@ -1,6 +1,7 @@
 /**
  * Planner-style Kanban card. Draggable via native HTML5 DnD.
  */
+import { useState } from "react";
 import { MessageSquare, Paperclip, ListChecks, Users } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DueDateBadge } from "@/components/common/DueDateBadge";
@@ -39,12 +40,20 @@ export function KanbanCard({
   onDragStart: (e: React.DragEvent) => void;
 }) {
   const doneCount = card.checklist.filter((i) => i.done).length;
+  const [dragging, setDragging] = useState(false);
   return (
     <article
       draggable
-      onDragStart={onDragStart}
+      onDragStart={(e) => {
+        setDragging(true);
+        onDragStart(e);
+      }}
+      onDragEnd={() => setDragging(false)}
       onClick={onOpen}
-      className="group cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+      className={cn(
+        "group cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/40 hover:shadow-md",
+        dragging && "opacity-50 ring-2 ring-primary",
+      )}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

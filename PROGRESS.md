@@ -19,3 +19,10 @@ Autonomous functional + design revamp. Branched from feat/v2.
 - Graph enterprise redesign delivered by background agent (token edges, node glow, legend w/ relation styles, empty/loading states, stats). tsc+build green.
 - 46 tests pass; build green. Committed.
 - Next: Planner dashboard charts (recharts), then Art Request routing in form.
+
+## 6/27/2026, 1:19:47 AM — Phases 2/3/5/6 ✅
+- Phase 2: 10 design skills installed project-local (git clone); status table written; .claude/skills git-ignored.
+- Phase 3: 7-lens council ran; workflow synthesis hit schema retry cap → reports+decision authored from code. docs/design-review/*.
+- Phase 4 polish: Kanban card dragging state (council quick win).
+- Phase 5/6 docs: GRAPH-PERMISSIONS.md, REVAMP-SUMMARY.md, REVIEW-GUIDE.md, calendar-create-event edge fn, start-review.sh, BLOCKERS updated.
+- 57 tests pass; tsc+build green. Next: final verify + start detached server + .run markers.
