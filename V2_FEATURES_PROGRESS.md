@@ -94,3 +94,33 @@ distinct from the existing lightweight Attachments list (kept; see DECISIONS.md)
   upload (multi-file, 25MB guard), open/download, remove; mounted in ProjectDetailPanel.
 - **Preview:** open a demo project → Documents shows seeded files (open them), upload a
   file and download it back, remove it. Real Storage wiring logged in BLOCKERS.md.
+
+## Feature 1 — richer M365 user info + Org Chart (2026-06-27 2:47pm EDT)
+## Feature 7 — Memory Graph (personal second brain) (same)
+Built together as one unified graph with a **Network / Org / Memory** mode switch,
+reusing the NexoString GraphCanvas (glow + DiceBear avatars + motion). Node size is
+already degree-driven in the canvas, so hubs stand out.
+- types/graph.ts: `GraphMode`, `reports_to` / `member_of` relations.
+- `src/pages/Graph.tsx`: mode switch (segmented control), `useGraphData(filters, mode)`,
+  client-side **local-subgraph** pruning (focus a node → neighborhood within `depth`
+  hops — works in all modes incl. preview). Filters (type/status/hide-orphans/search),
+  depth slider, legend, stats all reused. Accepts `initialMode` for the routes.
+- Routes `/org` (Org) and `/memory` (Memory) + nav entries; `NodeDetailSheet` now shows
+  user title/department/office/mail/reports + an **Open in Memory Graph** action; the
+  same entry point added to project/task/page detail surfaces.
+- **Org (Feature 1):** `src/lib/orgGraphDemo.ts` seeds a 3-level reports-to hierarchy
+  (CEO → VPs → ICs) incl. the real mock users + department nodes (member_of). Backend
+  (written, NOT pushed): migration `20260627180000_feature1_org_directory.sql`
+  (org_directory table, profiles.office_location, `get_org_chart_data()` RPC, feature
+  flags) + edge fn `graph-user-directory` (pulls jobTitle/department/officeLocation/mail/
+  manager/directReports). Scopes (`User.Read.All` / `Directory.Read.All`) documented in
+  docs/GRAPH-PERMISSIONS.md + BLOCKERS.md.
+- **Memory (Feature 7):** `src/lib/memoryGraphDemo.ts` assembles the viewer's
+  ACL-scoped projects/tasks/pages/requests/people + ALL links (owns, stakeholder,
+  assigned_to, belongs_to, relates_to, page wikilinks/linked_from, @mentions) with a
+  "🧠 My Notes (MOC)" hub. Real mode reuses the RLS-scoped get_graph_data across all
+  entity types. ACL scoping unit-tested (admin sees the hidden private project; standard
+  doesn't). Global + local (focus + depth) modes; size-by-degree; filters/search.
+- **Preview:** sidebar → Graph and switch Network/Org/Memory; or Org / Memory directly.
+  Focus a node for a local graph; "Open in Memory Graph" from any detail panel.
+- tsc + build green; 121 tests (incl. graphBuilders.test.ts).

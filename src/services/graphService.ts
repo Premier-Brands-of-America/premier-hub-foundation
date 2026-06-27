@@ -1,11 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { buildOrgGraph } from "@/lib/orgGraphDemo";
+import { buildMemoryGraph } from "@/lib/memoryGraphDemo";
+import { currentDemoViewer } from "@/lib/aclDemo";
 import type {
-  GraphEdge, GraphFilters, GraphNode, GraphPayload, NodeType,
+  GraphEdge, GraphFilters, GraphMode, GraphNode, GraphPayload, NodeType,
 } from "@/types/graph";
 
 const IS_PREVIEW = isPreviewEnvironment();
 const DEFAULT_LIMIT = 500;
+const ALL_MEMORY_TYPES: NodeType[] = ["project", "task", "request", "page", "user"];
 
 function mockGraph(): GraphPayload {
   const nodes: GraphNode[] = [];
@@ -80,6 +84,45 @@ export async function fetchGraph(filters: GraphFilters = {}): Promise<GraphPaylo
   const nodes = (row?.nodes ?? []) as GraphNode[];
   const edges = (row?.edges ?? []) as GraphEdge[];
   return { nodes, edges, truncated: nodes.length >= limit };
+}
+
+/** Fallback viewer for the memory graph when the preview viewer isn't resolved yet. */
+function memoryViewer() {
+  return (
+    currentDemoViewer() ?? {
+      userId: "preview-user",
+      isAdmin: false,
+      departmentId: null,
+      directReportIds: ["demo-user-report"],
+    }
+  );
+}
+
+/**
+ * Unified graph fetch by mode. Network reuses get_graph_data; Org adds the
+ * people/department hierarchy; Memory is the personal, ACL-scoped knowledge graph
+ * (real mode reuses the RLS-scoped get_graph_data across all entity types).
+ */
+export async function fetchGraphFor(mode: GraphMode, filters: GraphFilters = {}): Promise<GraphPayload> {
+  if (mode === "org") {
+    if (IS_PREVIEW) return buildOrgGraph();
+    const { data, error } = await supabase.rpc("get_org_chart_data" as never, {
+      p_filters: {} as never,
+      p_limit: filters.limit ?? DEFAULT_LIMIT,
+    } as never);
+    if (error) {
+      // RPC not deployed yet → fall back to the network graph rather than erroring.
+      return fetchGraph(filters);
+    }
+    const row = (Array.isArray(data) ? data[0] : data) as { nodes: GraphNode[] | null; edges: GraphEdge[] | null } | null;
+    return { nodes: (row?.nodes ?? []) as GraphNode[], edges: (row?.edges ?? []) as GraphEdge[], truncated: false };
+  }
+  if (mode === "memory") {
+    if (IS_PREVIEW) return buildMemoryGraph(memoryViewer());
+    // Real memory graph = the full RLS-scoped graph across all entity + link types.
+    return fetchGraph({ ...filters, entity_types: filters.entity_types ?? ALL_MEMORY_TYPES });
+  }
+  return fetchGraph(filters);
 }
 
 export async function expandNode(

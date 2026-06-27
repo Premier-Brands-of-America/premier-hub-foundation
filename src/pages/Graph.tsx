@@ -11,15 +11,76 @@ import { Button } from "@/components/ui/button";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
 import { DEFAULT_FORCES } from "@/types/graph";
-import { Network, SlidersHorizontal } from "lucide-react";
-import type { GraphEdge, GraphFilters, GraphForces, GraphNode, GraphPayload, GraphViewFilters, NodeType, RelationType } from "@/types/graph";
+import { Network, Share2, Brain, SlidersHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { GraphEdge, GraphFilters, GraphForces, GraphMode, GraphNode, GraphPayload, GraphViewFilters, NodeType, RelationType } from "@/types/graph";
 
-const ALL_NODE_TYPES: NodeType[] = ["project", "task", "request", "page", "user"];
+const ALL_NODE_TYPES: NodeType[] = ["project", "task", "request", "page", "user", "department"];
+
+const MODE_META: Record<GraphMode, { label: string; icon: typeof Network; blurb: string }> = {
+  network: { label: "Network", icon: Network, blurb: "How everything connects" },
+  org: { label: "Org", icon: Share2, blurb: "Reports-to hierarchy" },
+  memory: { label: "Memory", icon: Brain, blurb: "Your personal knowledge graph" },
+};
+
+function GraphModeSwitch({ mode, onChange }: { mode: GraphMode; onChange: (m: GraphMode) => void }) {
+  return (
+    <div className="flex items-center gap-1 rounded-full border border-border/60 bg-card/90 p-1 shadow-sm backdrop-blur-sm">
+      {(Object.keys(MODE_META) as GraphMode[]).map((m) => {
+        const { label, icon: Icon } = MODE_META[m];
+        const active = m === mode;
+        return (
+          <button
+            key={m}
+            type="button"
+            onClick={() => onChange(m)}
+            title={MODE_META[m].blurb}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" /> {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function edgeEnds(e: GraphEdge): [string, string] {
   const s = typeof e.source === "string" ? e.source : (e.source as unknown as GraphNode).id;
   const t = typeof e.target === "string" ? e.target : (e.target as unknown as GraphNode).id;
   return [s, t];
+}
+
+/** Prune to the neighborhood within `depth` hops of the focused node (local graph). */
+function localSubgraph(payload: GraphPayload, centerId: string, depth: number): GraphPayload {
+  const center = payload.nodes.find((n) => n.entityId === centerId || n.id === centerId);
+  if (!center) return payload;
+  const adj = new Map<string, string[]>();
+  payload.edges.forEach((e) => {
+    const [s, t] = edgeEnds(e);
+    (adj.get(s) ?? adj.set(s, []).get(s)!).push(t);
+    (adj.get(t) ?? adj.set(t, []).get(t)!).push(s);
+  });
+  const keep = new Set<string>([center.id]);
+  let frontier = [center.id];
+  for (let d = 0; d < Math.max(1, depth); d++) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      (adj.get(id) ?? []).forEach((nb) => {
+        if (!keep.has(nb)) { keep.add(nb); next.push(nb); }
+      });
+    }
+    frontier = next;
+  }
+  const nodes = payload.nodes.filter((n) => keep.has(n.id));
+  const edges = payload.edges.filter((e) => {
+    const [s, t] = edgeEnds(e);
+    return keep.has(s) && keep.has(t);
+  });
+  return { nodes, edges, truncated: payload.truncated };
 }
 
 function filtersFromParams(p: URLSearchParams): GraphFilters {
@@ -169,7 +230,7 @@ function GraphEmptyState({ onReset }: { onReset: () => void }) {
 
 /** Small stats pill — node count by type + edge total. */
 function GraphStats({ payload }: { payload: GraphPayload }) {
-  const typeOrder: NodeType[] = ["project", "task", "request", "page", "user"];
+  const typeOrder: NodeType[] = ["project", "task", "request", "page", "user", "department"];
   const counts = useMemo(() => {
     const m: Partial<Record<NodeType, number>> = {};
     for (const n of payload.nodes) {
@@ -196,8 +257,11 @@ function GraphStats({ payload }: { payload: GraphPayload }) {
   );
 }
 
-export default function GraphPage() {
+export default function GraphPage({ initialMode }: { initialMode?: GraphMode } = {}) {
   const [params, setParams] = useSearchParams();
+  const [mode, setMode] = useState<GraphMode>(
+    () => initialMode ?? (params.get("mode") as GraphMode | null) ?? "network",
+  );
   const [filters, setFilters] = useState<GraphFilters>(() => filtersFromParams(params));
   const [view, setView] = useState<GraphViewFilters>({});
   const [forces, setForces] = useState<GraphForces>(() => ({ ...DEFAULT_FORCES }));
@@ -209,11 +273,13 @@ export default function GraphPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   useGraphRealtime();
-  const { data, isLoading } = useGraphData(filters);
+  const { data, isLoading } = useGraphData(filters, mode);
 
   useEffect(() => {
-    setParams(filtersToParams(filters), { replace: true });
-  }, [filters, setParams]);
+    const p = filtersToParams(filters);
+    if (mode !== "network") p.set("mode", mode);
+    setParams(p, { replace: true });
+  }, [filters, mode, setParams]);
 
   useEffect(() => {
     const update = () => {
@@ -231,7 +297,13 @@ export default function GraphPage() {
     () => data ?? { nodes: [], edges: [], truncated: false },
     [data],
   );
-  const payload = useMemo(() => applyViewFilters(raw, view), [raw, view]);
+  // Local-graph: when a node is focused, prune to its neighborhood within `depth`
+  // hops (works for all modes incl. the preview demo builders).
+  const scoped = useMemo(
+    () => (filters.center_id ? localSubgraph(raw, filters.center_id, filters.depth ?? 1) : raw),
+    [raw, filters.center_id, filters.depth],
+  );
+  const payload = useMemo(() => applyViewFilters(scoped, view), [scoped, view]);
 
   const statusOptions = useMemo(() => {
     const set = new Set<string>();
@@ -290,16 +362,21 @@ export default function GraphPage() {
 
   return (
     <div ref={containerRef} className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-background">
+      {/* Mode switch: Network / Org / Memory */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+        <GraphModeSwitch mode={mode} onChange={setMode} />
+      </div>
+
       {/* Truncation banner */}
       {payload.truncated && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-warning/90 text-warning-foreground text-xs px-3 py-1 rounded-full shadow font-medium">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 mt-12 bg-warning/90 text-warning-foreground text-xs px-3 py-1 rounded-full shadow font-medium">
           Showing {payload.nodes.length} of many — refine filters or focus a local graph
         </div>
       )}
 
       {/* Rooted / local graph badge */}
       {rooted && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 mt-8 flex items-center gap-2 bg-card/95 text-xs px-3 py-1.5 rounded-full shadow border border-border/60 backdrop-blur-sm">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 mt-12 flex items-center gap-2 bg-card/95 text-xs px-3 py-1.5 rounded-full shadow border border-border/60 backdrop-blur-sm">
           <div className="h-1.5 w-1.5 rounded-full bg-primary" />
           <span className="text-muted-foreground">Local graph</span>
           <span className="font-medium">depth {filters.depth ?? 1}</span>

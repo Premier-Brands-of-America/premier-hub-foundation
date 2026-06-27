@@ -18,6 +18,7 @@ import type { Page, PageVisibility } from "@/types/pages";
 import { useUpdatePageMeta, useUpdatePageTitle } from "@/hooks/use-page";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageShareDialog } from "@/components/pages/PageShareDialog";
+import { OpenInMemoryGraphButton } from "@/components/graph/OpenInMemoryGraphButton";
 
 const EMOJIS = ["📄","📝","📚","📌","✅","⭐","🚀","🎯","💡","🔧","🎨","📊"];
 
@@ -109,6 +110,7 @@ export function PageHeader({ page }: Props) {
         >
           <Share2 className="h-3.5 w-3.5" /> Share
         </Button>
+        <OpenInMemoryGraphButton type="page" id={page.id} variant="outline" className="mt-1 h-9 shrink-0" />
       </div>
 
       <PageShareDialog

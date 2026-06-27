@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { ProjectDocuments } from "@/components/projects/ProjectDocuments";
+import { OpenInMemoryGraphButton } from "@/components/graph/OpenInMemoryGraphButton";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { OutlookCalendarPanel } from "@/components/integrations/outlook";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -665,6 +666,12 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
           {/* ─── Documents (Feature 3) ─── */}
           <section>
             <ProjectDocuments projectId={project.id} />
+          </section>
+
+          <Separator />
+
+          <section>
+            <OpenInMemoryGraphButton type="project" id={project.id} variant="outline" className="w-full" />
           </section>
 
           <Separator />

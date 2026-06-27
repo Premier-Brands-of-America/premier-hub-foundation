@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, TaskContact, TaskUpdate, TaskActivity, TaskAttachment, TaskLink } from "@/types/tasks";
 import { FILE_EXTENSIONS, MAX_FILE_SIZE } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
+import { OpenInMemoryGraphButton } from "@/components/graph/OpenInMemoryGraphButton";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { EntityAvatar } from "@/components/common/EntityAvatar";
@@ -339,6 +340,8 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
               </SelectContent>
             </Select>
           </div>
+
+          <OpenInMemoryGraphButton type="task" id={task.id} variant="outline" className="w-full" />
 
           <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
             Created {format(new Date(task.created_at), "MMM d, yyyy 'at' h:mm a")}

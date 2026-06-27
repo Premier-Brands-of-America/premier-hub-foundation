@@ -53,6 +53,52 @@ App-only alternative (not the current flow): use `Calendars.ReadWrite`
 **Application**, requires admin consent, and the function must POST to
 `/users/{msUserId}/events` (NOT `/me/events`).
 
+---
+
+# Microsoft Graph permissions — org directory (Feature 1)
+
+The org directory + Org Chart pull richer per-user info and the reports-to /
+direct-reports hierarchy. **No app-registration or admin-consent change was made
+by this run — that is an Entra admin action for the owner.** Until consented, the
+app uses the seeded **preview demo org**; the `graph-user-directory` edge fn +
+`org_directory` table are written and run only once the scope is granted.
+
+## Fields pulled (per user)
+`jobTitle`, `department`, `officeLocation`, `mail`, `manager` (via `$expand=manager`),
+and a `directReports` count — from `GET /users?$select=...&$expand=manager` and,
+optionally, `GET /users/{id}/directReports`.
+
+## Exact scope delta (verify against the permissions-reference before consent)
+<https://learn.microsoft.com/en-us/graph/permissions-reference>
+
+| Capability | Delegated scope | Application scope (app-only) |
+|---|---|---|
+| Read all users' profile + jobTitle/department/officeLocation/mail | **`User.Read.All`** | `User.Read.All` (admin consent) |
+| Read `manager` / `directReports` relationships | covered by `User.Read.All`, or **`User.Read` + `Directory.Read.All`** | `Directory.Read.All` (admin consent) |
+
+Recommended minimum: **`User.Read.All`** (covers profile fields + manager +
+directReports). Use `User.Read` + `Directory.Read.All` if your tenant restricts
+`User.Read.All`.
+
+Add to `SCOPES` in `supabase/functions/ms-oauth-start/index.ts` (delegated flow):
+```
+User.Read.All                 ← REQUIRED for the org directory / Org Chart
+Directory.Read.All            ← OPTIONAL alternative path for manager/reports
+```
+
+Where to grant in Entra (owner action): App registrations → (Premier Hub app) →
+**API permissions** → Add → Microsoft Graph → **Delegated** (or Application for an
+app-only sync) → add the scope(s) → **Grant admin consent**. Then invoke the
+`graph-user-directory` edge function to populate `org_directory` and backfill
+`profiles.title/department/office_location/manager_email`.
+
+## Build status
+- Edge fn `supabase/functions/graph-user-directory/index.ts` + migration
+  `20260627180000_feature1_org_directory.sql` (org_directory table, profiles.office_location,
+  `get_org_chart_data()` RPC) are **written, NOT pushed**.
+- Preview shows a seeded demo org (`src/lib/orgGraphDemo.ts`) via the graph "Org" mode
+  and `/org` route; no scope needed to review.
+
 ## 4. Build status / runtime test
 
 - Feature is **built** against `Calendars.ReadWrite`: see

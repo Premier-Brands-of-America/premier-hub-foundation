@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchGraph } from "@/services/graphService";
-import type { GraphFilters, GraphPayload } from "@/types/graph";
+import { fetchGraphFor } from "@/services/graphService";
+import type { GraphFilters, GraphMode, GraphPayload } from "@/types/graph";
 
 function stableHash(f: GraphFilters): string {
   const obj = {
@@ -13,10 +13,10 @@ function stableHash(f: GraphFilters): string {
   return JSON.stringify(obj);
 }
 
-export function useGraphData(filters: GraphFilters) {
+export function useGraphData(filters: GraphFilters, mode: GraphMode = "network") {
   return useQuery<GraphPayload>({
-    queryKey: ["graph", stableHash(filters)],
-    queryFn: () => fetchGraph(filters),
+    queryKey: ["graph", mode, stableHash(filters)],
+    queryFn: () => fetchGraphFor(mode, filters),
     staleTime: 30_000,
   });
 }

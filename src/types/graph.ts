@@ -1,9 +1,13 @@
 export type NodeType = "project" | "task" | "request" | "page" | "user" | "department";
 
+/** Which graph the page is showing. */
+export type GraphMode = "network" | "org" | "memory";
+
 export type RelationType =
   | "owns" | "stakeholder" | "assigned_to" | "belongs_to"
   | "relates_to" | "blocks" | "duplicate_of" | "parent_of"
-  | "mentions" | "linked_from";
+  | "mentions" | "linked_from"
+  | "reports_to" | "member_of";
 
 export interface GraphNode {
   id: string;

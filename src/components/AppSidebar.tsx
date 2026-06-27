@@ -18,6 +18,8 @@ import {
   CalendarRange,
   Network,
   KanbanSquare,
+  Share2,
+  Brain,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -54,6 +56,8 @@ const mainNav = [
 const toolsNav = [
   { title: "AI Assistant", url: "/ai-assistant", icon: Bot },
   { title: "Graph", url: "/graph", icon: Network, requiresStaff: true },
+  { title: "Org", url: "/org", icon: Share2 },
+  { title: "Memory", url: "/memory", icon: Brain },
   { title: "Diagnostics", url: "/diagnostics", icon: BarChart3, requiresDiagnostics: true },
 ];
 
