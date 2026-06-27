@@ -109,3 +109,32 @@ carbon neutral, with Premier crimson as the single saturated accent — exactly 
 stated direction. `npx tsc --noEmit` clean · `npm run build` green.
 
 ---
+
+## 2026-06-27 — Round 2: Warm dark + de-neon (Task A & B tokens)
+
+### A. Dark mode → WARM + LOW-NEON (`src/index.css`)
+- BEFORE: `.dark` ramp was cold carbon at hue 240° (e.g. `--background: 240 7% 6%`,
+  `--foreground: 240 8% 94%` near-pure white), and the crimson accent rendered as
+  NEON PINK (`--primary: 349 90% 64%` — ~90% saturation).
+- AFTER: rebuilt as a WARM charcoal at hue ~24° low-sat — `--background: 24 9% 7%`
+  (~#14110F warm near-black), elevated surfaces `--card: 24 8% 10%` / `--popover:
+  24 8% 11%` still warm. Text is a warm off-white `--foreground: 30 10% 91%` (not
+  pure #FFF); muted tier `28 6% 60%` for calm low-fatigue contrast.
+- Crimson DE-NEONED: `--primary: 347 62% 49%` (saturation 90→62%) — a deep refined
+  Premier crimson, no longer neon pink. `--ring` matches. White CTA text retained.
+- LIGHT mode warmed too: neutral ramp shifted from cool 240° to warm ~28–30° at very
+  low sat (`--background: 30 14% 98%`, `--foreground: 24 10% 12%`), sidebar warmed
+  (`24 8% 9%`), sidebar-primary de-neoned to `348 65% 60%`.
+
+### B. Graph + status/priority palette de-neon (`src/index.css` entity tokens)
+- BEFORE (dark): fully-saturated entity set — project `349 90% 70%` neon pink, task
+  `199 90% 60%` neon cyan, request `262 70% 72%` bright purple, department
+  `28 85% 62%` bright orange.
+- AFTER (dark): desaturated + warmed cohesive set — project `348 58% 60%`, task
+  `200 52% 56%`, request `258 38% 66%`, page `30 6% 64%`, person `162 40% 52%`,
+  department `32 58% 58%`. Light entity tokens muted to match.
+- Status/priority dark tokens desaturated across the board (e.g. in-progress 95→80%,
+  blocked/danger hue 0→4° at 62%, done 55→46%) for a calm warm-dark canvas.
+- `npx tsc --noEmit` clean · `npm run build` green.
+
+---
