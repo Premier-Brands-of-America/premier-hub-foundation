@@ -1,0 +1,270 @@
+/**
+ * Reports dashboard charts — renders a single predefined chart by id, reusing
+ * the planner chart idioms (tooltip/legend/axis styles, color arrays, ChartCard
+ * wrapper, donutCenter). Each chart maps a reportsMetrics fn -> recharts shape.
+ */
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Label,
+  LabelList,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  statusBreakdown,
+  byDepartment,
+  workload,
+  dueHealth,
+  priorityMix,
+  throughput,
+  type CountDatum,
+} from "@/lib/reportsMetrics";
+import { REPORT_CHART_META, type ReportChartId } from "@/lib/reportPrefs";
+import type { ReportItem } from "@/lib/reportsMetrics";
+
+/** Status order: Not started, In progress, In review, Completed. */
+const STATUS_COLORS = [
+  "hsl(var(--muted-foreground))",
+  "hsl(var(--primary))",
+  "hsl(var(--warning))",
+  "hsl(var(--status-done))",
+];
+/** Health order: Overdue, Due soon, On track, No date. */
+const HEALTH_COLORS = [
+  "hsl(var(--destructive))",
+  "hsl(var(--warning))",
+  "hsl(var(--status-done))",
+  "hsl(var(--muted-foreground))",
+];
+/** Priority order: Urgent, High, Medium, Low. */
+const PRIORITY_COLORS = [
+  "hsl(var(--priority-urgent))",
+  "hsl(var(--priority-high))",
+  "hsl(var(--priority-medium))",
+  "hsl(var(--priority-low))",
+];
+
+const tooltipStyle = {
+  background: "hsl(var(--popover))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 8,
+  fontSize: 12,
+  color: "hsl(var(--popover-foreground))",
+};
+
+const legendStyle = { fontSize: 11, color: "hsl(var(--muted-foreground))" };
+const axisTick = { fontSize: 11, fill: "hsl(var(--muted-foreground))" } as const;
+const labelStyle = { fontSize: 11, fill: "hsl(var(--muted-foreground))" } as const;
+
+function ChartCard({
+  title,
+  description,
+  isEmpty,
+  children,
+}: {
+  title: string;
+  description?: string;
+  isEmpty?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+        {description ? <CardDescription>{description}</CardDescription> : null}
+      </CardHeader>
+      <CardContent className="h-64">
+        {isEmpty ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            No data yet
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            {children as React.ReactElement}
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Centered big-number total drawn in the donut hole. */
+function donutCenter(total: number) {
+  return ({ viewBox }: { viewBox?: { cx?: number; cy?: number } }) => {
+    const cx = viewBox?.cx ?? 0;
+    const cy = viewBox?.cy ?? 0;
+    return (
+      <g>
+        <text
+          x={cx}
+          y={cy}
+          dy={-2}
+          textAnchor="middle"
+          className="fill-foreground tabular-nums"
+          style={{ fontSize: 24, fontWeight: 600 }}
+        >
+          {total}
+        </text>
+        <text
+          x={cx}
+          y={cy}
+          dy={16}
+          textAnchor="middle"
+          className="fill-muted-foreground"
+          style={{ fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase" }}
+        >
+          Total
+        </text>
+      </g>
+    );
+  };
+}
+
+const sum = (data: CountDatum[]) => data.reduce((acc, d) => acc + d.value, 0);
+
+function Donut({ data, colors }: { data: CountDatum[]; colors: string[] }) {
+  return (
+    <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+      <Pie
+        data={data}
+        dataKey="value"
+        nameKey="name"
+        innerRadius={56}
+        outerRadius={80}
+        paddingAngle={2}
+        cornerRadius={4}
+        strokeWidth={0}
+      >
+        {data.map((_, i) => (
+          <Cell key={i} fill={colors[i % colors.length]} />
+        ))}
+        <Label position="center" content={donutCenter(sum(data))} />
+      </Pie>
+      <Tooltip contentStyle={tooltipStyle} />
+      <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
+    </PieChart>
+  );
+}
+
+/** Renders one chart by id. Returns null for an unknown id (defensive). */
+export function ReportChart({ id, items }: { id: ReportChartId; items: ReportItem[] }) {
+  const meta = REPORT_CHART_META[id];
+
+  switch (id) {
+    case "status": {
+      const data = statusBreakdown(items);
+      return (
+        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
+          <Donut data={data} colors={STATUS_COLORS} />
+        </ChartCard>
+      );
+    }
+
+    case "due_health": {
+      const data = dueHealth(items);
+      return (
+        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
+          <Donut data={data} colors={HEALTH_COLORS} />
+        </ChartCard>
+      );
+    }
+
+    case "by_department": {
+      const data = byDepartment(items);
+      return (
+        <ChartCard title={meta.title} description={meta.description} isEmpty={data.length === 0}>
+          <BarChart data={data} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
+            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={40}>
+              <LabelList dataKey="value" position="top" style={labelStyle} />
+            </Bar>
+          </BarChart>
+        </ChartCard>
+      );
+    }
+
+    case "workload": {
+      const data = workload(items);
+      return (
+        <ChartCard title={meta.title} description={meta.description} isEmpty={data.length === 0}>
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+            <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} />
+            <YAxis type="category" dataKey="name" width={90} axisLine={false} tickLine={false} tick={axisTick} />
+            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} maxBarSize={40}>
+              <LabelList dataKey="value" position="right" style={labelStyle} />
+            </Bar>
+          </BarChart>
+        </ChartCard>
+      );
+    }
+
+    case "throughput": {
+      const data = throughput(items);
+      return (
+        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
+          <LineChart data={data} margin={{ top: 16, right: 16, bottom: 4, left: -8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "hsl(var(--primary))" }}
+              activeDot={{ r: 4 }}
+            >
+              <LabelList dataKey="value" position="top" style={labelStyle} />
+            </Line>
+          </LineChart>
+        </ChartCard>
+      );
+    }
+
+    case "priority": {
+      const data = priorityMix(items);
+      return (
+        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
+          <BarChart data={data} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
+            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
+              {data.map((_, i) => (
+                <Cell key={i} fill={PRIORITY_COLORS[i % PRIORITY_COLORS.length]} />
+              ))}
+              <LabelList dataKey="value" position="top" style={labelStyle} />
+            </Bar>
+          </BarChart>
+        </ChartCard>
+      );
+    }
+
+    default:
+      return null;
+  }
+}
