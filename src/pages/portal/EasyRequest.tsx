@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { isPreviewEnvironment } from "@/lib/environment";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateRequest } from "@/hooks/useRequests";
 import {
@@ -151,9 +152,9 @@ export default function EasyRequest() {
       });
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
       toast.success(`Request submitted: ${created.request_number}`);
-      navigate(`/requests/${created.id}`);
+      navigate(isPreviewEnvironment() ? "/requests" : `/requests/${created.id}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to submit request";
+      const msg = err instanceof Error && err.message ? err.message : "Failed to submit request. Check the required fields above; in preview the live database is not connected.";
       setSubmitError(msg);
     }
   };

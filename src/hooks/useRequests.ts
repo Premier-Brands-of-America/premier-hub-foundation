@@ -9,6 +9,7 @@ import {
 } from "@/services/requests";
 import type { CreateRequestPayload, UpdateRequestPatch } from "@/types/request";
 import { supabase } from "@/integrations/supabase/client";
+import { isPreviewEnvironment } from "@/lib/environment";
 
 export const requestKeys = {
   all: ["requests"] as const,
@@ -55,6 +56,18 @@ export function useCreateRequest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateRequestPayload) => {
+      if (isPreviewEnvironment()) {
+        // Preview/demo: no live DB. Simulate a successful submission so the
+        // whole request flow is testable without `supabase db push`.
+        const n = Math.floor(1000 + (Date.now() % 9000));
+        return {
+          id: `demo-req-${Date.now()}`,
+          request_number: `ART-PREVIEW-${n}`,
+          status: "submitted",
+          created_at: new Date().toISOString(),
+          ...(payload as Record<string, unknown>),
+        } as Awaited<ReturnType<typeof createRequest>>;
+      }
       const created = await createRequest(payload);
       // Fire-and-forget SharePoint folder provisioning
       supabase.functions
