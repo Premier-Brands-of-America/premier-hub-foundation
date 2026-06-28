@@ -20,6 +20,7 @@ import {
   KanbanSquare,
   Share2,
   Brain,
+  Wrench,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -61,17 +62,20 @@ const toolsNav = [
   { title: "Diagnostics", url: "/diagnostics", icon: BarChart3, requiresDiagnostics: true },
 ];
 
-const adminNav = [
-  { title: "Admin Tools", url: "/admin", icon: Settings },
-];
-
+// Art Department Requests — request-portal items only.
 const portalNav: NavItemConfig[] = [
   { label: "Submit Request", to: "/requests/new", icon: FilePlus, feature: "art_request_portal", roles: ["requester", "designer", "admin"] },
   { label: "My Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
   { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
   { label: "Department Workload", to: "/workload", icon: Users2, feature: "department_dashboard", roles: ["admin"] },
+];
+
+// Administration — admin tooling plus the app-wide Audit Log. Audit Log is also
+// visible to diagnostics users; everything else is admin-only.
+const adminNav: NavItemConfig[] = [
+  { label: "Admin Tools", to: "/admin", icon: Wrench, roles: ["admin"] },
   { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["admin"] },
-  { label: "Audit Log", to: "/audit", icon: ScrollText, feature: "audit_trail", roles: ["admin"] },
+  { label: "Audit Log", to: "/audit", icon: ScrollText, feature: "audit_trail", roles: ["admin"], requireDiagnostics: true },
   { label: "Settings", to: "/admin/settings", icon: Settings, feature: "admin_settings", roles: ["admin"] },
 ];
 
@@ -131,9 +135,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Art Request Portal */}
+        {/* Art Department Requests */}
         <SidebarGroup>
-          <SidebarGroupLabel>Art Request Portal</SidebarGroupLabel>
+          <SidebarGroupLabel>Art Department Requests</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {portalNav.map((item) => (
@@ -176,25 +180,15 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin (conditional) */}
-        {profile?.is_admin && (
+        {/* Administration — admin tooling + the app-wide Audit Log (admin or
+            diagnostics). Per-item gating lives in NavItem. */}
+        {(profile?.is_admin || profile?.can_view_diagnostics) && (
           <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminNav.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.url)}
-                      tooltip={item.title}
-                    >
-                      <NavLink to={item.url} end activeClassName="font-medium">
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <NavItem key={item.to} item={item} collapsed={collapsed} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>

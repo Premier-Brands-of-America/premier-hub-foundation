@@ -61,9 +61,13 @@ const IS_PREVIEW = isPreviewEnvironment();
 function ProtectedRoute({
   children,
   requireRole,
+  allowDiagnostics,
 }: {
   children: React.ReactNode;
   requireRole?: "admin" | "designer" | "requester" | Array<"admin" | "designer" | "requester">;
+  /** When set, a user with `can_view_diagnostics` passes even if their role
+   *  isn't in `requireRole` (used by the Audit Log: admin + diagnostics). */
+  allowDiagnostics?: boolean;
 }) {
   const { session, loading, profile } = useAuth();
 
@@ -101,7 +105,8 @@ function ProtectedRoute({
   if (requireRole) {
     const allowed = Array.isArray(requireRole) ? requireRole : [requireRole];
     const effectiveRole = profile?.role ?? (profile?.is_admin ? "admin" : undefined);
-    const ok = effectiveRole && allowed.includes(effectiveRole as "admin" | "designer" | "requester");
+    const roleOk = effectiveRole && allowed.includes(effectiveRole as "admin" | "designer" | "requester");
+    const ok = roleOk || (allowDiagnostics && !!profile?.can_view_diagnostics);
     if (!ok) {
       toast({ title: "Access denied", description: "You don't have permission to view that page.", variant: "destructive" });
       return <Navigate to="/" replace />;
@@ -167,7 +172,7 @@ function AppRoutes() {
           <Route path="/queue" element={<ProtectedRoute requireRole={["designer","admin"]}><FeatureRoute feature="art_request_portal"><Queue /></FeatureRoute></ProtectedRoute>} />
           <Route path="/workload" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="department_dashboard"><Workload /></FeatureRoute></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="reports"><ReportsPage /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/audit" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="audit_trail"><AuditLogPage /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/audit" element={<ProtectedRoute requireRole="admin" allowDiagnostics><FeatureRoute feature="audit_trail"><AuditLogPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages/:id" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/timeline" element={<ProtectedRoute><FeatureRoute feature="timeline"><TimelinePage /></FeatureRoute></ProtectedRoute>} />
