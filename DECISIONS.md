@@ -71,3 +71,36 @@ Chose to nest `color_overrides` inside the existing `profiles.preferences` JSONB
 than add a separate `user_theme_prefs` table: it reuses the established preferences
 read/write path + RLS (owner updates own row), avoiding duplicate policies. localStorage
 mirrors it for instant apply + the preview path.
+
+## v2 final polish — Sidebar IA, Audit Log, Reports, Profile Integrations (2026-06-28)
+
+### Diagnostics gating ("admin + diagnostics")
+There is no "diagnostics" **role** — the Role union is only admin/designer/requester.
+Diagnostics capability is the boolean `profile.can_view_diagnostics` (or `is_admin`).
+So "Audit Log visible to admin + diagnostics" = `is_admin || can_view_diagnostics`.
+- `ProtectedRoute` gained `allowDiagnostics` — a user passes if their role matches
+  `requireRole` OR (`allowDiagnostics` && `can_view_diagnostics`). `/audit` uses
+  `requireRole="admin" allowDiagnostics`. `/admin/settings` stays `requireRole="admin"`.
+- `NavItem` gained `requireDiagnostics` for sidebar parity with the route guard.
+- The Administration sidebar group now renders for `is_admin || can_view_diagnostics`
+  (was admin-only); per-item visibility lives in NavItem (Audit Log = admin+diagnostics,
+  everything else admin-only). Verified against the three preview mock users
+  (Standard Employee, Diagnostics User, Admin User) in PreviewAuthContext.
+
+### Audit Log is APP-WIDE (not request-only)
+The Audit Log records actions across every area — projects, tasks, pages, art requests,
+auth, and admin (feature-flag/role/department/permission changes). In preview a seeded
+cross-app demo feed (`demoAuditStore`) renders it. Production reads `public.audit_log`
+(RLS: admins see all) via `useAuditLog`, joined to the actor profile. NOTE: production
+rows are sparser than the demo shape — `area` is **inferred** from `entity_type`, and the
+human action label is derived from the `action` column. Enriching production rows (an
+explicit `area` column + structured before/after rendering) is a follow-up.
+
+### Reports data sources
+Reports is driven by a pure metrics module (`reportsMetrics`) over a normalized
+`ReportItem[]`. In preview the dataset spans the art-request demo store (`demoListAll`)
+**and** the planner demo board (`demoBoard` — tasks + projects), so charts span the app.
+`by_department` uses requests only (planner cards carry no department). In production
+`useReportData` reads the `requests` table; folding live projects/tasks into Reports
+(a unified server view) is deferred. Per-user chart selection persists to localStorage
+in preview (`reportPrefs`); production should nest it under `profiles.preferences->'report_charts'`.

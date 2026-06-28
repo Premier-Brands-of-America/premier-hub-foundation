@@ -55,3 +55,16 @@ review.
 ### Auth (Feature 4)
 - Keep the Supabase Auth providers locked to **Azure only** (no email/password,
   magic-link, or signup in the Supabase console). Verified in code; this is an infra lock.
+
+### Microsoft 365 connections on the Profile page (v2 final polish, 2026-06-28)
+- The Profile → "Connections / Integrations" section connects Outlook / Teams /
+  SharePoint / OneDrive via the existing MS-Graph OAuth foundation (`ms-oauth-start` /
+  callback edge fns + the `ms_connections` token store, migration
+  `20260601110000_ms_oauth_calendar.sql`). In **preview** connect/disconnect is simulated
+  via localStorage (`demoConnectionsStore`) so the UI + first-time onboarding are clickable.
+- **Deploy-gated (owner/admin in Entra):** the real OAuth consent flow needs the app
+  registration to grant the relevant delegated scopes per service (Calendars.ReadWrite,
+  OnlineMeetings/Chat for Teams transcripts, Sites.Selected/Files.Read for SharePoint &
+  OneDrive). Wiring the Connect button to `ms-oauth-start` + reading real `ms_connections`
+  rows happens once consented. The non-preview Connect button is rendered disabled with an
+  "Available after deployment" hint until then.
