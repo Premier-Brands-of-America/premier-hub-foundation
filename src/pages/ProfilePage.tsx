@@ -17,6 +17,7 @@ import { AvatarPicker } from "@/components/common/AvatarPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDesignMode, type Theme, type Density } from "@/providers/DesignModeProvider";
 import { AppearanceColors } from "@/components/AppearanceColors";
+import { Microsoft365Connections } from "@/components/integrations/Microsoft365Connections";
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
@@ -173,6 +174,9 @@ export default function ProfilePage() {
           </dl>
         </CardContent>
       </Card>
+
+      {/* Microsoft 365 connections + first-time onboarding */}
+      <Microsoft365Connections />
 
       {/* Appearance — theme + density (functionality preserved) */}
       <Card>
