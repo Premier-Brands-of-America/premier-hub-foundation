@@ -152,7 +152,7 @@ export default function EasyRequest() {
       });
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
       toast.success(`Request submitted: ${created.request_number}`);
-      navigate(isPreviewEnvironment() ? "/requests" : `/requests/${created.id}`);
+      navigate(`/requests/${created.id}`);
     } catch (err) {
       const msg = err instanceof Error && err.message ? err.message : "Failed to submit request. Check the required fields above; in preview the live database is not connected.";
       setSubmitError(msg);
