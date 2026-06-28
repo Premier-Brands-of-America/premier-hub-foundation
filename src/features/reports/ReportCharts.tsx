@@ -139,7 +139,10 @@ function donutCenter(total: number) {
 
 const sum = (data: CountDatum[]) => data.reduce((acc, d) => acc + d.value, 0);
 
-function Donut({ data, colors }: { data: CountDatum[]; colors: string[] }) {
+// Returns the PieChart element (NOT a component) so ResponsiveContainer clones
+// the chart directly and injects width/height — wrapping it in a component would
+// leave the PieChart unsized and render blank.
+function renderDonut(data: CountDatum[], colors: string[]) {
   return (
     <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
       <Pie
@@ -172,7 +175,7 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
       const data = statusBreakdown(items);
       return (
         <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
-          <Donut data={data} colors={STATUS_COLORS} />
+          {renderDonut(data, STATUS_COLORS)}
         </ChartCard>
       );
     }
@@ -181,7 +184,7 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
       const data = dueHealth(items);
       return (
         <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
-          <Donut data={data} colors={HEALTH_COLORS} />
+          {renderDonut(data, HEALTH_COLORS)}
         </ChartCard>
       );
     }
