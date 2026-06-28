@@ -1,5 +1,4 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Hash, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,18 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
-import { getRequest } from "@/services/requests";
-import { requestKeys } from "@/hooks/useRequests";
+import { useRequest } from "@/hooks/useRequests";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { AttachmentUploader } from "@/components/attachments/AttachmentUploader";
 import { SharePointPanel } from "@/components/request-detail/SharePointPanel";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { DueDateBadge } from "@/components/common/DueDateBadge";
+import { StatusBadge, PriorityBadge, TypeBadge } from "@/components/requests/requestBadges";
 import { canUploadFiles } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { ATTACHMENT_KINDS, type AttachmentKind } from "@/types/attachment";
-import type { RequestPriority, RequestStatus } from "@/types/request";
 
 function tabsForRole(
   role: ReturnType<typeof useRole>,
@@ -30,50 +28,12 @@ function tabsForRole(
   return ["submission", "reference", "final"];
 }
 
-// Presentation-only token mapping: status / priority → semantic color token.
-const STATUS_TOKEN: Record<RequestStatus, string> = {
-  submitted: "--status-info",
-  in_review: "--status-info",
-  assigned: "--entity-task",
-  in_progress: "--status-warning",
-  waiting_on_info: "--status-warning",
-  internal_review: "--entity-request",
-  sent_for_approval: "--entity-request",
-  complete: "--status-done",
-  archived: "--muted-foreground",
-};
-
-const PRIORITY_TOKEN: Record<RequestPriority, string> = {
-  low: "--priority-low",
-  medium: "--priority-medium",
-  high: "--priority-high",
-  urgent: "--priority-urgent",
-};
-
-function TokenBadge({ token, children }: { token: string; children: React.ReactNode }) {
-  return (
-    <span
-      className="inline-flex items-center rounded-full border border-transparent px-2.5 py-0.5 text-xs font-medium capitalize"
-      style={{
-        backgroundColor: `hsl(var(${token}) / 0.14)`,
-        color: `hsl(var(${token}))`,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const role = useRole();
   const { user } = useAuth();
 
-  const { data: request, isLoading, error } = useQuery({
-    queryKey: requestKeys.detail(id ?? ""),
-    queryFn: () => getRequest(id!),
-    enabled: !!id,
-  });
+  const { data: request, isLoading, error } = useRequest(id);
 
   if (!id) return null;
 
@@ -118,7 +78,6 @@ export default function RequestDetail() {
   const tabs = tabsForRole(role, isOwner);
   const requesterAllowedKinds: AttachmentKind[] = ["submission", "reference"];
 
-  const statusLabel = request.status.replace(/_/g, " ");
   const typeLabel = request.request_type.replace(/_/g, " ");
 
   return (
@@ -142,11 +101,9 @@ export default function RequestDetail() {
                 {request.request_number}
               </span>
             )}
-            <TokenBadge token={STATUS_TOKEN[request.status]}>{statusLabel}</TokenBadge>
-            <TokenBadge token={PRIORITY_TOKEN[request.priority]}>{request.priority}</TokenBadge>
-            <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-medium capitalize text-muted-foreground">
-              {typeLabel}
-            </span>
+            <StatusBadge status={request.status} />
+            <PriorityBadge priority={request.priority} />
+            <TypeBadge>{typeLabel}</TypeBadge>
             {request.due_date && <DueDateBadge due={request.due_date} />}
           </div>
         </div>
