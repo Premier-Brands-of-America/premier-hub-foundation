@@ -16,11 +16,24 @@ export const departmentKeys = {
   all: ["departments", "all"] as const,
 };
 
+
+/** Demo departments for the preview/demo path (no live DB). Lets the Easy Request
+ *  and other department-gated forms be testable without `supabase db push`. */
+const DEMO_DEPARTMENTS: DepartmentRow[] = [
+  { id: "dept-art", name: "Art Department", is_active: true, display_order: 1 },
+  { id: "dept-mkt", name: "Marketing", is_active: true, display_order: 2 },
+  { id: "dept-it", name: "Information Technology", is_active: true, display_order: 3 },
+  { id: "dept-fin", name: "Finance", is_active: true, display_order: 4 },
+  { id: "dept-exec", name: "Executive", is_active: true, display_order: 5 },
+  { id: "dept-ops", name: "Operations", is_active: true, display_order: 6 },
+];
+
 export function useActiveDepartments() {
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: departmentKeys.active,
     queryFn: async (): Promise<DepartmentRow[]> => {
+      if (isPreviewEnvironment()) return DEMO_DEPARTMENTS;
       const { data, error } = await supabase
         .from("active_departments" as never)
         .select("id,name,display_order")
@@ -54,6 +67,7 @@ export function useAllDepartments() {
   return useQuery({
     queryKey: departmentKeys.all,
     queryFn: async (): Promise<DepartmentRow[]> => {
+      if (isPreviewEnvironment()) return DEMO_DEPARTMENTS;
       const { data, error } = await supabase
         .from("departments")
         .select("id,name,is_active,display_order,updated_at")
