@@ -68,13 +68,13 @@ const portalNav: NavItemConfig[] = [
   { label: "My Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
   { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
   { label: "Department Workload", to: "/workload", icon: Users2, feature: "department_dashboard", roles: ["admin"] },
+  { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["designer", "admin"] },
 ];
 
-// Administration — admin tooling plus the app-wide Audit Log. Audit Log is also
-// visible to diagnostics users; everything else is admin-only.
+// Administration — admin tooling + the app-wide Audit Log (also visible to
+// diagnostics users); Settings is admin-only.
 const adminNav: NavItemConfig[] = [
   { label: "Admin Tools", to: "/admin", icon: Wrench, roles: ["admin"] },
-  { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["admin"] },
   { label: "Audit Log", to: "/audit", icon: ScrollText, feature: "audit_trail", roles: ["admin"], requireDiagnostics: true },
   { label: "Settings", to: "/admin/settings", icon: Settings, feature: "admin_settings", roles: ["admin"] },
 ];
