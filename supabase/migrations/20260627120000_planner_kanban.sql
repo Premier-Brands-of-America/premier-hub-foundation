@@ -20,7 +20,7 @@ alter table public.project_buckets enable row level security;
 
 drop policy if exists "view buckets if can view project" on public.project_buckets;
 create policy "view buckets if can view project" on public.project_buckets
-for select to authenticated using (public.can_view_project(project_id));
+for select to authenticated using (public.can_view_project(auth.uid(), project_id));
 
 drop policy if exists "manage buckets if stakeholder or admin" on public.project_buckets;
 create policy "manage buckets if stakeholder or admin" on public.project_buckets
@@ -54,7 +54,7 @@ create index if not exists idx_tasks_assignee on public.tasks(assignee_id);
 drop policy if exists "view project tasks" on public.tasks;
 create policy "view project tasks" on public.tasks
 for select to authenticated using (
-  project_id is not null and public.can_view_project(project_id)
+  project_id is not null and public.can_view_project(auth.uid(), project_id)
 );
 
 drop policy if exists "stakeholders manage project tasks" on public.tasks;
