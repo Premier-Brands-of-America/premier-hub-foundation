@@ -11,6 +11,10 @@ const corsHeaders = {
 const AI_GATEWAY = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
 const AI_MODEL = Deno.env.get("AI_MODEL") || "gpt-4o-mini";
 
+// gte-small embeddings for semantic memory (RAG). Free, 384-dim, no key.
+// deno-lint-ignore no-explicit-any
+declare const Supabase: any;
+
 // ─── Rate limiting ───
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 20;
@@ -291,6 +295,38 @@ async function buildUserContext(supabase: any, user: any, profile: any): Promise
   return parts.filter(Boolean).join("\n");
 }
 
+/**
+ * Semantic memory retrieval (RAG). Embeds the user's latest message with
+ * gte-small and cosine-searches memory_embeddings via the RLS-scoped match RPC
+ * (caller JWT → only their viewable chunks). Runs per-message (NOT cached).
+ * Returns "" when embeddings are unavailable/empty so the recent lists remain
+ * a graceful fallback. Never throws — retrieval is best-effort context.
+ */
+async function retrieveMemory(supabase: any, query: string): Promise<string> {
+  try {
+    if (!query || !query.trim()) return "";
+    if (typeof Supabase === "undefined" || !Supabase?.ai?.Session) return "";
+    const session = new Supabase.ai.Session("gte-small");
+    const embedding = await session.run(query, { mean_pool: true, normalize: true });
+    const { data, error } = await supabase.rpc("match_memory_embeddings", {
+      query_embedding: embedding,
+      match_count: 6,
+    });
+    if (error || !Array.isArray(data) || data.length === 0) return "";
+    const lines = data.map((r: any) => {
+      const snippet = String(r.chunk ?? "").replace(/\s+/g, " ").slice(0, 300);
+      const sim = typeof r.similarity === "number" ? ` (${Math.round(r.similarity * 100)}%)` : "";
+      return `- [${r.entity_type}${sim}] ${snippet}`;
+    });
+    return `\n--- RELEVANT MEMORY (semantic) ---\n` +
+      `The most relevant passages from the user's authorized data for this question:\n` +
+      lines.join("\n");
+  } catch (e) {
+    console.warn("retrieveMemory skipped:", e instanceof Error ? e.message : e);
+    return "";
+  }
+}
+
 // ─── Main handler ───
 
 serve(async (req) => {
@@ -360,6 +396,12 @@ serve(async (req) => {
       contextCache.set(cacheKey, { context: contextString, timestamp: Date.now() });
     }
 
+    // ─── Semantic memory (RAG) — per-message, not cached. Leads the context so
+    //     the model attends to the most relevant passages first; the recent
+    //     lists in contextString remain the fallback. ───
+    const lastUserMsg = [...messages].reverse().find((m: any) => m?.role === "user");
+    const relevantMemory = await retrieveMemory(supabase, String(lastUserMsg?.content ?? ""));
+
     // ─── Build system prompt ───
     const systemPrompt = `You are Premier Project Hub AI Assistant — a read-only, permission-aware assistant.
 
@@ -371,7 +413,7 @@ CRITICAL RULES:
 5. Today's date is ${new Date().toISOString().slice(0, 10)}.
 
 USER'S AUTHORIZED DATA:
-${contextString}
+${relevantMemory ? relevantMemory + "\n" : ""}${contextString}
 
 CAPABILITIES:
 - Summarize the user's work (tasks and projects)

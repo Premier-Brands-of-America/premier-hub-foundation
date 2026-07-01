@@ -23,3 +23,11 @@ verify_jwt = false      # Microsoft Graph notifications; validates clientState
 verify_jwt = false      # server-to-server, secret-key authorized
 [functions.transcript-action-items]
 verify_jwt = true
+
+# ── Memory knowledge graph (graphify in-app) ──
+[functions.memory-extract]
+verify_jwt = false      # server-to-server, secret-key authorized (SUPABASE_SECRET_KEY)
+[functions.memory-search]
+verify_jwt = true       # RLS-scoped semantic retrieval under the caller's JWT
+[functions.memory-wiki]
+verify_jwt = true       # on-demand topic summary (Claude), authenticated caller
