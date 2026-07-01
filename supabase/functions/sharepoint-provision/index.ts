@@ -128,8 +128,8 @@ Deno.serve(async (req) => {
     const { data: claimsData, error: claimsErr } = await userClient.auth.getUser(
       authHeader.replace("Bearer ", ""),
     );
-    if (claimsErr || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
-    const userId = claimsData.claims.sub as string;
+    if (claimsErr || !claimsData?.user) return json({ error: "Unauthorized" }, 401);
+    const userId = claimsData.user.id as string;
 
     let body: { request_id?: string };
     try {
