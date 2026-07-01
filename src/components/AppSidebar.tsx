@@ -64,7 +64,7 @@ const toolsNav = [
 
 // Art Department Requests — request-portal items only.
 const portalNav: NavItemConfig[] = [
-  { label: "Submit Request", to: "/requests/new", icon: FilePlus, feature: "art_request_portal", roles: ["requester", "designer", "admin"] },
+  { label: "Submit Art Request", to: "/requests/new", icon: FilePlus, feature: "art_request_portal", roles: ["requester", "designer", "admin"] },
   { label: "My Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
   { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
   { label: "Department Workload", to: "/workload", icon: Users2, feature: "department_dashboard", roles: ["admin"] },

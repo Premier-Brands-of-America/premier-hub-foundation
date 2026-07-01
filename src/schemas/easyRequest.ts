@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const projectTypes = [
-  "Comp",
   "Mockup",
   "Small Art Change",
   "Render",
@@ -93,7 +92,7 @@ export const defaultEasyValues: EasyRequestValues = {
   due_date: "",
   priority: "medium",
   description: "",
-  project_type: "Comp",
+  project_type: "Mockup",
   project_type_other: "",
   notes: "",
   digital_renders: [],

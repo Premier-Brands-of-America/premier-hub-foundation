@@ -13,7 +13,7 @@ export const tones = [
 ] as const;
 
 export const brandsList = [
-  "Premier", "Heritage Co.", "BrandX", "BrandY", "Other",
+  "Arm & Hammer Foot Care", "Trojan Men's Care", "Other",
 ] as const;
 
 export const requiredElementsList = [
