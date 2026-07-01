@@ -471,12 +471,18 @@ function UsersTab() {
 
 function AuditLogTab() {
   return (
-    <div className="rounded-lg border border-border py-12">
+    <div className="flex flex-col items-center gap-4 rounded-lg border border-border py-12">
       <EmptyState
         icon={<ScrollText className="h-6 w-6" />}
-        title="Audit log is coming soon"
-        description="A searchable record of admin and system changes will live here."
+        title="Audit log lives on its own page"
+        description="The app-wide, searchable record of admin and system changes is available in Administration → Audit Log."
       />
+      <a
+        href="/audit"
+        className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
+      >
+        Open Audit Log
+      </a>
     </div>
   );
 }

@@ -71,12 +71,12 @@ export default function AuditLogPage() {
 
   const actors = useMemo(() => {
     const map = new Map<string, string>();
-    for (const e of entries) if (!map.has(e.actor_id)) map.set(e.actor_id, e.actor_name);
+    for (const e of entries) if (e.actor_id && !map.has(e.actor_id)) map.set(e.actor_id, e.actor_name || "—");
     return Array.from(map, ([id, name]) => ({ id, name }));
   }, [entries]);
 
   const actionKinds = useMemo(
-    () => Array.from(new Set(entries.map((e) => e.action_kind))).sort(),
+    () => Array.from(new Set(entries.map((e) => e.action_kind).filter(Boolean))).sort(),
     [entries],
   );
 
