@@ -33,7 +33,8 @@ create unique index if not exists org_directory_mail_unique
 do $$
 declare
   r record;
-  v_user_id uuid;
+  v_user_id  uuid;
+  v_existing uuid; -- id of an org_directory row already representing this person
 begin
   for r in (
     select * from (values
@@ -48,14 +49,24 @@ begin
       where lower(p.email) = lower(r.mail)
       limit 1;
 
-    if exists (select 1 from public.org_directory od where lower(od.mail) = lower(r.mail)) then
-      update public.org_directory od
+    -- Find an existing row by email OR (when registered) by user_id, so a row a
+    -- prior Graph sync created under a different/absent mail is updated in place
+    -- rather than colliding with org_directory_user_unique.
+    select od.id into v_existing
+      from public.org_directory od
+      where lower(od.mail) = lower(r.mail)
+         or (v_user_id is not null and od.user_id = v_user_id)
+      limit 1;
+
+    if v_existing is not null then
+      update public.org_directory
         set full_name  = r.full_name,
+            mail       = r.mail,
             department = 'Art',
-            job_title  = coalesce(od.job_title, 'Creative Manager'),
-            user_id    = coalesce(v_user_id, od.user_id),
+            job_title  = coalesce(job_title, 'Creative Manager'),
+            user_id    = coalesce(v_user_id, user_id),
             synced_at  = now()
-        where lower(od.mail) = lower(r.mail);
+        where id = v_existing;
     else
       insert into public.org_directory (user_id, full_name, mail, department, job_title)
       values (v_user_id, r.full_name, r.mail, 'Art', 'Creative Manager');
