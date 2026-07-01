@@ -48,10 +48,7 @@ const mainNav = [
   { title: "Planner", url: "/planner", icon: KanbanSquare },
   { title: "Pages", url: "/pages", icon: FileType2 },
   { title: "Timeline", url: "/timeline", icon: CalendarRange },
-  { title: "My Assigned Projects", url: "/assigned-projects", icon: FolderKanban },
-  { title: "Projects I Own", url: "/owned-projects", icon: Crown },
-  { title: "All Public Projects", url: "/public-projects", icon: Globe },
-  { title: "Completed Projects", url: "/completed-projects", icon: Archive },
+  { title: "Projects", url: "/projects", icon: FolderKanban },
 ];
 
 const toolsNav = [

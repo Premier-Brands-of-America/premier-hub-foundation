@@ -21,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 
 const TasksPage = lazy(() => import("./pages/TasksPage"));
 const ProjectListPage = lazy(() => import("./pages/ProjectListPage"));
+const ProjectsHub = lazy(() => import("./pages/ProjectsHub"));
 const AIAssistantPage = lazy(() => import("./pages/AIAssistantPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings"));
@@ -157,6 +158,7 @@ function AppRoutes() {
           <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetailRoute /></ProtectedRoute>} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailRoute /></ProtectedRoute>} />
           <Route path="/planner" element={<ProtectedRoute><PlannerPage /></ProtectedRoute>} />
+          <Route path="/projects" element={<ProtectedRoute><ProjectsHub /></ProtectedRoute>} />
           <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
           <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />
           <Route path="/public-projects" element={<ProtectedRoute><ProjectListPage mode="public" /></ProtectedRoute>} />
