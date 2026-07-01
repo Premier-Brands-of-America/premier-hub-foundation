@@ -69,7 +69,10 @@ export async function rebuildMemory(limit = 40): Promise<{ ok: boolean; message:
     body: { backfill: true, limit },
   });
   if (error) return { ok: false, message: error.message };
-  const r = data as { processed?: number; concepts?: number; chunks?: number };
+  const r = data as { processed?: number; concepts?: number; chunks?: number; started?: boolean; queued?: number };
+  if (r?.started) {
+    return { ok: true, message: `Rebuild started for ${r.queued ?? 0} items — the graph fills in over the next minute. Refresh shortly.` };
+  }
   return { ok: true, message: `Processed ${r?.processed ?? 0} items · ${r?.concepts ?? 0} concepts · ${r?.chunks ?? 0} chunks.` };
 }
 

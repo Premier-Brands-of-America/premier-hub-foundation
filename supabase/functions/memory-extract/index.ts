@@ -228,19 +228,21 @@ async function processEntity(admin: any, session: any, ref: EntityRef): Promise<
       .upsert(edges, { onConflict: "source_type,source_id,target_type,target_id,relation_type", ignoreDuplicates: true });
   }
 
-  // ── Embeddings (gte-small, free) ──
-  const chunks = chunkText(src.text);
+  // ── Embeddings (gte-small, free) — only if the AI session is available ──
   const rows: Record<string, unknown>[] = [];
-  for (let i = 0; i < chunks.length; i++) {
-    const embedding = await session.run(chunks[i], { mean_pool: true, normalize: true });
-    rows.push({
-      entity_type: ref.entity_type, entity_id: ref.entity_id,
-      chunk_index: i, chunk: chunks[i], embedding,
-    });
-  }
-  if (rows.length) {
-    await admin.from("memory_embeddings")
-      .upsert(rows, { onConflict: "entity_type,entity_id,chunk_index" });
+  if (session) {
+    const chunks = chunkText(src.text);
+    for (let i = 0; i < chunks.length; i++) {
+      const embedding = await session.run(chunks[i], { mean_pool: true, normalize: true });
+      rows.push({
+        entity_type: ref.entity_type, entity_id: ref.entity_id,
+        chunk_index: i, chunk: chunks[i], embedding,
+      });
+    }
+    if (rows.length) {
+      await admin.from("memory_embeddings")
+        .upsert(rows, { onConflict: "entity_type,entity_id,chunk_index" });
+    }
   }
 
   return { concepts: conceptIdByKey.size, relations: extraction.relations.length, chunks: rows.length };
@@ -312,7 +314,15 @@ Deno.serve(async (req) => {
     isAdmin = !!prof?.is_admin;
   }
 
-  const session = new Supabase.ai.Session("gte-small");
+  // gte-small may be unavailable in some runtimes; never let it throw uncaught
+  // (that produced a CORS-less 500 = "Failed to send a request"). Null → skip embeddings.
+  // deno-lint-ignore no-explicit-any
+  let session: any = null;
+  try {
+    session = new Supabase.ai.Session("gte-small");
+  } catch (e) {
+    console.error("gte-small session unavailable, skipping embeddings:", e);
+  }
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -332,16 +342,34 @@ Deno.serve(async (req) => {
       return json({ error: "provide {entity_type, entity_id} or {backfill:true, limit}" }, 400);
     }
 
-    let concepts = 0, relations = 0, chunks = 0, processed = 0;
-    for (const ref of refs) {
-      try {
-        const r = await processEntity(admin, session, ref);
-        concepts += r.concepts; relations += r.relations; chunks += r.chunks; processed++;
-      } catch (e) {
-        console.error("processEntity failed", ref, e instanceof Error ? e.message : e);
+    const runAll = async () => {
+      let concepts = 0, relations = 0, chunks = 0, processed = 0;
+      for (const ref of refs) {
+        try {
+          const r = await processEntity(admin, session, ref);
+          concepts += r.concepts; relations += r.relations; chunks += r.chunks; processed++;
+        } catch (e) {
+          console.error("processEntity failed", ref, e instanceof Error ? e.message : e);
+        }
       }
+      return { processed, concepts, relations, chunks };
+    };
+
+    // Backfill can process many entities (each an AI call) — run it in the
+    // background and respond immediately so the client never times out.
+    if (body?.backfill) {
+      // deno-lint-ignore no-explicit-any
+      const er = (globalThis as any).EdgeRuntime;
+      if (er && typeof er.waitUntil === "function") {
+        er.waitUntil(runAll());
+        return json({ ok: true, started: true, queued: refs.length });
+      }
+      const totals = await runAll();
+      return json({ ok: true, ...totals });
     }
-    return json({ ok: true, processed, concepts, relations, chunks });
+
+    const totals = await runAll();
+    return json({ ok: true, ...totals });
   } catch (e) {
     console.error("memory-extract error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
