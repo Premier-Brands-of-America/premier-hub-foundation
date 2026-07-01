@@ -22,21 +22,21 @@ export interface Manager {
 export const MANAGERS: Record<ManagerId, Manager> = {
   jaclyn: {
     id: "jaclyn",
-    name: "Jaclyn",
+    name: "Jaclyn Baum",
     emailEnvKey: "VITE_MANAGER_JACLYN_EMAIL",
-    fallbackEmail: "jaclyn@premier-brands.com",
+    fallbackEmail: "jbaum@premier-brands.com",
   },
   megan: {
     id: "megan",
-    name: "Megan",
+    name: "Megan Oettinger",
     emailEnvKey: "VITE_MANAGER_MEGAN_EMAIL",
-    fallbackEmail: "megan@premier-brands.com",
+    fallbackEmail: "moettinger@premier-brands.com",
   },
   dan: {
     id: "dan",
-    name: "Dan",
+    name: "Dan De Lello",
     emailEnvKey: "VITE_MANAGER_DAN_EMAIL",
-    fallbackEmail: "dan@premier-brands.com",
+    fallbackEmail: "ddelello@premier-brands.com",
   },
 };
 
