@@ -37,11 +37,12 @@ interface GraphUser {
   department?: string | null;
   officeLocation?: string | null;
   mail?: string | null;
+  accountEnabled?: boolean | null;
   userPrincipalName?: string | null;
   manager?: { id?: string; mail?: string; userPrincipalName?: string } | null;
 }
 
-const SELECT = "id,displayName,jobTitle,department,officeLocation,mail,userPrincipalName";
+const SELECT = "id,displayName,jobTitle,department,officeLocation,mail,userPrincipalName,accountEnabled";
 
 Deno.serve(async (req: Request) => {
   const pre = handleOptions(req);
@@ -105,6 +106,8 @@ Deno.serve(async (req: Request) => {
         department: u.department ?? null,
         office_location: u.officeLocation ?? null,
         mail: u.mail ?? u.userPrincipalName ?? null,
+        full_name: u.displayName ?? null,
+        account_enabled: u.accountEnabled ?? true,
         manager_ms_user_id: u.manager?.id ?? null,
         manager_email: (u.manager?.mail ?? u.manager?.userPrincipalName ?? null),
         direct_reports_count: reportsByManager.get(u.id) ?? 0,
