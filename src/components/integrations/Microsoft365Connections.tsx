@@ -16,6 +16,9 @@ import {
   dismissOnboarding,
 } from "@/lib/demoConnectionsStore";
 import { startConnect } from "@/components/integrations/outlook/outlook-api";
+import { useOutlookConnection } from "@/components/integrations/outlook/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const ICONS: Record<MsServiceId, LucideIcon> = {
   outlook: Mail,
@@ -29,7 +32,14 @@ export function Microsoft365Connections() {
   const userId = profile?.user_id ?? "";
   const preview = isPreviewEnvironment();
 
-  const [connected, setConnected] = useState<MsServiceId[]>(() => getConnections(userId));
+  const qc = useQueryClient();
+  const { data: msConn } = useOutlookConnection();
+  const [demoConnected, setDemoConnected] = useState<MsServiceId[]>(() => getConnections(userId));
+  const connected: MsServiceId[] = preview
+    ? demoConnected
+    : msConn
+      ? MS_SERVICES.map((svc) => svc.id)
+      : [];
   const [onboardingHidden, setOnboardingHidden] = useState(false);
 
   const showOnboarding =
@@ -37,7 +47,7 @@ export function Microsoft365Connections() {
 
   const connect = async (id: MsServiceId, name: string) => {
     if (preview) {
-      setConnected(connectService(userId, id));
+      setDemoConnected(connectService(userId, id));
       toast.success(`Connected ${name}`);
       return;
     }
@@ -53,9 +63,21 @@ export function Microsoft365Connections() {
     }
   };
 
-  const disconnect = (id: MsServiceId, name: string) => {
-    setConnected(disconnectService(userId, id));
-    toast.success(`Disconnected ${name}`);
+  const disconnect = async (id: MsServiceId, name: string) => {
+    if (preview) {
+      setDemoConnected(disconnectService(userId, id));
+      toast.success(`Disconnected ${name}`);
+      return;
+    }
+    try {
+      await supabase.from("ms_connections").delete().not("id", "is", null);
+      await qc.invalidateQueries({ queryKey: ["outlook", "connection"] });
+      toast.success("Disconnected Microsoft 365");
+    } catch (e) {
+      toast.error("Couldn't disconnect", {
+        description: e instanceof Error ? e.message : undefined,
+      });
+    }
   };
 
   const dismiss = () => {
