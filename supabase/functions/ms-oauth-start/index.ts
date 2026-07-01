@@ -19,7 +19,7 @@
 
 import { handleOptions, json, getAuthedUserId, signState } from "../_shared/ms-graph.ts";
 
-const SCOPES = "Calendars.Read Mail.Read offline_access openid profile";
+const SCOPES = "Calendars.ReadWrite Mail.Read Mail.Send User.Read.All Directory.Read.All offline_access openid profile";
 
 /** Allowlisted app origins for post-OAuth redirects (ALLOWED_APP_ORIGINS, comma-separated). */
 function allowedAppOrigin(origin: string): string {
