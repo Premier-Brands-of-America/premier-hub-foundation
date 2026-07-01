@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Moon, Sun, Rows3, Rows4 } from "lucide-react";
+import { Moon, Sun, Rows3, Rows4, Loader2, RefreshCw, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useDesignMode, type Theme, type Density } from "@/providers/DesignModeProvider";
 import { AppearanceColors } from "@/components/AppearanceColors";
 import { Microsoft365Connections } from "@/components/integrations/Microsoft365Connections";
+import { fetchDirectory } from "@/lib/directory";
+import { useOutlookConnection } from "@/components/integrations/outlook/hooks";
 
 export default function ProfilePage() {
   const { profile, user } = useAuth();
@@ -28,7 +30,15 @@ export default function ProfilePage() {
     (profile as { avatar_url?: string | null } | null)?.avatar_url ?? null,
   );
   const [saving, setSaving] = useState(false);
+  const [syncingDir, setSyncingDir] = useState(false);
   const { theme, setTheme, density, setDensity } = useDesignMode();
+  const { data: msConn } = useOutlookConnection();
+
+  // Directory is environment-aware (demo people in preview, real profiles in prod).
+  const { data: directory = [] } = useQuery({
+    queryKey: ["directory"],
+    queryFn: fetchDirectory,
+  });
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
@@ -74,10 +84,47 @@ export default function ProfilePage() {
     }
   };
 
+  // Sync the Microsoft 365 org directory (admin action). Invokes the
+  // graph-user-directory edge fn, which backfills profiles.title/department/
+  // office_location/manager_email + org_directory from Microsoft Graph.
+  const syncDirectory = async () => {
+    setSyncingDir(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("graph-user-directory");
+      if (error) throw error;
+      const synced = (data as { synced?: number } | null)?.synced ?? 0;
+      toast.success(`Synced ${synced} ${synced === 1 ? "person" : "people"} from Microsoft 365`);
+      qc.invalidateQueries({ queryKey: ["profile", user?.id] });
+      qc.invalidateQueries({ queryKey: ["directory"] });
+      qc.invalidateQueries({ queryKey: ["admin", "profiles", "list"] });
+    } catch (e) {
+      toast.error("Microsoft 365 directory sync failed", {
+        description: e instanceof Error ? e.message : "Reconnect Microsoft 365 and try again.",
+      });
+    } finally {
+      setSyncingDir(false);
+    }
+  };
+
   if (!profile) return null;
 
   const azureOid = (profile as { azure_oid?: string }).azure_oid ?? "";
   const role = profile.role ?? "requester";
+
+  // Real org info from the profile (backfilled by graph-user-directory) + directory.
+  const officeLocation = (profile as { office_location?: string | null }).office_location ?? null;
+  const emailLc = (profile.email ?? "").toLowerCase();
+  const manager = profile.manager_email
+    ? directory.find((p) => (p.email ?? "").toLowerCase() === profile.manager_email!.toLowerCase())
+    : undefined;
+  const directReports = emailLc
+    ? directory.filter(
+        (p) => (p.manager_email ?? "").toLowerCase() === emailLc && (p.email ?? "").toLowerCase() !== emailLc,
+      )
+    : [];
+  const hasOrgInfo = !!(profile.title || profile.department || officeLocation || profile.manager_email);
+  const isAdmin = role === "admin";
+  const connected = !!msConn;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -172,6 +219,79 @@ export default function ProfilePage() {
               <dd className="truncate font-mono text-xs text-muted-foreground">{azureOid || "—"}</dd>
             </div>
           </dl>
+        </CardContent>
+      </Card>
+
+      {/* Organization — real M365 directory info (title/department/manager/reports) */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle className="text-base">Organization</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Your role in the org, synced from Microsoft 365.
+            </p>
+          </div>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={syncDirectory} disabled={syncingDir} className="gap-1.5">
+              {syncingDir ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Sync Microsoft 365 directory
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isAdmin && connected && !hasOrgInfo && (
+            <div className="rounded-lg border border-[hsl(var(--primary)/0.35)] bg-[hsl(var(--primary)/0.10)] p-3 text-xs text-foreground">
+              Microsoft 365 is connected but your org details aren't synced yet. Run{" "}
+              <span className="font-medium">Sync Microsoft 365 directory</span> to populate titles,
+              departments, and the reporting hierarchy (needed for the Org Chart).
+            </div>
+          )}
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Title</dt>
+              <dd className="text-sm text-foreground">{profile.title || "—"}</dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Department</dt>
+              <dd className="text-sm text-foreground">{profile.department || "—"}</dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Office</dt>
+              <dd className="text-sm text-foreground">{officeLocation || "—"}</dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reports to</dt>
+              <dd className="text-sm text-foreground">
+                {manager?.full_name || manager?.email || profile.manager_email || "—"}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="space-y-2 border-t border-border pt-4">
+            <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              Direct reports {directReports.length > 0 && `(${directReports.length})`}
+            </div>
+            {directReports.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No direct reports.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {directReports.map((r) => (
+                  <li
+                    key={r.user_id}
+                    className="flex items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3"
+                  >
+                    <EntityAvatar type="user" seed={r.user_id} name={r.full_name || r.email || ""} size="sm" />
+                    <span className="text-xs text-foreground">{r.full_name || r.email}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </CardContent>
       </Card>
 

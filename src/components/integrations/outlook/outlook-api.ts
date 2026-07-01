@@ -77,6 +77,18 @@ export async function fetchUnlinkedEvents(limit = 30): Promise<CalendarEvent[]> 
   return (data as CalendarEvent[]) ?? [];
 }
 
+/** Events whose start falls in [startIso, endIso), ascending — used by the dashboard week card. */
+export async function fetchEventsInRange(startIso: string, endIso: string): Promise<CalendarEvent[]> {
+  const { data, error } = await sb
+    .from("calendar_events")
+    .select("id, ms_event_id, subject, join_web_url, start_at, end_at, project_id")
+    .gte("start_at", startIso)
+    .lt("start_at", endIso)
+    .order("start_at", { ascending: true });
+  if (error) throw error;
+  return (data as CalendarEvent[]) ?? [];
+}
+
 // ─── Edge-function actions ──────────────────────────────────────────────────
 
 function invoke<T>(fn: string, body?: Record<string, unknown>): Promise<T> {

@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   fetchConnection,
+  fetchEventsInRange,
   fetchProjectEvents,
   fetchUnlinkedEvents,
   linkEvent,
@@ -21,6 +22,7 @@ const keys = {
   connection: ["outlook", "connection"] as const,
   projectEvents: (projectId: string) => ["outlook", "events", "project", projectId] as const,
   unlinked: ["outlook", "events", "unlinked"] as const,
+  range: (startIso: string, endIso: string) => ["outlook", "events", "range", startIso, endIso] as const,
 };
 
 export function useOutlookConnection() {
@@ -44,6 +46,31 @@ export function useUnlinkedEvents(enabled = true) {
     queryKey: keys.unlinked,
     queryFn: () => fetchUnlinkedEvents(),
     enabled,
+  });
+}
+
+/** Calendar events whose start falls in [startIso, endIso). Used by the dashboard week card. */
+export function useCalendarEventsInRange(startIso: string, endIso: string, enabled = true) {
+  return useQuery<CalendarEvent[]>({
+    queryKey: keys.range(startIso, endIso),
+    queryFn: () => fetchEventsInRange(startIso, endIso),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Silent calendar sync for the dashboard: pulls Outlook events, then refreshes
+ * any cached range queries so the week view populates. No success toast (unlike
+ * useSyncCalendar) since it runs automatically on the dashboard.
+ */
+export function useBackgroundCalendarSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: syncCalendar,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["outlook", "events", "range"] });
+    },
   });
 }
 
