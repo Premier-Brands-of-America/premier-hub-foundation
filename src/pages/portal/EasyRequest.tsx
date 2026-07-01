@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePickerField } from "@/components/DatePickerField";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
+import { useActiveDepartments, matchDepartmentByName } from "@/hooks/useDepartments";
 import { ArtRequestRouting } from "@/components/request-form/ArtRequestRouting";
 import { routeRequest, resolveRecipients } from "@/lib/artRouting";
 import { resolveManagerEmail, type ManagerId } from "@/config/artOwnership";
@@ -46,11 +47,17 @@ export default function EasyRequest() {
   const [showCancel, setShowCancel] = useState(false);
   const [draftFound, setDraftFound] = useState(false);
 
-  const profileDeptId = profile?.department_id ?? "";
+  // Default the department from the authoritative M365 Organization department
+  // (profile.department, synced from Graph), name-matched to an existing row.
+  const { data: departments = [] } = useActiveDepartments();
+  const orgDeptId = useMemo(
+    () => matchDepartmentByName(profile?.department, departments),
+    [profile?.department, departments],
+  );
 
   const form = useForm<EasyRequestValues>({
     resolver: zodResolver(easyRequestSchema),
-    defaultValues: { ...defaultEasyValues, department_id: profileDeptId },
+    defaultValues: { ...defaultEasyValues, department_id: "" },
     mode: "onChange",
   });
 
@@ -74,12 +81,12 @@ export default function EasyRequest() {
     return () => sub.unsubscribe();
   }, [watch, step]);
 
-  // Default department from profile only when empty
+  // Default department from the M365 org dept once resolved, only when empty.
   useEffect(() => {
-    if (!getValues("department_id") && profileDeptId) {
-      setValue("department_id", profileDeptId);
+    if (!getValues("department_id") && orgDeptId) {
+      setValue("department_id", orgDeptId);
     }
-  }, [profileDeptId, setValue, getValues]);
+  }, [orgDeptId, setValue, getValues]);
 
   const renders = useFieldArray({ control, name: "digital_renders" });
 
@@ -243,7 +250,7 @@ export default function EasyRequest() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Defaults to your profile department — change if this request belongs to a different department.
+                    Defaults to your Microsoft 365 department — change if this request is for another.
                   </p>
                   {errors.department_id && <p className="text-xs text-destructive">{errors.department_id.message}</p>}
                 </div>

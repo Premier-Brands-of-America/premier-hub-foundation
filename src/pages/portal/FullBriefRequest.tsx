@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePickerField } from "@/components/DatePickerField";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
+import { useActiveDepartments, matchDepartmentByName } from "@/hooks/useDepartments";
 import { StepperShell } from "@/components/request-form/StepperShell";
 import { MultiSelectChips } from "@/components/request-form/MultiSelectChips";
 import { RepeatableList } from "@/components/request-form/RepeatableList";
@@ -79,11 +80,17 @@ export default function FullBriefRequest() {
   const [showCancel, setShowCancel] = useState(false);
   const [draftFound, setDraftFound] = useState(false);
 
-  const profileDeptId = profile?.department_id ?? "";
+  // Default the department from the authoritative M365 Organization department
+  // (profile.department, synced from Graph), name-matched to an existing row.
+  const { data: departments = [] } = useActiveDepartments();
+  const orgDeptId = useMemo(
+    () => matchDepartmentByName(profile?.department, departments),
+    [profile?.department, departments],
+  );
 
   const form = useForm<FullBriefValues>({
     resolver: zodResolver(fullBriefSchema),
-    defaultValues: { ...defaultFullBriefValues, department_id: profileDeptId },
+    defaultValues: { ...defaultFullBriefValues, department_id: "" },
     mode: "onChange",
   });
   const { control, handleSubmit, watch, setValue, getValues, formState, trigger, reset, register } = form;
@@ -109,10 +116,10 @@ export default function FullBriefRequest() {
   }, [watch, step]);
 
   useEffect(() => {
-    if (!getValues("department_id") && profileDeptId) {
-      setValue("department_id", profileDeptId);
+    if (!getValues("department_id") && orgDeptId) {
+      setValue("department_id", orgDeptId);
     }
-  }, [profileDeptId, setValue, getValues]);
+  }, [orgDeptId, setValue, getValues]);
 
   const stepValid = useMemo(() => async (i: number) => {
     const ok = await trigger(stepFieldNames[i] as never);
@@ -257,7 +264,7 @@ export default function FullBriefRequest() {
                       required
                     />
                     <p className="text-xs text-muted-foreground">
-                      Defaults to your profile department — change if this request belongs to a different department.
+                      Defaults to your Microsoft 365 department — change if this request is for another.
                     </p>
                     {errors.department_id && <p className="text-xs text-destructive">{errors.department_id.message}</p>}
                   </div>

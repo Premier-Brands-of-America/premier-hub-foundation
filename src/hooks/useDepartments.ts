@@ -79,6 +79,24 @@ export function useAllDepartments() {
   });
 }
 
+/**
+ * Resolve a free-text department name (e.g. the M365 Organization department synced
+ * from Graph into profile.department) to an existing department row id, matching by
+ * name case- and space-insensitively. Returns null if the name is empty or no active
+ * department matches — callers then fall back to manual selection. Never creates rows.
+ */
+export function matchDepartmentByName(
+  name: string | null | undefined,
+  departments: DepartmentRow[],
+): string | null {
+  if (!name) return null;
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const target = norm(name);
+  if (!target) return null;
+  const match = departments.find((d) => norm(d.name) === target);
+  return match?.id ?? null;
+}
+
 export async function fetchDepartmentById(id: string): Promise<DepartmentRow | null> {
   if (!id) return null;
   const { data, error } = await supabase
