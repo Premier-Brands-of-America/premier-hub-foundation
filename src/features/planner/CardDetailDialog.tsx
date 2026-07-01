@@ -32,6 +32,7 @@ import { AttachmentGallery } from "@/components/common/AttachmentGallery";
 import { CommentsThread } from "@/components/common/CommentsThread";
 import { MeetingScheduler } from "@/components/common/MeetingScheduler";
 import { parseMentions } from "@/lib/mentions";
+import { useAuth } from "@/hooks/useAuth";
 import type { PlannerCard, CardPriority, CardStatus, ChecklistItem } from "./types";
 
 const STATUS: { value: CardStatus; label: string }[] = [
@@ -63,6 +64,7 @@ export function CardDetailDialog({
   onDelete: (id: string) => void;
 }) {
   const [checkText, setCheckText] = useState("");
+  const { user, profile } = useAuth();
   if (!card) return null;
 
   const doneCount = card.checklist.filter((i) => i.done).length;
@@ -90,14 +92,19 @@ export function CardDetailDialog({
   }
 
   function addComment(body: string) {
-    const author = users[0];
+    const authorId = user?.id ?? "me";
+    const authorName =
+      profile?.full_name ??
+      users.find((u) => u.id === user?.id)?.name ??
+      user?.email ??
+      "Me";
     patch({
       comments: [
         ...card!.comments,
         {
           id: newId(),
-          authorId: author?.id ?? "me",
-          authorName: author?.name ?? "Me",
+          authorId,
+          authorName,
           body,
           createdAt: new Date().toISOString(),
         },
