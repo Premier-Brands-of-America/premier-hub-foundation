@@ -277,10 +277,15 @@ export async function fetchProjectStakeholders(projectId: string): Promise<Enric
 export async function addProjectStakeholder(
   userId: string, projectId: string, stakeholderProfile: StakeholderProfile
 ): Promise<void> {
-  const name = stakeholderProfile.full_name || stakeholderProfile.email || stakeholderProfile.user_id;
+  const stakeholderUserId = stakeholderProfile.user_id;
+  if (!stakeholderUserId) {
+    // Directory-only (not-yet-registered) person has no auth user to key on.
+    throw new Error("This person hasn't signed in yet, so they can't be added as a stakeholder. They'll be selectable once they register.");
+  }
+  const name = stakeholderProfile.full_name || stakeholderProfile.email || stakeholderUserId;
   if (IS_PREVIEW) {
     mockStakeholders.push({
-      id: mockId(), project_id: projectId, user_id: stakeholderProfile.user_id,
+      id: mockId(), project_id: projectId, user_id: stakeholderUserId,
       percent_complete: null, added_at: new Date().toISOString(),
       full_name: stakeholderProfile.full_name, email: stakeholderProfile.email,
       title: stakeholderProfile.title, department: stakeholderProfile.department,
@@ -290,7 +295,7 @@ export async function addProjectStakeholder(
     return;
   }
   const { error } = await supabase.from("project_stakeholders").insert({
-    project_id: projectId, user_id: stakeholderProfile.user_id,
+    project_id: projectId, user_id: stakeholderUserId,
   });
   if (error) throw error;
   await logProjectActivity(userId, projectId, "stakeholder_added", "stakeholder", null, name);

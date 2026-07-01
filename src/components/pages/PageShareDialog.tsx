@@ -56,7 +56,7 @@ export function PageShareDialog({ pageId, ownerId, visibility, open, onOpenChang
             <StakeholderPicker
               existingUserIds={existingIds}
               triggerLabel="Add people"
-              onSelect={(p) => add.mutate({ granteeUserId: p.user_id, role: "view" })}
+              onSelect={(p) => { if (p.user_id) add.mutate({ granteeUserId: p.user_id, role: "view" }); }}
             />
           </div>
 

@@ -282,10 +282,10 @@ export default function ProfilePage() {
               <ul className="flex flex-wrap gap-2">
                 {directReports.map((r) => (
                   <li
-                    key={r.user_id}
+                    key={r.user_id ?? r.email ?? r.full_name}
                     className="flex items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3"
                   >
-                    <EntityAvatar type="user" seed={r.user_id} name={r.full_name || r.email || ""} size="sm" />
+                    <EntityAvatar type="user" seed={r.user_id ?? r.email ?? ""} name={r.full_name || r.email || ""} size="sm" />
                     <span className="text-xs text-foreground">{r.full_name || r.email}</span>
                   </li>
                 ))}

@@ -70,7 +70,7 @@ export function StakeholderPicker({ existingUserIds, onSelect, triggerLabel = "A
   }, [open]);
 
   const filtered = useMemo(() => {
-    const available = profiles.filter((p) => !existingUserIds.includes(p.user_id));
+    const available = profiles.filter((p) => p.user_id != null && !existingUserIds.includes(p.user_id));
     if (!search.trim()) return available;
     const q = search.toLowerCase();
     return available.filter(
