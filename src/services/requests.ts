@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { getPreviewViewer } from "@/lib/previewViewer";
+import { demoPushNotification } from "@/lib/demoNotificationsStore";
 import {
   demoCreateRequest, demoGetRequest, demoListMine,
   demoListDepartment, demoListQueue, demoUpdateRequest,
@@ -63,4 +65,30 @@ export async function updateRequest(id: string, patch: UpdateRequestPatch): Prom
     .from(TABLE).update(patch as never).eq("id", id).select("*").single();
   if (error) throw error;
   return data as unknown as ArtRequest;
+}
+
+/**
+ * Notify the assigned manager that a new request was routed to them.
+ *
+ * PRODUCTION: handled entirely by the `assign_manager_and_notify` DB trigger
+ * (SECURITY DEFINER, RLS-safe) — nothing to do client-side, so this no-ops.
+ * PREVIEW: there is no DB/trigger, so push a demo notification to the current
+ * viewer's bell (keyed by their user_id) so the routing→notification flow is
+ * observable end-to-end. The manager name/customer are carried in the message.
+ */
+export function notifyRequestAssignment(request: ArtRequest): void {
+  if (!isPreviewEnvironment()) return;
+  const viewer = getPreviewViewer();
+  if (!viewer) return;
+  const meta = request.metadata ?? {};
+  const managerEmail = typeof meta.manager_email === "string" ? meta.manager_email : null;
+  if (!managerEmail) return; // no manager routed (e.g. full-brief) → nothing to notify
+  const customer = typeof meta.customer === "string" ? meta.customer : null;
+  demoPushNotification({
+    user_id: viewer.userId,
+    type: "info",
+    title: "Nuevo art request asignado",
+    message: customer ? `${request.title} · ${customer}` : request.title,
+    link: `/requests/${request.id}`,
+  });
 }

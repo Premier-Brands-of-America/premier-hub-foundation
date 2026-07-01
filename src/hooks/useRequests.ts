@@ -5,6 +5,7 @@ import {
   listDepartmentRequests,
   listMyRequests,
   listQueue,
+  notifyRequestAssignment,
   updateRequest,
 } from "@/services/requests";
 import type { CreateRequestPayload, UpdateRequestPatch } from "@/types/request";
@@ -57,6 +58,10 @@ export function useCreateRequest() {
   return useMutation({
     mutationFn: async (payload: CreateRequestPayload) => {
       const created = await createRequest(payload);
+      // In-app assignment notification. In production the DB trigger handles the
+      // assignee + notification; in preview push a demo notification so the flow
+      // is observable in the bell.
+      notifyRequestAssignment(created);
       // Fire-and-forget SharePoint folder provisioning (skip in preview)
       if (!isPreviewEnvironment())
       supabase.functions

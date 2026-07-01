@@ -1,5 +1,21 @@
 # BLOCKERS — feat/premier-hub-revamp
 
+## Art request assignment — email to UNREGISTERED managers (needs Graph Mail.Send)
+Migration `20260701155155_seed_art_users.sql` + the `assign_manager_and_notify`
+DB trigger set `assignee_id` and insert an in-app notification **only when the
+routed manager's email matches a registered `profiles` row**. Today only Dan De
+Lello (ddelello@premier-brands.com) is registered, so:
+- Jaclyn Baum (jbaum@premier-brands.com) and Megan Oettinger
+  (moettinger@premier-brands.com) are seeded into `org_directory` (so they show
+  in the Org Chart) but have **no auth/profile row** → they cannot be an
+  `assignee_id` (FK → profiles) and get no in-app notification.
+- ACTION: build a Graph **Mail.Send** edge-function path to email requests to
+  managers who are not yet app users (until they register). The client already
+  stores `metadata.manager_email` / `notify_to` / `notify_cc` on each request,
+  so the email path has everything it needs.
+- Also: `supabase db push` is required to apply `20260701155155_seed_art_users.sql`
+  (relaxes org_directory.user_id NOT NULL, adds full_name, adds the trigger).
+
 ## Avatar/icon — deploy follow-ups (non-blocking; preview works without them)
 
 The avatar/icon system works end-to-end in the running preview using deterministic

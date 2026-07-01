@@ -31,7 +31,7 @@ import { DatePickerField } from "@/components/DatePickerField";
 import { DepartmentPicker } from "@/components/forms/DepartmentPicker";
 import { ArtRequestRouting } from "@/components/request-form/ArtRequestRouting";
 import { routeRequest, resolveRecipients } from "@/lib/artRouting";
-import type { ManagerId } from "@/config/artOwnership";
+import { resolveManagerEmail, type ManagerId } from "@/config/artOwnership";
 import { Plus, Trash2, X } from "lucide-react";
 
 const STEP_TITLES = ["Basics", "Details", "Specifics"];
@@ -119,10 +119,14 @@ export default function EasyRequest() {
       (values.assigned_manager || null) as ManagerId | null,
     );
     const recipients = route.lead ? resolveRecipients(route.lead) : null;
+    // Resolved manager inbox — the DB trigger uses this to find the registered
+    // profile to set as assignee + notify (see 20260701155155_seed_art_users).
+    const managerEmail = route.lead ? resolveManagerEmail(route.lead) : null;
     const metadata: Record<string, unknown> = {
       customer: values.customer,
       assigned_manager: route.lead,
       project_lead: route.lead,
+      manager_email: managerEmail,
       notify_to: recipients?.to ?? [],
       notify_cc: recipients?.cc ?? [],
       key_points: (values.key_points ?? []).filter((p) => p.trim()),
