@@ -11,7 +11,7 @@ import type { CardType, WidgetConfig } from "./types";
 import { MyOpenTasksCard } from "./cards/MyOpenTasksCard";
 import { ProjectRollupCard } from "./cards/ProjectRollupCard";
 import { RecentPagesCard } from "./cards/RecentPagesCard";
-import { CalendarWeekCard } from "./cards/CalendarWeekCard";
+import { CalendarTodayCard } from "./cards/CalendarTodayCard";
 import { ArtRequestQueueCard } from "./cards/ArtRequestQueueCard";
 import { MiniGraphCard } from "./cards/MiniGraphCard";
 
@@ -58,12 +58,12 @@ export const CARD_REGISTRY: Record<CardType, CardDefinition> = {
   },
   "calendar-week": {
     type: "calendar-week",
-    title: "This Week",
-    description: "Your Outlook calendar for the week.",
+    title: "Today",
+    description: "Your Outlook meetings for today.",
     icon: CalendarDays,
     defaultSize: { w: 4, h: 2 },
     defaultConfig: { source: "calendar_events" },
-    render: () => <CalendarWeekCard />,
+    render: () => <CalendarTodayCard />,
   },
   "art-request-queue": {
     type: "art-request-queue",
