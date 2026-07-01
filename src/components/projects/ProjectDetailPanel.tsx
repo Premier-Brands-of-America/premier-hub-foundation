@@ -300,7 +300,26 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
         <div className="flex items-center gap-2 min-w-0">
           <span className="h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--entity-project))]" aria-hidden />
           <h3 className="truncate text-sm font-semibold text-foreground">Project detail</h3>
-          {saving && <span className="shrink-0 text-xs text-muted-foreground">Saving…</span>}
+          <span className="shrink-0 text-xs" aria-live="polite">
+            {saving ? (
+              <span className="text-muted-foreground">Saving…</span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400">Saved ✓</span>
+            )}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0"
+            disabled={saving}
+            onClick={() => {
+              (document.activeElement as HTMLElement | null)?.blur();
+              toast({ title: "All changes saved", description: "Your work is saved automatically." });
+            }}
+          >
+            Save
+          </Button>
         </div>
         <Button
           variant="ghost"
