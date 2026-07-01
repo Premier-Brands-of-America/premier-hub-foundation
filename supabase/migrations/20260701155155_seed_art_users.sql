@@ -93,10 +93,16 @@ as $$
   ),
   dir_only as (
     -- Directory people not backed by a profile row (e.g. not-yet-registered).
+    -- Checked against public.profiles directly (not the p_limit-capped `people`
+    -- CTE) so a registered person is never mis-emitted as an unregistered node
+    -- when the active-profile count exceeds p_limit.
     select od.id, od.full_name, od.mail, od.job_title, od.department, od.office_location, od.manager_email
     from public.org_directory od
     where od.mail is not null
-      and not exists (select 1 from people pe where lower(pe.email) = lower(od.mail))
+      and not exists (
+        select 1 from public.profiles p
+        where p.is_active = true and lower(p.email) = lower(od.mail)
+      )
   ),
   depts as (
     select distinct department from (
