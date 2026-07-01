@@ -4,7 +4,7 @@ import { getPreviewViewer } from "@/lib/previewViewer";
 import { demoPushNotification } from "@/lib/demoNotificationsStore";
 import {
   demoCreateRequest, demoGetRequest, demoListMine,
-  demoListDepartment, demoListQueue, demoUpdateRequest,
+  demoListDepartment, demoListQueue, demoUpdateRequest, demoDeleteRequest,
 } from "@/lib/demoRequestsStore";
 import type {
   ArtRequest,
@@ -65,6 +65,12 @@ export async function updateRequest(id: string, patch: UpdateRequestPatch): Prom
     .from(TABLE).update(patch as never).eq("id", id).select("*").single();
   if (error) throw error;
   return data as unknown as ArtRequest;
+}
+
+export async function deleteRequest(id: string): Promise<void> {
+  if (isPreviewEnvironment()) return demoDeleteRequest(id);
+  const { error } = await supabase.from(TABLE).delete().eq("id", id);
+  if (error) throw error;
 }
 
 /**

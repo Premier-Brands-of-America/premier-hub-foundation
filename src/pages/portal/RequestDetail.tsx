@@ -1,15 +1,18 @@
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Hash, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Hash, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
-import { useRequest } from "@/hooks/useRequests";
+import { useRequest, useDeleteRequest } from "@/hooks/useRequests";
 import { AttachmentList } from "@/components/attachments/AttachmentList";
 import { AttachmentUploader } from "@/components/attachments/AttachmentUploader";
 import { SharePointPanel } from "@/components/request-detail/SharePointPanel";
+import { EditRequestDialog } from "@/components/request-detail/EditRequestDialog";
+import { toast } from "sonner";
 import { RelationsSection } from "@/components/relations/RelationsSection";
 import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { DueDateBadge } from "@/components/common/DueDateBadge";
@@ -34,6 +37,9 @@ export default function RequestDetail() {
   const { user } = useAuth();
 
   const { data: request, isLoading, error } = useRequest(id);
+  const navigate = useNavigate();
+  const del = useDeleteRequest();
+  const [editOpen, setEditOpen] = useState(false);
 
   if (!id) return null;
 
@@ -83,15 +89,45 @@ export default function RequestDetail() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-3 sm:p-4 md:p-6">
       <PageHeader title={request.title} subtitle={request.request_number ?? undefined} />
+      <EditRequestDialog request={request} open={editOpen} onOpenChange={setEditOpen} />
 
       {/* Header band — the one bold element: title with crimson edge-rail. */}
       <header className="space-y-3">
-        <Button asChild variant="ghost" size="sm" className="-ml-2 h-8 gap-1.5 text-muted-foreground hover:text-foreground">
-          <Link to="/requests">
-            <ArrowLeft className="h-4 w-4" />
-            Back to requests
-          </Link>
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 h-8 gap-1.5 text-muted-foreground hover:text-foreground">
+            <Link to="/requests">
+              <ArrowLeft className="h-4 w-4" />
+              Back to requests
+            </Link>
+          </Button>
+          {(isOwner || role === "admin") && (
+            <div className="flex items-center gap-2">
+              {isOwner && (
+                <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setEditOpen(true)}>
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-destructive hover:text-destructive"
+                disabled={del.isPending}
+                onClick={async () => {
+                  if (!confirm("Delete this request? This can't be undone.")) return;
+                  try {
+                    await del.mutateAsync(request.id);
+                    toast.success("Request deleted");
+                    navigate("/requests");
+                  } catch (e) {
+                    toast.error((e as Error)?.message ?? "Could not delete request");
+                  }
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="edge-rail">
           <h1 className="text-2xl font-semibold tracking-tight">{request.title}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">

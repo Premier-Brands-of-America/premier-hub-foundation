@@ -87,6 +87,10 @@ export function demoListQueue(): ArtRequest[] {
 export function demoListAll(): ArtRequest[] {
   return load().sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
+export function demoDeleteRequest(id: string): void {
+  save(load().filter((r) => r.id !== id));
+}
+
 export function demoUpdateRequest(id: string, patch: UpdateRequestPatch): ArtRequest {
   const list = load();
   const i = list.findIndex((r) => r.id === id);

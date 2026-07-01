@@ -7,6 +7,7 @@ import {
   listQueue,
   notifyRequestAssignment,
   updateRequest,
+  deleteRequest,
 } from "@/services/requests";
 import type { CreateRequestPayload, UpdateRequestPatch } from "@/types/request";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +73,14 @@ export function useCreateRequest() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: requestKeys.all });
     },
+  });
+}
+
+export function useDeleteRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteRequest(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: requestKeys.all }),
   });
 }
 
