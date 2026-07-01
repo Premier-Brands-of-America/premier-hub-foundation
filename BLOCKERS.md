@@ -103,3 +103,9 @@ Planner. These owner/infra items must land for that real data to actually popula
   follow-up. The @mention parsing is already unit-tested.
 - **Calendar week card** relies on the `calendar-sync` edge fn + `ms_connections` token; it
   auto-syncs on connect. Recurrence/timezone handling is per `calendar-sync` (−7d…+30d window).
+- **Planner RLS.** Board reads require `can_view_project`; bucket/task creates & moves require
+  `is_project_stakeholder(project_id)` (or admin). New planner cards are inserted with
+  `user_id = auth.uid()` to satisfy the base `tasks` INSERT policy; note the base `tasks`
+  DELETE policy is still owner-only, so a stakeholder deleting another user's card will get a
+  toast error until a project-scoped DELETE policy is added. Non-stakeholders see empty boards
+  by design.

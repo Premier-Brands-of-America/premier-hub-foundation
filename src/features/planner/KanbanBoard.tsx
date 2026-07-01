@@ -15,15 +15,18 @@ import { DEMO_USERS } from "./demoData";
 import type { PlannerCard } from "./types";
 
 export function KanbanBoard({
-  projectId = "demo-project",
   controller,
+  users = DEMO_USERS,
+  showReset = true,
 }: {
-  projectId?: string;
-  controller?: ReturnType<typeof usePlannerBoard>;
+  /** Board controller (demo or Supabase-backed) shared with the charts view. */
+  controller: ReturnType<typeof usePlannerBoard>;
+  /** Assignee / @mention directory (demo users in preview, real profiles in prod). */
+  users?: { id: string; name: string }[];
+  /** Hide the "Reset" button in production (it re-fetches, not reset-to-demo). */
+  showReset?: boolean;
 }) {
-  // Use a provided controller (shared with the charts view) or create our own.
-  const own = usePlannerBoard(projectId);
-  const board = controller ?? own;
+  const board = controller;
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [addingBucket, setAddingBucket] = useState(false);
   const [bucketName, setBucketName] = useState("");
@@ -55,9 +58,15 @@ export function KanbanBoard({
             {board.board.cards.length} cards across {buckets.length} buckets
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={board.reset} title="Reset demo board">
-          <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
-        </Button>
+        {showReset ? (
+          <Button variant="ghost" size="sm" onClick={board.reset} title="Reset demo board">
+            <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={board.reset} title="Refresh from server">
+            <RotateCcw className="mr-1.5 h-4 w-4" /> Refresh
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-1 gap-3 overflow-x-auto pb-4">
@@ -68,7 +77,7 @@ export function KanbanBoard({
             index={i}
             count={buckets.length}
             cards={cardsInBucket(board.board, bucket.id)}
-            users={DEMO_USERS}
+            users={users}
             onOpenCard={(c: PlannerCard) => setOpenCardId(c.id)}
             onAddCard={(bucketId) =>
               board.addCard(bucketId, { title: "Untitled", kind: "task" })
@@ -116,7 +125,7 @@ export function KanbanBoard({
 
       <CardDetailDialog
         card={openCard}
-        users={DEMO_USERS}
+        users={users}
         onClose={() => setOpenCardId(null)}
         onUpdate={board.updateCard}
         onDelete={board.removeCard}
