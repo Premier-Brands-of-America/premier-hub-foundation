@@ -16,6 +16,17 @@ Lello (ddelello@premier-brands.com) is registered, so:
 - Also: `supabase db push` is required to apply `20260701155155_seed_art_users.sql`
   (relaxes org_directory.user_id NOT NULL, adds full_name, adds the trigger).
 
+## sharepoint-provision — redeploy + set app-only secrets
+`supabase/functions/sharepoint-provision/index.ts` was edited (NOT deployed) to
+return CORS-valid 500s with the real error message and to list which secrets are
+missing. For provisioning to actually work, Edwin must:
+- `supabase functions deploy sharepoint-provision`
+- Set the app-only secrets on the function:
+  `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `SP_DRIVE_ID`
+  (and optionally `SP_ROOT_FOLDER`, which defaults to "ArtRequests").
+Until then the function returns a clear "Missing secret(s): …" 500 so the UI
+shows exactly what infra is pending.
+
 ## Avatar/icon — deploy follow-ups (non-blocking; preview works without them)
 
 The avatar/icon system works end-to-end in the running preview using deterministic
