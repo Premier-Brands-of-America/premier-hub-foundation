@@ -8,13 +8,8 @@ const corsHeaders = {
 };
 
 const SUBFOLDERS = [
-  "01-Submission",
-  "02-Reference",
-  "03-Working",
-  "04-Review",
-  "05-Approval",
-  "06-Final",
-  "07-Archive",
+  "Reference",
+  "Final",
 ];
 
 function json(body: unknown, status = 200) {

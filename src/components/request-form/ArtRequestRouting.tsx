@@ -6,6 +6,7 @@
  *
  * Pure presentation on top of lib/artRouting + config/artOwnership.
  */
+import { useState } from "react";
 import { Plus, X, ArrowRight, Mail, Users } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,10 @@ export function ArtRequestRouting({
 }) {
   const route = customer ? routeRequest(customer, (manager || null) as ManagerId | null) : null;
   const recipients = route?.lead ? resolveRecipients(route.lead) : null;
+  const OTHER_CUSTOMER = "__other__";
+  const customerInList = (CUSTOMERS as readonly string[]).includes(customer);
+  const [otherCustomer, setOtherCustomer] = useState(!customerInList && customer !== "");
+  const customerSelectValue = customerInList ? customer : otherCustomer ? OTHER_CUSTOMER : "";
 
   function addPoint() {
     onKeyPointsChange([...keyPoints, ""]);
@@ -58,7 +63,18 @@ export function ArtRequestRouting({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>Customer / Brand <span className="text-destructive">*</span></Label>
-          <Select value={customer} onValueChange={onCustomerChange}>
+          <Select
+            value={customerSelectValue}
+            onValueChange={(v) => {
+              if (v === OTHER_CUSTOMER) {
+                setOtherCustomer(true);
+                onCustomerChange("");
+              } else {
+                setOtherCustomer(false);
+                onCustomerChange(v);
+              }
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select customer…" />
             </SelectTrigger>
@@ -66,8 +82,17 @@ export function ArtRequestRouting({
               {CUSTOMERS.map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
+              <SelectItem value={OTHER_CUSTOMER}>Other (write in)…</SelectItem>
             </SelectContent>
           </Select>
+          {(otherCustomer || (!customerInList && customer !== "")) && (
+            <Input
+              className="mt-2"
+              placeholder="Type customer / brand name"
+              value={customerInList ? "" : customer}
+              onChange={(e) => onCustomerChange(e.target.value)}
+            />
+          )}
         </div>
 
         {route?.requiresManagerSelection && (

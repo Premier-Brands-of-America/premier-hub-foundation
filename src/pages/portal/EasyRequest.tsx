@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -138,8 +139,8 @@ export default function EasyRequest() {
       notify_cc: recipients?.cc ?? [],
       key_points: (values.key_points ?? []).filter((p) => p.trim()),
       meeting_required: values.meeting_required,
-      project_type: values.project_type,
-      ...(values.project_type === "Other" && { project_type_other: values.project_type_other }),
+      project_type: values.project_type.join(", "),
+      ...(values.project_type.includes("Other") && { project_type_other: values.project_type_other }),
       notes: values.notes || null,
       digital_renders: values.digital_renders,
       package_type: values.package_type || null,
@@ -306,15 +307,32 @@ export default function EasyRequest() {
                   {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Project Type</Label>
-                  <Select value={watch("project_type")} onValueChange={(v) => setValue("project_type", v as EasyRequestValues["project_type"], { shouldValidate: true })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {projectTypes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label>Project Type <span className="text-xs font-normal text-muted-foreground">(select all that apply)</span></Label>
+                  <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
+                    {projectTypes.map((p) => {
+                      const checked = (projectType ?? []).includes(p);
+                      return (
+                        <label key={p} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(c) => {
+                              const cur = projectType ?? [];
+                              const next = c ? [...cur, p] : cur.filter((x) => x !== p);
+                              setValue("project_type", next as EasyRequestValues["project_type"], { shouldValidate: true });
+                            }}
+                          />
+                          {p}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {errors.project_type && (
+                    <p className="text-xs text-destructive">
+                      {(errors.project_type as { message?: string })?.message ?? "Pick at least one type"}
+                    </p>
+                  )}
                 </div>
-                {projectType === "Other" && (
+                {(projectType ?? []).includes("Other") && (
                   <div className="space-y-1.5">
                     <Label htmlFor="pto">Describe project type</Label>
                     <Input id="pto" maxLength={120} {...form.register("project_type_other")} />

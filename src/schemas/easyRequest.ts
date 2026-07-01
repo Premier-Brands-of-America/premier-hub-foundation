@@ -43,12 +43,12 @@ export const detailsSchema = z
       .string()
       .trim()
       .min(20, "Please provide at least 20 characters — be specific"),
-    project_type: z.enum(projectTypes),
+    project_type: z.array(z.enum(projectTypes)).min(1, "Pick at least one type"),
     project_type_other: z.string().trim().max(120).optional().or(z.literal("")),
     notes: z.string().trim().max(2000).optional().or(z.literal("")),
   })
   .refine(
-    (d) => d.project_type !== "Other" || (d.project_type_other && d.project_type_other.length > 0),
+    (d) => !d.project_type.includes("Other") || (d.project_type_other && d.project_type_other.length > 0),
     { path: ["project_type_other"], message: "Please describe the project type" },
   );
 
@@ -92,7 +92,7 @@ export const defaultEasyValues: EasyRequestValues = {
   due_date: "",
   priority: "medium",
   description: "",
-  project_type: "Mockup",
+  project_type: ["Mockup"],
   project_type_other: "",
   notes: "",
   digital_renders: [],

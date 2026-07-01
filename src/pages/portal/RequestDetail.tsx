@@ -22,10 +22,10 @@ function tabsForRole(
   role: ReturnType<typeof useRole>,
   isOwner: boolean,
 ): AttachmentKind[] {
-  if (role === "admin" || role === "designer") return [...ATTACHMENT_KINDS];
+  if (role === "admin" || role === "designer") return ["reference", "final"];
   // requester: see all but only upload to submission/reference (uploader gates this)
-  if (isOwner) return [...ATTACHMENT_KINDS];
-  return ["submission", "reference", "final"];
+  if (isOwner) return ["reference", "final"];
+  return ["reference", "final"];
 }
 
 export default function RequestDetail() {
@@ -76,7 +76,7 @@ export default function RequestDetail() {
   const isOwner = !!user?.id && request.requester_id === user.id;
   const canUpload = canUploadFiles(role, request, user?.id ?? null);
   const tabs = tabsForRole(role, isOwner);
-  const requesterAllowedKinds: AttachmentKind[] = ["submission", "reference"];
+  const requesterAllowedKinds: AttachmentKind[] = ["reference"];
 
   const typeLabel = request.request_type.replace(/_/g, " ");
 
@@ -166,12 +166,18 @@ export default function RequestDetail() {
             );
           })()}
 
-          <RelationsSection
-            ownerRef={{ entityType: "request", entityId: request.id, title: request.title }}
-            editable
-          />
-
-          <BacklinksPanel targetType="request" targetId={request.id} />
+          <details className="rounded-lg border border-border">
+            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-muted-foreground">
+              Connections &amp; backlinks
+            </summary>
+            <div className="space-y-4 border-t border-border p-4">
+              <RelationsSection
+                ownerRef={{ entityType: "request", entityId: request.id, title: request.title }}
+                editable
+              />
+              <BacklinksPanel targetType="request" targetId={request.id} />
+            </div>
+          </details>
 
           <Card>
             <CardHeader className="pb-3">
