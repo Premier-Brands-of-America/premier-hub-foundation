@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/PageHeader";
 import { FilePlus, FileText, Folder, Link2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/errors";
 import { PromptDialog } from "@/components/pages/PromptDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { RestrictedContentPanel } from "@/components/admin-access/RestrictedContentPanel";
@@ -176,8 +177,9 @@ export default function PagesPage() {
             navigate(`/pages/${newId}`);
           } catch (e) {
             // Surface the real cause instead of failing silently; keep the
-            // dialog open so the user can retry.
-            toast.error(e instanceof Error && e.message ? e.message : "Failed to create page");
+            // dialog open so the user can retry. Supabase throws a PostgrestError
+            // object (not an Error), so use robust extraction to reveal it.
+            toast.error(getErrorMessage(e, "Failed to create page"));
           }
         }}
       />
