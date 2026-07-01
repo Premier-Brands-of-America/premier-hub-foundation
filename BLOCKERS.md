@@ -68,3 +68,38 @@ review.
   OneDrive). Wiring the Connect button to `ms-oauth-start` + reading real `ms_connections`
   rows happens once consented. The non-preview Connect button is rendered disabled with an
   "Available after deployment" hint until then.
+
+## Production real-data audit & fix (2026-07-01)
+
+See `REAL_DATA_AUDIT.md` for the full surface-by-surface audit. The client is now
+wired to read real data in production for the calendar card, Profile org info, and the
+Planner. These owner/infra items must land for that real data to actually populate:
+
+### Migrations to push (written, NOT pushed — owner runs `supabase db push`)
+- **`20260627180000_feature1_org_directory.sql`** — REQUIRED for the Org Chart + Profile
+  org info. Adds `org_directory`, `profiles.office_location`, and `get_org_chart_data()`.
+  Until pushed: `/org` falls back to the network graph and the Profile Organization card
+  shows "—" for synced fields. The client already reads these correctly once present.
+- **`20260627120000_planner_kanban.sql`** — REQUIRED for the Planner. Adds
+  `project_buckets` + the kanban columns on `tasks` (`bucket_id`, `position`, `priority`,
+  `assignee_id`, `checklist`, …). Until pushed, `usePlannerBoardSupabase` queries error and
+  the board renders empty (no crash); preview is unaffected.
+
+### Data population step (NOT just a migration)
+- **Run "Sync Microsoft 365 directory"** (Profile page, admin-only → `graph-user-directory`
+  edge fn) at least once after the feature1 migration is pushed. This backfills
+  `profiles.title/department/office_location/manager_email` + `org_directory` from Graph.
+  This is the step that was previously missing entirely — nothing in the UI ever invoked
+  `graph-user-directory`, which is why the Org Chart and Profile were empty even with M365
+  connected. Requires `User.Read.All` + `Directory.Read.All` admin consent (already granted).
+
+### Known partials (non-blocking)
+- **`tasks.status` enum is `active|complete` only** (the kanban migration did not extend it).
+  The Planner's `not_started`/`in_progress`/`completed` collapse to `active`/`complete` on
+  write and are re-derived on read (via `percent_complete`). A future migration could add a
+  richer kanban status enum for exact round-tripping.
+- **Planner card comments/attachments** load empty from the Supabase controller for now;
+  comment persistence to `task_updates`/`project_updates` (with `mentioned_user_ids`) is a
+  follow-up. The @mention parsing is already unit-tested.
+- **Calendar week card** relies on the `calendar-sync` edge fn + `ms_connections` token; it
+  auto-syncs on connect. Recurrence/timezone handling is per `calendar-sync` (−7d…+30d window).
