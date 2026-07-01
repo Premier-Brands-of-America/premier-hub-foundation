@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { PageTree } from "@/components/pages/PageTree";
 import { PageEditor } from "@/components/pages/PageEditor";
@@ -169,9 +170,15 @@ export default function PagesPage() {
         confirmLabel="Create page"
         onCancel={() => setNewOpen(false)}
         onConfirm={async (title) => {
-          setNewOpen(false);
-          const newId = await createMut.mutateAsync({ title });
-          navigate(`/pages/${newId}`);
+          try {
+            const newId = await createMut.mutateAsync({ title });
+            setNewOpen(false);
+            navigate(`/pages/${newId}`);
+          } catch (e) {
+            // Surface the real cause instead of failing silently; keep the
+            // dialog open so the user can retry.
+            toast.error(e instanceof Error && e.message ? e.message : "Failed to create page");
+          }
         }}
       />
     </>
