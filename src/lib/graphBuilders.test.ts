@@ -1,7 +1,24 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { buildOrgGraph } from "./orgGraphDemo";
 import { buildMemoryGraph } from "./memoryGraphDemo";
 import type { VisibilityViewer } from "./visibility";
+import type { AdminAccessGrant } from "./adminAccess";
+
+beforeEach(() => localStorage.clear());
+
+function seedGrant(adminId: string, targetId: string) {
+  const grant: AdminAccessGrant = {
+    id: "g1",
+    admin_id: adminId,
+    target_type: "project",
+    target_id: targetId,
+    reason: "support",
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 60 * 60_000).toISOString(),
+    revoked_at: null,
+  };
+  localStorage.setItem("phv2:demo-admin-grants", JSON.stringify([grant]));
+}
 
 const standard: VisibilityViewer = {
   userId: "mock-uid-001",
@@ -48,7 +65,13 @@ describe("buildMemoryGraph (ACL-scoped)", () => {
     expect(g.nodes.some((n) => n.id === "project:demo-acl-p4")).toBe(true);
   });
 
-  it("an admin viewer sees the otherwise-hidden private project", () => {
+  it("an admin does NOT passively see the hidden private project (break-glass)", () => {
+    const g = buildMemoryGraph(admin);
+    expect(g.nodes.some((n) => n.id === "project:demo-acl-p3")).toBe(false);
+  });
+
+  it("an admin sees the hidden private project once a break-glass grant is active", () => {
+    seedGrant(admin.userId, "demo-acl-p3");
     const g = buildMemoryGraph(admin);
     expect(g.nodes.some((n) => n.id === "project:demo-acl-p3")).toBe(true);
   });

@@ -57,6 +57,8 @@ interface SeedRow {
 
 // Ordered roughly newest-first; we sort defensively below.
 const SEED: SeedRow[] = [
+  { actor: ACTORS.alex, area: "project", action_kind: "admin_access_revoked", action: "Revoked support access", entity_type: "Proyecto", entity_label: "Vendor contract (private)", min: 4 },
+  { actor: ACTORS.alex, area: "project", action_kind: "admin_access_granted", action: "Requested support access", entity_type: "Proyecto", entity_label: "Vendor contract (private)", detail: "Investigating a sync error the owner reported.", min: 14 },
   { actor: ACTORS.alex, area: "admin", action_kind: "feature_flag.toggled", action: "Enabled feature flag", entity_type: "Feature Flag", entity_label: "reports", detail: "off → on (global)", min: 6 },
   { actor: ACTORS.sam, area: "request", action_kind: "request.submitted", action: "Submitted request", entity_type: "Art Request", entity_label: "ART-1042 · Kroger summer endcap", min: 18 },
   { actor: ACTORS.casey, area: "task", action_kind: "task.completed", action: "Completed task", entity_type: "Task", entity_label: "Wire up SharePoint provisioning", min: 41 },
@@ -81,9 +83,39 @@ const SEED: SeedRow[] = [
   { actor: ACTORS.riley, area: "request", action_kind: "request.status_changed", action: "Changed request status", entity_type: "Art Request", entity_label: "ART-1001 · Kroger summer endcap", detail: "in progress → complete", min: 3200 },
 ];
 
-/** Returns the demo audit feed, newest-first. */
+// Dynamically appended demo entries (e.g. break-glass grants requested at
+// runtime), persisted so they survive navigation within a preview session.
+const EXTRA_KEY = "phv2:demo-audit-extra";
+
+function loadExtra(): AuditEntry[] {
+  try {
+    const raw = localStorage.getItem(EXTRA_KEY);
+    return raw ? (JSON.parse(raw) as AuditEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Append a demo audit entry (stamps id + created_at). */
+export function demoAppendAudit(
+  e: Omit<AuditEntry, "id" | "created_at"> & { created_at?: string },
+): AuditEntry {
+  const entry: AuditEntry = {
+    id: "demo-audit-x-" + Date.now() + "-" + Math.round(Math.random() * 1e6),
+    created_at: e.created_at ?? new Date().toISOString(),
+    ...e,
+  };
+  try {
+    localStorage.setItem(EXTRA_KEY, JSON.stringify([entry, ...loadExtra()]));
+  } catch {
+    /* noop */
+  }
+  return entry;
+}
+
+/** Returns the demo audit feed (seed + runtime entries), newest-first. */
 export function demoListAudit(): AuditEntry[] {
-  return SEED.map((r, i) => ({
+  const seeded = SEED.map((r, i) => ({
     id: "demo-audit-" + i,
     created_at: minutesAgo(r.min),
     actor_id: r.actor.id,
@@ -95,7 +127,8 @@ export function demoListAudit(): AuditEntry[] {
     entity_type: r.entity_type,
     entity_label: r.entity_label,
     detail: r.detail,
-  })).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }));
+  return [...loadExtra(), ...seeded].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 export const AUDIT_AREAS: AuditArea[] = ["project", "task", "page", "request", "auth", "admin"];

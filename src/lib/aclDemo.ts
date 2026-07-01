@@ -148,3 +148,28 @@ export function buildDemoTasks(viewer: { userId: string }): Task[] {
     task("demo-acl-t4", DEMO_REPORT.user_id, "Riley: export final assets", "private"),
   ];
 }
+
+/**
+ * Best-effort owner of a demo target, for the preview break-glass flow (who to
+ * notify). Resolves projects/tasks from the demo builders; pages and anything
+ * unresolved fall back to Morgan (DEMO_OTHER), who owns the hidden demo items.
+ */
+export function demoResolveTargetOwner(
+  type: "project" | "task" | "page",
+  id: string,
+): DemoPerson {
+  const v = getPreviewViewer();
+  if (v) {
+    const me: DemoPerson = { user_id: v.userId, full_name: "You", email: v.email };
+    const people = [me, DEMO_OTHER, DEMO_REPORT];
+    const byId = (uid: string): DemoPerson => people.find((p) => p.user_id === uid) ?? DEMO_OTHER;
+    if (type === "project") {
+      const p = buildDemoProjects({ userId: v.userId }).projects.find((x) => x.id === id);
+      if (p) return byId(p.owner_id);
+    } else if (type === "task") {
+      const t = buildDemoTasks({ userId: v.userId }).find((x) => x.id === id);
+      if (t) return byId(t.user_id);
+    }
+  }
+  return DEMO_OTHER;
+}

@@ -1,15 +1,23 @@
 /**
- * Client-side visibility adapters (Feature 5).
+ * Client-side visibility adapters (Feature 5 + break-glass admin access).
  *
  * Maps project / task / page rows onto the pure, tested resolvers in acl.ts and
  * pageShare.ts, so the preview demo path filters items the same way the RLS
- * policies in 20260627150000_feature5_acl_visibility.sql do server-side.
+ * policies do server-side.
  *
- * Keep this in sync with that migration: text comments reference the SQL rules.
+ * Break-glass: admins no longer see others' private content passively (matching
+ * production, where the is_admin bypass in the view helpers was replaced by a
+ * time-boxed grant). An admin's power over a SPECIFIC item is unlocked only by an
+ * active demo grant — otherwise they see just own + public + reports + shares.
+ *
+ * Keep this in sync with 20260627150000_feature5_acl_visibility.sql and
+ * 20260701140934_breakglass_admin_access.sql: text comments reference the SQL.
  */
 
 import { canViewItem, type AclViewer } from "./acl";
 import { canViewPage as resolveCanViewPage, type PageShareGrant, type PageVisibility } from "./pageShare";
+import { hasActiveDemoGrant } from "./demoAdminGrants";
+import type { BreakGlassTargetType } from "./adminAccess";
 
 export interface VisibilityViewer {
   userId: string;
@@ -19,40 +27,46 @@ export interface VisibilityViewer {
   directReportIds: string[];
 }
 
-const toAcl = (v: VisibilityViewer): AclViewer => ({
+/** Admin power over one item is granted only when an active break-glass grant exists. */
+function grantedAdmin(v: VisibilityViewer, type: BreakGlassTargetType, id: string | undefined): boolean {
+  return v.isAdmin && !!id && hasActiveDemoGrant(v.userId, type, id);
+}
+
+const toAcl = (v: VisibilityViewer, isAdmin: boolean): AclViewer => ({
   userId: v.userId,
-  isAdmin: v.isAdmin,
+  isAdmin,
   directReportIds: v.directReportIds,
 });
 
-/** projects: owner / stakeholder + public + admin + manager-of-report. */
+/** projects: owner / stakeholder + public + manager-of-report + granted-admin. */
 export function canViewProjectRow(
   viewer: VisibilityViewer,
-  project: { owner_id: string; visibility: string },
+  project: { id?: string; owner_id: string; visibility: string },
   stakeholderUserIds: readonly string[] = [],
 ): boolean {
-  return canViewItem(toAcl(viewer), {
+  return canViewItem(toAcl(viewer, grantedAdmin(viewer, "project", project.id)), {
     ownerId: project.owner_id,
     isPublic: project.visibility === "public",
     stakeholderIds: stakeholderUserIds,
   });
 }
 
-/** tasks: owner (user_id) + public + admin + manager-of-owner. */
+/** tasks: owner (user_id) + public + manager-of-owner + granted-admin. */
 export function canViewTaskRow(
   viewer: VisibilityViewer,
-  task: { user_id: string; visibility?: string | null },
+  task: { id?: string; user_id: string; visibility?: string | null },
 ): boolean {
-  return canViewItem(toAcl(viewer), {
+  return canViewItem(toAcl(viewer, grantedAdmin(viewer, "task", task.id)), {
     ownerId: task.user_id,
     isPublic: task.visibility === "public",
   });
 }
 
-/** pages: owner + per-person shares + public + department + admin (+ manager-of-owner). */
+/** pages: owner + per-person shares + public + department + manager-of-owner + granted-admin. */
 export function canViewPageRow(
   viewer: VisibilityViewer,
   page: {
+    id?: string;
     owner_id: string | null;
     visibility: string;
     department_id?: string | null;
@@ -62,7 +76,7 @@ export function canViewPageRow(
   // Manager-of-owner is a project/task-style rule; pages also honor it.
   if (page.owner_id && viewer.directReportIds.includes(page.owner_id)) return true;
   return resolveCanViewPage(
-    { userId: viewer.userId, isAdmin: viewer.isAdmin, departmentId: viewer.departmentId },
+    { userId: viewer.userId, isAdmin: grantedAdmin(viewer, "page", page.id), departmentId: viewer.departmentId },
     {
       ownerId: page.owner_id,
       visibility: page.visibility as PageVisibility,

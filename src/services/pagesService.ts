@@ -70,6 +70,7 @@ export async function fetchPageTree(rootId?: string): Promise<PageTreeNode[]> {
     const visible = (p: Page) =>
       !viewer ||
       canViewPageRow(viewer, {
+        id: p.id,
         owner_id: p.owner_id,
         visibility: p.visibility,
         department_id: p.department_id,
@@ -110,6 +111,7 @@ export async function fetchPage(id: string): Promise<Page | null> {
     if (
       viewer &&
       !canViewPageRow(viewer, {
+        id: p.id,
         owner_id: p.owner_id,
         visibility: p.visibility,
         department_id: p.department_id,
