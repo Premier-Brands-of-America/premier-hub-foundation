@@ -83,7 +83,8 @@ export interface ProjectLink {
 
 /** Profile info for stakeholder display */
 export interface StakeholderProfile {
-  user_id: string;
+  /** Auth user id — null for M365 directory people who have not registered yet. */
+  user_id: string | null;
   full_name: string | null;
   email: string | null;
   title: string | null;
