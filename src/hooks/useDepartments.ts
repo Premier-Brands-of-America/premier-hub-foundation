@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
@@ -46,10 +46,13 @@ export function useActiveDepartments() {
     staleTime: 60_000,
   });
 
+  const channelName = useRef(
+    `realtime-departments-active-${Math.random().toString(36).slice(2)}`,
+  );
   useEffect(() => {
     if (isPreviewEnvironment()) return;
     const ch = supabase
-      .channel("realtime-departments-active")
+      .channel(channelName.current)
       .on("postgres_changes", { event: "*", schema: "public", table: "departments" }, () => {
         qc.invalidateQueries({ queryKey: departmentKeys.active });
         qc.invalidateQueries({ queryKey: departmentKeys.all });
