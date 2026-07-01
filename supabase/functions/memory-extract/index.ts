@@ -17,7 +17,6 @@
 //
 // Secrets used: SUPABASE_URL, SUPABASE_SECRET_KEY, AI_ASSISTANT_API_KEY.
 // ============================================================================
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const AI_GATEWAY = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
@@ -284,7 +283,7 @@ async function callerCanSee(userClient: any, type: string, id: string): Promise<
   return !!data;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
