@@ -15,6 +15,7 @@ import {
   isOnboardingDismissed,
   dismissOnboarding,
 } from "@/lib/demoConnectionsStore";
+import { startConnect } from "@/components/integrations/outlook/outlook-api";
 
 const ICONS: Record<MsServiceId, LucideIcon> = {
   outlook: Mail,
@@ -34,9 +35,22 @@ export function Microsoft365Connections() {
   const showOnboarding =
     !onboardingHidden && connected.length === 0 && !isOnboardingDismissed(userId);
 
-  const connect = (id: MsServiceId, name: string) => {
-    setConnected(connectService(userId, id));
-    toast.success(`Connected ${name}`);
+  const connect = async (id: MsServiceId, name: string) => {
+    if (preview) {
+      setConnected(connectService(userId, id));
+      toast.success(`Connected ${name}`);
+      return;
+    }
+    try {
+      const { authorizeUrl } = await startConnect(
+        window.location.origin + window.location.pathname,
+      );
+      window.location.href = authorizeUrl;
+    } catch (e) {
+      toast.error("Couldn't start Microsoft connection", {
+        description: e instanceof Error ? e.message : undefined,
+      });
+    }
   };
 
   const disconnect = (id: MsServiceId, name: string) => {
@@ -71,14 +85,10 @@ export function Microsoft365Connections() {
               </div>
               <Button
                 size="sm"
-                disabled={!preview}
                 onClick={() => connect("outlook", "Outlook")}
               >
                 Connect Microsoft 365
               </Button>
-              {!preview && (
-                <p className="text-xs text-muted-foreground">Available after deployment</p>
-              )}
             </div>
             <button
               type="button"
@@ -129,8 +139,6 @@ export function Microsoft365Connections() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={!preview}
-                    title={!preview ? "Available after deployment" : undefined}
                     onClick={() => connect(service.id, service.name)}
                   >
                     Connect
