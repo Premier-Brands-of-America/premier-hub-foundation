@@ -44,6 +44,8 @@ const TimelinePage = lazy(() => import("./pages/Timeline"));
 const GraphPage = lazy(() => import("./pages/Graph"));
 const PlannerPage = lazy(() => import("./pages/Planner"));
 const SearchResultsPage = lazy(() => import("./pages/SearchResults"));
+const ProjectDetailRoute = lazy(() => import("./pages/ProjectDetailRoute"));
+const TaskDetailRoute = lazy(() => import("./pages/TaskDetailRoute"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -152,6 +154,8 @@ function AppRoutes() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+          <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetailRoute /></ProtectedRoute>} />
+          <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailRoute /></ProtectedRoute>} />
           <Route path="/planner" element={<ProtectedRoute><PlannerPage /></ProtectedRoute>} />
           <Route path="/assigned-projects" element={<ProtectedRoute><ProjectListPage mode="assigned" /></ProtectedRoute>} />
           <Route path="/owned-projects" element={<ProtectedRoute><ProjectListPage mode="owned" /></ProtectedRoute>} />

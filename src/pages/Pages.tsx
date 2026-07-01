@@ -14,6 +14,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { FilePlus, FileText, Folder, Link2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PromptDialog } from "@/components/pages/PromptDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { RestrictedContentPanel } from "@/components/admin-access/RestrictedContentPanel";
+import { ActiveAccessBanner } from "@/components/admin-access/ActiveAccessBanner";
 
 const MOBILE_TABS = [
   { id: "tree", label: "Pages", icon: Folder },
@@ -24,7 +27,9 @@ const MOBILE_TABS = [
 export default function PagesPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: page, isLoading } = usePage(id);
+  const { profile } = useAuth();
+  const isAdmin = profile?.is_admin ?? false;
+  const { data: page, isLoading, refetch } = usePage(id);
   const saveBody = useSavePageBody(id);
   const createMut = useCreatePage();
   const { data: tree = [] } = usePageTree();
@@ -45,19 +50,22 @@ export default function PagesPage() {
   );
 
   const Editor = page ? (
-    <div className="flex h-full flex-col overflow-auto px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex w-full flex-1 flex-col">
-        <PageBreadcrumbs pageId={page.id} />
-        {/* The one bold element on this screen: the crimson edge-rail document header. */}
-        <div className="edge-rail">
-          <PageDocHeader page={page} />
-        </div>
-        <div className="mt-6 min-h-0 flex-1">
-          <PageEditor
-            pageId={page.id}
-            initialContent={page.body_md ?? ""}
-            onChange={(md) => saveBody.mutate(md)}
-          />
+    <div className="flex h-full flex-col overflow-auto">
+      <ActiveAccessBanner targetType="page" targetId={page.id} onRevoked={() => refetch()} />
+      <div className="flex flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex w-full flex-1 flex-col">
+          <PageBreadcrumbs pageId={page.id} />
+          {/* The one bold element on this screen: the crimson edge-rail document header. */}
+          <div className="edge-rail">
+            <PageDocHeader page={page} />
+          </div>
+          <div className="mt-6 min-h-0 flex-1">
+            <PageEditor
+              pageId={page.id}
+              initialContent={page.body_md ?? ""}
+              onChange={(md) => saveBody.mutate(md)}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -67,6 +75,9 @@ export default function PagesPage() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading page…
         </div>
+      ) : id && isAdmin ? (
+        // Forbidden by RLS + the viewer is an admin: offer break-glass access.
+        <RestrictedContentPanel targetType="page" targetId={id} onGranted={() => refetch()} />
       ) : (
         <EmptyState
           icon={<FileText className="h-5 w-5" />}

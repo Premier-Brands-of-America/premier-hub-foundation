@@ -23,6 +23,7 @@ import { BacklinksPanel } from "@/components/pages/BacklinksPanel";
 import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { AvatarPicker } from "@/components/common/AvatarPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ActiveAccessBanner } from "@/components/admin-access/ActiveAccessBanner";
 
 interface TaskDetailPanelProps {
   task: Task;
@@ -210,6 +211,7 @@ export function TaskDetailPanel({ task, onClose, onTaskUpdated }: TaskDetailPane
 
   return (
     <div className="flex flex-col h-full border-l border-border bg-card">
+      <ActiveAccessBanner targetType="task" targetId={task.id} onRevoked={onClose} />
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2 min-w-0">

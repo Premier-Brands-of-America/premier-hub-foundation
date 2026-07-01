@@ -2,7 +2,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AIChatPanel } from "@/components/AIChatPanel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Bell, Bot, LogOut, Moon, Rows3, Sun, User as UserIcon } from "lucide-react";
+import { Bot, LogOut, Moon, Rows3, Sun, User as UserIcon } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -189,14 +190,7 @@ function ShellHeader({
           <Bot className="h-4 w-4" />
           <span className="hidden lg:inline text-xs">AI Assistant</span>
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-        </Button>
+        <NotificationBell />
         {profile && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

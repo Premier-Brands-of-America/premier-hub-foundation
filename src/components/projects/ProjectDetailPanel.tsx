@@ -31,6 +31,7 @@ import type {
 } from "@/types/projects";
 import { FILE_EXTENSIONS, MAX_FILE_SIZE } from "@/types/tasks";
 import * as projectService from "@/services/projectService";
+import { ActiveAccessBanner } from "@/components/admin-access/ActiveAccessBanner";
 import { StakeholderPicker } from "./StakeholderPicker";
 import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { AvatarPicker } from "@/components/common/AvatarPicker";
@@ -293,6 +294,7 @@ export function ProjectDetailPanel({ project, onClose, onProjectUpdated }: Proje
 
   return (
     <div className="flex flex-col h-full border-l border-border bg-card">
+      <ActiveAccessBanner targetType="project" targetId={project.id} onRevoked={onClose} />
       {/* ─── Header bar ─── */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2 min-w-0">
