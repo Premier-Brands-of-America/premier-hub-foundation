@@ -231,6 +231,62 @@ async function buildUserContext(supabase: any, user: any, profile: any): Promise
     parts.push(`\n--- PROJECTS ---\nNo projects visible.`);
   }
 
+  // Pages / notes — the interconnected wiki + AI memory (RLS-scoped to the user)
+  const { data: pages } = await supabase
+    .from("pages")
+    .select("id, title, body_text, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(20);
+  if (pages && pages.length) {
+    const lines = pages.map((pg: any) =>
+      `- ${pg.title || "Untitled"}${pg.body_text ? ": " + String(pg.body_text).replace(/\s+/g, " ").slice(0, 240) : ""}`);
+    parts.push(`\n--- PAGES / NOTES (${pages.length}) ---\n` + lines.join("\n"));
+  } else {
+    parts.push(`\n--- PAGES / NOTES ---\nNo pages visible.`);
+  }
+
+  // Art requests
+  const { data: requests } = await supabase
+    .from("requests")
+    .select("id, request_number, title, status, customer, project_type, due_date")
+    .order("created_at", { ascending: false })
+    .limit(25);
+  if (requests && requests.length) {
+    const lines = requests.map((r: any) =>
+      `- ${r.request_number ?? String(r.id).slice(0, 8)} · ${r.title} [${r.status}]` +
+      `${r.customer ? " · " + r.customer : ""}${r.project_type ? " · " + r.project_type : ""}` +
+      `${r.due_date ? " · due " + r.due_date : ""}`);
+    parts.push(`\n--- ART REQUESTS (${requests.length}) ---\n` + lines.join("\n"));
+  }
+
+  // Connections / memory graph — how entities link (backlinks & relations)
+  const { data: relations } = await supabase
+    .from("entity_relations")
+    .select("source_type, source_id, target_type, target_id, relation_type")
+    .limit(100);
+  if (relations && relations.length) {
+    const lines = relations.map((r: any) =>
+      `- ${r.source_type}:${String(r.source_id).slice(0, 8)} --${r.relation_type}--> ${r.target_type}:${String(r.target_id).slice(0, 8)}`);
+    parts.push(
+      `\n--- CONNECTIONS / MEMORY GRAPH (${relations.length}) ---\n` +
+      `How items link together (cross-reference the ids with the lists above):\n` +
+      lines.join("\n"));
+  }
+
+  // Meeting transcripts (summaries)
+  const { data: transcripts } = await supabase
+    .from("meeting_transcripts")
+    .select("subject, summary_md, started_at, status")
+    .eq("status", "summarized")
+    .order("started_at", { ascending: false })
+    .limit(10);
+  if (transcripts && transcripts.length) {
+    const lines = transcripts.map((t: any) =>
+      `- ${t.subject || "Meeting"}${t.started_at ? " (" + String(t.started_at).slice(0, 10) + ")" : ""}: ` +
+      `${t.summary_md ? String(t.summary_md).replace(/\s+/g, " ").slice(0, 260) : ""}`);
+    parts.push(`\n--- MEETING TRANSCRIPTS (${transcripts.length}) ---\n` + lines.join("\n"));
+  }
+
   parts.push(`\nContext gathered at: ${new Date().toISOString()} (data may be a few minutes old during this conversation)`);
   return parts.filter(Boolean).join("\n");
 }
