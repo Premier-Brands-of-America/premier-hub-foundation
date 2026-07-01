@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link2 } from "lucide-react";
+import { Info } from "lucide-react";
 import { useBacklinks } from "@/hooks/use-backlinks";
 import type { BacklinkTargetType } from "@/types/pages";
 import { formatDistanceToNow } from "date-fns";
@@ -22,16 +23,21 @@ export function BacklinksPanel({ targetType, targetId, className }: Props) {
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Link2 className="h-3.5 w-3.5" />
           </span>
-          Backlinks
+          Mentioned in
+          <Info
+            className="h-3.5 w-3.5 cursor-help text-muted-foreground"
+            aria-label="What is this?"
+            title="Other pages, projects, tasks or requests that link to or mention this item. It's an automatic list of where this shows up across the hub."
+          />
         </CardTitle>
         <span className="stat-numeral text-sm text-muted-foreground">{data.length}</span>
       </CardHeader>
       <CardContent className="space-y-2">
-        {isLoading && <p className="text-xs text-muted-foreground">Loading backlinks…</p>}
+        {isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
         {!isLoading && data.length === 0 && (
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Nothing links here yet. Mention this page from another with{" "}
-            <span className="font-medium text-foreground">[[</span> to build connections.
+            Nothing points here yet. When another page, project, task or request links
+            to or mentions this item, it will show up here automatically.
           </p>
         )}
         {data.map((row) => (

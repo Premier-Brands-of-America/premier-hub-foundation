@@ -55,7 +55,7 @@ const toolsNav = [
   { title: "AI Assistant", url: "/ai-assistant", icon: Bot },
   { title: "Graph", url: "/graph", icon: Network, requiresStaff: true },
   { title: "Org", url: "/org", icon: Share2 },
-  { title: "Memory", url: "/memory", icon: Brain },
+  { title: "Memory", url: "/memory", icon: Brain, requiresAdmin: true },
   { title: "Diagnostics", url: "/diagnostics", icon: BarChart3, requiresDiagnostics: true },
 ];
 
@@ -153,6 +153,9 @@ export function AppSidebar() {
                 .filter((item) => {
                   if ((item as any).requiresDiagnostics) {
                     return profile?.is_admin || profile?.can_view_diagnostics;
+                  }
+                  if ((item as any).requiresAdmin) {
+                    return profile?.is_admin || profile?.role === "admin";
                   }
                   if ((item as any).requiresStaff) {
                     return profile?.is_admin || profile?.role === "designer" || profile?.role === "admin";
