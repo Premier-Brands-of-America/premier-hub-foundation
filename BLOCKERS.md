@@ -152,3 +152,25 @@ Planner. These owner/infra items must land for that real data to actually popula
   /403 (everyone else).
 - **Intentionally NOT changed:** the shared Art-Request queue and admin/config tables (profiles,
   feature flags, departments, roles, `audit_log`, `org_directory`) — admins keep full access there.
+
+## Directory union (org_directory ∪ profiles) — assigning to unregistered people (2026-07-01)
+- `fetchDirectory()` now unions the M365 `org_directory` cache with registered `profiles`
+  (deduped by lower(email), profiles preferred) so unregistered staff appear in pickers and
+  in Profile → Organization (manager + direct reports) before they ever sign in.
+- **Expected limitation:** sharing/assigning to a directory-only (not-yet-registered) person
+  cannot create a real `assignee_id` or notification — there is no auth user yet. Those
+  people have `user_id = null` in the directory. The assignee/notification link resolves
+  automatically the first time they sign in (email match against `profiles`). The Planner
+  assignee/@mention picker intentionally excludes null-user_id people for this reason.
+
+## Page create — real error now surfaced; root cause not reproducible statically (2026-07-01)
+- `Pages.tsx` now shows the true Supabase/PostgrestError via `getErrorMessage()` instead of the
+  generic "Failed to create page". Static review of the create path found NO concrete bug:
+  the client calls `rpc('create_page', { p_title, p_parent_id (omitted→NULL), p_visibility })`
+  with param names matching the SECURITY INVOKER RPC; `visibility` defaults to `'private'`
+  (in the CHECK set); the INSERT policy `owner_id = auth.uid()` is satisfied; the
+  `extract_page_links` BEFORE-INSERT trigger and the generated `search_vector` column are both
+  harmless on an empty body.
+- **If it still fails in production**, it is likely env-specific (migration not applied, RPC
+  missing, or `auth.uid()` null on an expired session). The surfaced toast will now reveal the
+  exact Postgres message — please paste it and we can pinpoint the cause.
