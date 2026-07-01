@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SECRET = Deno.env.get("SUPABASE_SECRET_KEY")!;
+  const SECRET = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY") || "";
   const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 
   // ── Dual auth (mirrors sharepoint-provision) ──
