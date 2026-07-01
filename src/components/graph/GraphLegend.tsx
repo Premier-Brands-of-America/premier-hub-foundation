@@ -1,9 +1,11 @@
 import { Card } from "@/components/ui/card";
+import { Sparkles } from "lucide-react";
 import { EntityIcon } from "@/components/common/EntityIcon";
 import { NODE_COLOR_VAR } from "./graphColors";
-import type { NodeType, GraphPayload } from "@/types/graph";
+import type { NodeType } from "@/types/graph";
+import type { EntityType } from "@/types/relations";
 
-const ENTITY_TYPES: NodeType[] = ["project", "task", "request", "page", "user"];
+const ENTITY_TYPES: NodeType[] = ["project", "task", "request", "page", "user", "concept"];
 
 const ENTITY_LABELS: Record<NodeType, string> = {
   project: "Project",
@@ -12,6 +14,7 @@ const ENTITY_LABELS: Record<NodeType, string> = {
   page: "Page",
   user: "Person",
   department: "Department",
+  concept: "Concept",
 };
 
 interface RelationRow {
@@ -49,7 +52,11 @@ export function GraphLegend({ counts }: Props) {
                 className="shrink-0 inline-block w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: `hsl(var(${NODE_COLOR_VAR[t]}))` }}
               />
-              <EntityIcon type={t} className="h-3 w-3 text-muted-foreground shrink-0" />
+              {t === "concept" ? (
+                <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />
+              ) : (
+                <EntityIcon type={t as EntityType} className="h-3 w-3 text-muted-foreground shrink-0" />
+              )}
               <span className="text-xs capitalize flex-1">{ENTITY_LABELS[t]}</span>
               {counts?.[t] != null && (
                 <span className="text-[10px] tabular-nums text-muted-foreground font-medium">

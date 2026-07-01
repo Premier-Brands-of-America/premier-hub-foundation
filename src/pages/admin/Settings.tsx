@@ -31,6 +31,7 @@ import { format } from "date-fns";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/PageHeader";
 import DepartmentsTab from "@/pages/admin/DepartmentsTab";
+import MemoryAccessTab from "@/pages/admin/MemoryAccessTab";
 
 type EntityType = "global" | "department" | "user";
 type FlagRow = {
@@ -504,6 +505,7 @@ export default function AdminSettings() {
           <TabsTrigger value="features">Features</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="memory">Memory access</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
         </TabsList>
         <TabsContent value="features" className="mt-4">
@@ -514,6 +516,9 @@ export default function AdminSettings() {
         </TabsContent>
         <TabsContent value="departments" className="mt-4">
           <DepartmentsTab />
+        </TabsContent>
+        <TabsContent value="memory" className="mt-4">
+          <MemoryAccessTab />
         </TabsContent>
         <TabsContent value="audit" className="mt-4">
           <AuditLogTab />

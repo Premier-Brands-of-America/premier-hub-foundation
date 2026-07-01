@@ -10,6 +10,8 @@ import { GraphListFallback } from "@/components/graph/GraphListFallback";
 import { Button } from "@/components/ui/button";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
+import { useAuth } from "@/hooks/useAuth";
+import { MemoryInsightsPanel } from "@/components/memory/MemoryInsightsPanel";
 import { DEFAULT_FORCES } from "@/types/graph";
 import { Network, Share2, Brain, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -274,6 +276,8 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
 
   useGraphRealtime();
   const { data, isLoading } = useGraphData(filters, mode);
+  const { profile } = useAuth();
+  const isAdmin = !!profile?.is_admin || profile?.role === "admin";
 
   useEffect(() => {
     const p = filtersToParams(filters);
@@ -427,6 +431,22 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
               rooted={rooted}
             />
           </div>
+
+          {/* Memory-mode insights: key concepts, surprising connections, wiki, rebuild */}
+          {mode === "memory" && (
+            <div className="absolute top-16 right-3 z-10">
+              <MemoryInsightsPanel
+                nodes={payload.nodes}
+                edges={payload.edges}
+                isAdmin={isAdmin}
+                onFocusNode={(id) => {
+                  canvasRef.current?.centerOnNode(id);
+                  const n = payload.nodes.find((x) => x.id === id);
+                  if (n) setSelected(n);
+                }}
+              />
+            </div>
+          )}
 
           {/* Top-right: Toolbar */}
           <div className="absolute top-3 right-3 z-10">

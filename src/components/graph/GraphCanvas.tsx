@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useState }
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import {
   getForegroundColor, getNodeColor, getStatusColor, nodeRadius,
-  RELATION_STYLES, getCardColor,
+  RELATION_STYLES, edgeDash, getCardColor,
   getSelectionColor, getHoverColor, getVoidColor, rawVar, getNodeColorRaw,
 } from "./graphColors";
 import { entityImageUri } from "@/lib/avatars/entityAvatars";
@@ -302,7 +302,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
           const cpy = (s.y + t.y) / 2 + ny * off;
 
           const weight = RELATION_STYLES[link.type]?.weight ?? 1;
-          const dash = RELATION_STYLES[link.type]?.dash;
+          const dash = edgeDash(link.type, link.edgeKind);
           ctx.beginPath();
           ctx.moveTo(s.x, s.y);
           ctx.quadraticCurveTo(cpx, cpy, t.x, t.y);

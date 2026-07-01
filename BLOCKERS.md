@@ -1,5 +1,22 @@
 # BLOCKERS — feat/premier-hub-revamp
 
+## Memory knowledge graph ("graphify in-app") — db push + deploy functions
+The full KG system is written but NOT pushed/deployed (see `MEMORY_KG.md` for the
+architecture + copy-paste commands). To go live, Edwin must:
+- `supabase db push` — applies `20260701180000_memory_kg.sql` (pgvector extension +
+  `memory_concepts`, `memory_embeddings`, `entity_relations.edge_kind/confidence/rationale`,
+  `memory_access_grants` + `can_view_memory`, append-only `memory_access_log`, and the
+  `get_memory_graph` / `memory_god_nodes` / `memory_surprising_edges` / `match_memory_embeddings` RPCs).
+- `supabase functions deploy memory-extract memory-search memory-wiki ai-assistant`
+  (`ai-assistant` was edited to inject semantic RAG; `config.toml` registers the 3 new fns).
+- Backfill the graph: click **Rebuild memory** on `/memory` (admin), or POST
+  `{"backfill":true,"limit":50}` to `memory-extract` with the `SUPABASE_SECRET_KEY`.
+- Secrets: reuses existing `AI_ASSISTANT_API_KEY` / `AI_GATEWAY_URL` / `AI_MODEL` +
+  `SUPABASE_URL/ANON_KEY/SECRET_KEY`; `gte-small` embeddings need no key.
+Until pushed, `/memory` and the AI RAG path work in **preview** (demo knowledge
+graph + graceful RPC fallbacks); in production the graph is empty until backfilled.
+
+
 ## Art request assignment — email to UNREGISTERED managers (needs Graph Mail.Send)
 Migration `20260701155155_seed_art_users.sql` + the `assign_manager_and_notify`
 DB trigger set `assignee_id` and insert an in-app notification **only when the

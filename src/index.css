@@ -130,6 +130,7 @@
     --entity-page: 30 5% 46%;
     --entity-person: 162 42% 36%;
     --entity-department: 32 64% 46%;
+    --entity-concept: 280 52% 52%;     /* orchid — AI-discovered concepts */
 
     /* Status & priority tokens (timeline / badges / widgets) */
     --status-todo: 28 6% 48%;
@@ -232,6 +233,7 @@
     --entity-page: 228 12% 64%;        /* neutral slate */
     --entity-person: 338 82% 72%;      /* rose-magenta */
     --entity-department: 86 62% 62%;   /* electric-lime */
+    --entity-concept: 280 78% 74%;     /* orchid — AI-discovered concepts */
 
     --status-todo: 228 12% 62%;
     --status-in-progress: 42 92% 60%;

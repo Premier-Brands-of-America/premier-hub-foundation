@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { fireMemoryExtract } from "@/services/memoryService";
 import { isValidUrl } from "@/lib/validation";
 import { getPreviewViewer } from "@/lib/previewViewer";
 import { buildDemoTasks, currentDemoViewer } from "@/lib/aclDemo";
@@ -110,6 +111,7 @@ export async function createTask(
     .single();
   if (error) throw error;
   await logActivity(userId, data.id, "task_created");
+  fireMemoryExtract("task", data.id);
   return data as Task;
 }
 
@@ -175,6 +177,7 @@ export async function updateTask(
       : "field_changed";
     await logActivity(userId, taskId, action, c.field, c.old, c.new_);
   }
+  fireMemoryExtract("task", taskId);
   return data as Task;
 }
 

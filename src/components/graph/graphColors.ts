@@ -1,4 +1,4 @@
-import type { NodeType, RelationType } from "@/types/graph";
+import type { EdgeKind, NodeType, RelationType } from "@/types/graph";
 
 export const NODE_COLOR_VAR: Record<NodeType, string> = {
   project: "--entity-project",
@@ -7,6 +7,7 @@ export const NODE_COLOR_VAR: Record<NodeType, string> = {
   page: "--entity-page",
   user: "--entity-person",
   department: "--entity-department",
+  concept: "--entity-concept",
 };
 
 function cssVar(name: string, fallback: string): string {
@@ -130,4 +131,27 @@ export const RELATION_STYLES: Record<RelationType, { dash?: number[]; weight: nu
   parent_of: { weight: 1.5 },
   mentions: { weight: 1, dash: [2, 3] },
   linked_from: { weight: 1, dash: [2, 3] },
+  reports_to: { weight: 1.5 },
+  member_of: { weight: 1 },
 };
+
+/**
+ * Edge-kind styling (graphify provenance). When an edge carries an `edgeKind`
+ * (the memory graph), the dash pattern is driven by provenance rather than the
+ * relation type: EXTRACTED solid, INFERRED dashed, AMBIGUOUS dotted. MANUAL and
+ * STRUCTURAL fall through to the relation-type style (as the graph always drew).
+ */
+export const EDGE_KIND_DASH: Record<EdgeKind, number[] | undefined> = {
+  MANUAL: undefined,
+  STRUCTURAL: undefined,
+  EXTRACTED: undefined,   // solid
+  INFERRED: [5, 3],       // dashed
+  AMBIGUOUS: [1, 3],      // dotted
+};
+
+/** Resolve the dash pattern for an edge, preferring provenance over relation. */
+export function edgeDash(type: RelationType, edgeKind?: EdgeKind): number[] | undefined {
+  if (edgeKind === "INFERRED" || edgeKind === "AMBIGUOUS") return EDGE_KIND_DASH[edgeKind];
+  if (edgeKind === "EXTRACTED") return undefined;
+  return RELATION_STYLES[type]?.dash;
+}

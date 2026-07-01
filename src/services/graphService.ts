@@ -119,10 +119,44 @@ export async function fetchGraphFor(mode: GraphMode, filters: GraphFilters = {})
   }
   if (mode === "memory") {
     if (IS_PREVIEW) return buildMemoryGraph(memoryViewer());
-    // Real memory graph = the full RLS-scoped graph across all entity + link types.
-    return fetchGraph({ ...filters, entity_types: filters.entity_types ?? ALL_MEMORY_TYPES });
+    // Real memory graph = the AI knowledge graph (entities + concepts + extracted
+    // edges), RLS-scoped and gated by can_view_memory (get_memory_graph). Falls
+    // back to the plain entity graph if the KG RPC isn't deployed yet.
+    return fetchMemoryGraph(filters);
   }
   return fetchGraph(filters);
+}
+
+/** Map a get_memory_graph edge row → GraphEdge, carrying provenance. */
+function mapMemoryEdge(e: Record<string, unknown>): GraphEdge {
+  return {
+    id: String(e.id),
+    source: String(e.source),
+    target: String(e.target),
+    type: e.type as GraphEdge["type"],
+    edgeKind: (e.edge_kind ?? undefined) as GraphEdge["edgeKind"],
+    confidence: (e.confidence ?? null) as number | null,
+    rationale: (e.rationale ?? null) as string | null,
+  };
+}
+
+/** Real AI knowledge graph via get_memory_graph (concepts + extracted edges). */
+export async function fetchMemoryGraph(filters: GraphFilters = {}): Promise<GraphPayload> {
+  if (IS_PREVIEW) return buildMemoryGraph(memoryViewer());
+  const limit = filters.limit ?? DEFAULT_LIMIT;
+  const { data, error } = await supabase.rpc("get_memory_graph" as never, {
+    p_limit: limit,
+  } as never);
+  if (error) {
+    // KG RPC not deployed yet → fall back to the plain RLS-scoped entity graph.
+    return fetchGraph({ ...filters, entity_types: filters.entity_types ?? ALL_MEMORY_TYPES });
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { nodes: GraphNode[] | null; edges: Record<string, unknown>[] | null }
+    | null;
+  const nodes = (row?.nodes ?? []) as GraphNode[];
+  const edges = (row?.edges ?? []).map(mapMemoryEdge);
+  return { nodes, edges, truncated: nodes.length >= limit };
 }
 
 export async function expandNode(

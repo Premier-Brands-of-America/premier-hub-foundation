@@ -14,7 +14,7 @@
 import type { GraphEdge, GraphNode, GraphPayload } from "@/types/graph";
 import type { VisibilityViewer } from "@/lib/visibility";
 import { canViewProjectRow, canViewTaskRow } from "@/lib/visibility";
-import { buildDemoProjects, buildDemoTasks, DEMO_OTHER, DEMO_REPORT } from "@/lib/aclDemo";
+import { buildDemoProjects, buildDemoTasks, currentDemoViewer, DEMO_OTHER, DEMO_REPORT } from "@/lib/aclDemo";
 
 export function buildMemoryGraph(viewer: VisibilityViewer): GraphPayload {
   const nodes: GraphNode[] = [];
@@ -111,5 +111,50 @@ export function buildMemoryGraph(viewer: VisibilityViewer): GraphPayload {
     ),
   );
 
+  // ── AI-discovered concepts + extracted/inferred edges (graphify) ──
+  // Concept nodes the extractor would surface from the notes/projects above,
+  // linked to their sources ('mentions', EXTRACTED) and to each other.
+  DEMO_CONCEPTS.forEach((c) =>
+    addNode({ id: c.id, entityId: c.id.replace("concept:", ""), type: "concept", label: c.label, metadata: { kind: "concept", mentionCount: c.mentions } }),
+  );
+  DEMO_CONCEPT_EDGES.forEach((e) => addEdge(e));
+
   return { nodes, edges, truncated: false };
+}
+
+/** Demo concepts (the labels the AI extractor would produce in preview). */
+const DEMO_CONCEPTS = [
+  { id: "concept:brand-voice", label: "Brand Voice", mentions: 4 },
+  { id: "concept:spring-campaign", label: "Spring Campaign", mentions: 3 },
+  { id: "concept:launch-plan", label: "Launch Plan", mentions: 2 },
+  { id: "concept:creative-assets", label: "Creative Assets", mentions: 3 },
+] as const;
+
+/** Demo extracted/inferred edges wiring concepts to sources + each other. */
+const DEMO_CONCEPT_EDGES: GraphEdge[] = [
+  { id: "kg-1", source: "page:note-brand", target: "concept:brand-voice", type: "mentions", edgeKind: "EXTRACTED", confidence: 0.95, rationale: "Note defines brand voice" },
+  { id: "kg-2", source: "page:note-campaign", target: "concept:spring-campaign", type: "mentions", edgeKind: "EXTRACTED", confidence: 0.9, rationale: "Campaign ideas note" },
+  { id: "kg-3", source: "page:note-launch", target: "concept:launch-plan", type: "mentions", edgeKind: "EXTRACTED", confidence: 0.88, rationale: "Launch plan note" },
+  { id: "kg-4", source: "request:req-205", target: "concept:creative-assets", type: "mentions", edgeKind: "EXTRACTED", confidence: 0.82, rationale: "Asset request" },
+  { id: "kg-5", source: "concept:spring-campaign", target: "concept:creative-assets", type: "relates_to", edgeKind: "EXTRACTED", confidence: 0.8, rationale: "Campaign needs assets" },
+  { id: "kg-6", source: "concept:launch-plan", target: "concept:brand-voice", type: "relates_to", edgeKind: "INFERRED", confidence: 0.55, rationale: "Launch should honor brand voice" },
+  { id: "kg-7", source: "concept:spring-campaign", target: "concept:launch-plan", type: "relates_to", edgeKind: "INFERRED", confidence: 0.48, rationale: "Campaign feeds the launch" },
+];
+
+/** Fallback demo viewer for the preview memory graph (mirrors graphService). */
+function demoViewer(): VisibilityViewer {
+  return (
+    currentDemoViewer() ?? {
+      userId: "preview-user",
+      isAdmin: false,
+      departmentId: null,
+      directReportIds: ["demo-user-report"],
+    }
+  );
+}
+
+/** The preview memory knowledge graph for the current demo viewer. Insights are
+ *  computed from this graph via the shared selectors (see memoryService). */
+export function demoMemoryGraph(): GraphPayload {
+  return buildMemoryGraph(demoViewer());
 }

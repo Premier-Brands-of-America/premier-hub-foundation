@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { fireMemoryExtract } from "@/services/memoryService";
 import { getPreviewViewer } from "@/lib/previewViewer";
 import { currentDemoViewer, DEMO_OTHER } from "@/lib/aclDemo";
 import { canViewPageRow } from "@/lib/visibility";
@@ -180,6 +181,8 @@ export async function savePageBody(id: string, body_md: string): Promise<void> {
   }
   const { error } = await supabase.from("pages").update({ body_md }).eq("id", id);
   if (error) throw error;
+  // Fire-and-forget knowledge-graph extraction on the saved content.
+  fireMemoryExtract("page", id);
 }
 
 export async function updatePageTitle(id: string, title: string): Promise<void> {

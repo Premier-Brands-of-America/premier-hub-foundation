@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
+import { fireMemoryExtract } from "@/services/memoryService";
 import { getPreviewViewer } from "@/lib/previewViewer";
 import { demoPushNotification } from "@/lib/demoNotificationsStore";
 import {
@@ -56,7 +57,9 @@ export async function createRequest(payload: CreateRequestPayload): Promise<ArtR
   const { data, error } = await supabase
     .from(TABLE).insert(payload as never).select("*").single();
   if (error) throw error;
-  return data as unknown as ArtRequest;
+  const created = data as unknown as ArtRequest;
+  fireMemoryExtract("request", created.id);
+  return created;
 }
 
 export async function updateRequest(id: string, patch: UpdateRequestPatch): Promise<ArtRequest> {
@@ -64,6 +67,7 @@ export async function updateRequest(id: string, patch: UpdateRequestPatch): Prom
   const { data, error } = await supabase
     .from(TABLE).update(patch as never).eq("id", id).select("*").single();
   if (error) throw error;
+  fireMemoryExtract("request", id);
   return data as unknown as ArtRequest;
 }
 

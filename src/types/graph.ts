@@ -1,4 +1,7 @@
-export type NodeType = "project" | "task" | "request" | "page" | "user" | "department";
+export type NodeType = "project" | "task" | "request" | "page" | "user" | "department" | "concept";
+
+/** Provenance of an edge in the knowledge graph (graphify). */
+export type EdgeKind = "MANUAL" | "STRUCTURAL" | "EXTRACTED" | "INFERRED" | "AMBIGUOUS";
 
 /** Which graph the page is showing. */
 export type GraphMode = "network" | "org" | "memory";
@@ -26,6 +29,10 @@ export interface GraphEdge {
   target: string;
   type: RelationType;
   label?: string;
+  /** Knowledge-graph provenance — drives edge styling on the memory graph. */
+  edgeKind?: EdgeKind;
+  confidence?: number | null;
+  rationale?: string | null;
 }
 
 export interface GraphFilters {

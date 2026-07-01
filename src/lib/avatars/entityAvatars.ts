@@ -14,6 +14,7 @@ const STYLE_BY_TYPE: Record<NodeType, AvatarStyleKey> = {
   request: "icons",
   department: "shapes",
   page: "glass",
+  concept: "shapes",
 };
 
 /** CSS hue token per entity type (mirrors graph node colors). */
@@ -24,6 +25,7 @@ export const HUE_VAR_BY_TYPE: Record<NodeType, string> = {
   page: "--entity-page",
   user: "--entity-person",
   department: "--entity-department",
+  concept: "--entity-concept",
 };
 
 /** Resolve an entity's image data-URI. An explicit avatar_url/icon (real

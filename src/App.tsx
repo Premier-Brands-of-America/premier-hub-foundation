@@ -13,6 +13,7 @@ import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { FeatureFlagsProvider } from "@/providers/FeatureFlagsProvider";
 import { DesignModeProvider } from "@/providers/DesignModeProvider";
 import { FeatureRoute } from "@/components/FeatureRoute";
+import { MemoryRouteGuard } from "@/components/memory/MemoryRouteGuard";
 import Login from "./pages/Login";
 import PreviewLogin from "./pages/PreviewLogin";
 import Dashboard from "./pages/Index";
@@ -184,7 +185,7 @@ function AppRoutes() {
           <Route path="/timeline" element={<ProtectedRoute><FeatureRoute feature="timeline"><TimelinePage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/graph" element={<ProtectedRoute requireRole={["admin","designer"]}><FeatureRoute feature="graph"><GraphPage key="graph" /></FeatureRoute></ProtectedRoute>} />
           <Route path="/org" element={<ProtectedRoute><GraphPage key="org" initialMode="org" /></ProtectedRoute>} />
-          <Route path="/memory" element={<ProtectedRoute requireRole="admin"><GraphPage key="memory" initialMode="memory" /></ProtectedRoute>} />
+          <Route path="/memory" element={<ProtectedRoute><MemoryRouteGuard><GraphPage key="memory" initialMode="memory" /></MemoryRouteGuard></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
           <Route path="/403" element={<ProtectedRoute><Forbidden /></ProtectedRoute>} />
           <Route path="/feature-off" element={<ProtectedRoute><FeatureOff /></ProtectedRoute>} />
