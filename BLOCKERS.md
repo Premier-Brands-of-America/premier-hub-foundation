@@ -109,3 +109,19 @@ Planner. These owner/infra items must land for that real data to actually popula
   DELETE policy is still owner-only, so a stakeholder deleting another user's card will get a
   toast error until a project-scoped DELETE policy is added. Non-stakeholders see empty boards
   by design.
+
+## Break-glass admin access — migration must be pushed by the owner (2026-07-01)
+- **New migration `supabase/migrations/20260701140934_breakglass_admin_access.sql` is written but
+  NOT pushed.** Run `supabase db push` (owner) to apply it. It is idempotent
+  (create-or-replace / if-not-exists / drop-policy-if-exists) and touches no data.
+- **This changes admin visibility in production.** After the push, admins **no longer passively
+  see** other users' private projects / tasks / pages (nor silently edit/delete them). To
+  troubleshoot, an admin must request time-boxed access (default 60 min) via the break-glass panel
+  — which is written to the Audit Log and notifies the item's owner. Communicate this behavior
+  change before pushing; any support workflow that relied on passive admin visibility must now go
+  through the grant flow.
+- **Notification deep-links** point at `/projects/:id`, `/tasks/:id`, `/pages/:id` (routes now
+  exist). A genuinely missing/forbidden item shows the break-glass panel (admins) or redirects to
+  /403 (everyone else).
+- **Intentionally NOT changed:** the shared Art-Request queue and admin/config tables (profiles,
+  feature flags, departments, roles, `audit_log`, `org_directory`) — admins keep full access there.

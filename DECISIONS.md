@@ -104,3 +104,50 @@ Reports is driven by a pure metrics module (`reportsMetrics`) over a normalized
 `useReportData` reads the `requests` table; folding live projects/tasks into Reports
 (a unified server view) is deferred. Per-user chart selection persists to localStorage
 in preview (`reportPrefs`); production should nest it under `profiles.preferences->'report_charts'`.
+
+### Break-glass / just-in-time admin access (replaces passive admin-sees-all)
+**Why.** Admins used to passively see everyone's private **projects / tasks / pages** — the
+`is_admin(...)` bypass was baked into the row-visibility helpers. The owner found this too
+invasive. We replaced it with an explicit, time-boxed, audited, owner-notified model: an admin
+gets **no** passive access; to troubleshoot they must request access to a *specific* item with a
+reason. Nothing passive.
+
+**Model.** `admin_access_grants (admin_id, target_type, target_id, reason, expires_at, revoked_at)`.
+`request_admin_access(type, id, reason, minutes=60)` (SECURITY DEFINER) clamps the duration to
+**[5, 1440]** (default **60 min**), writes the grant, appends an `audit_log` row
+(`admin_access_granted`), and inserts a **`warning` notification for the owner** (skipped if the
+admin owns the item). `revoke_admin_access(grant_id)` sets `revoked_at` and audits
+`admin_access_revoked`. `has_active_admin_grant(user, type, id)` = admin **and** an unrevoked,
+unexpired grant exists; it replaced the `is_admin` term inside `can_view_project` / `can_view_task`
+/ `can_view_page` / `can_edit_page`, and the blanket-admin term on the tasks and projects
+UPDATE/DELETE policies and the pages DELETE policy.
+
+**Owner transparency.** The affected owner can read the grant rows for their item
+(`is_target_owner` in the SELECT policy), so they can see who accessed what and why.
+
+**Scope.** Personal content only. Deliberately **unchanged**: the shared Art-Request queue
+(a shared work surface) and admin/config tables (profiles, feature flags, departments, roles,
+`audit_log`, `org_directory`) — admins keep those.
+
+**Projects SELECT note.** The `projects` table's own SELECT policy is *inline*
+(`visibility='public' OR is_project_stakeholder(...) OR is_admin(...)`) and does **not** route
+through `can_view_project`, so swapping the helper alone would not remove passive admin visibility
+of private projects in lists. The migration therefore also replaces the `is_admin` term in that
+inline SELECT policy with `has_active_admin_grant(...)`. (Tasks/pages already SELECT via their
+helpers, so the helper swap covers them.)
+
+**Notification links** use `'/'||type||'s/'||id` (`/projects/:id`, `/tasks/:id`, `/pages/:id`).
+`/pages/:id` already existed; we added thin `/projects/:id` and `/tasks/:id` deep-link routes so
+the owner's link resolves and admins have a reachable break-glass entry point (forbidden + admin →
+`RestrictedContentPanel`).
+
+**Preview parity.** The demo ACL (`visibility.ts` wrappers) no longer grants admins passive
+sight — an admin's power over an item is unlocked only by an active *demo* grant
+(`demoAdminGrants`, localStorage). Requesting a demo grant appends a demo audit entry and pushes
+the owner a demo notification, mirroring production. `acl.ts` / `pageShare.ts` stay pure (their
+`isAdmin` shortcut is fed the grant-gated value by the wrappers).
+
+**Notifications UI.** The header bell was previously a dead button. It is now wired to a minimal
+popover (`useNotifications` → `notifications` table in prod / demo store in preview) that renders
+`info`/`success`/`warning` types and navigates via the notification `link` — no separate
+notification center was added.
