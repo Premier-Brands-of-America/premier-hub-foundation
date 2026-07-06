@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { MatchHighlight } from "@/components/search/MatchHighlight";
 
 interface Props {
   targetType: BacklinkTargetType;
@@ -89,9 +90,9 @@ export function BacklinksPanel({ targetType, targetId, pageTitle, onClose, class
           >
             <div className="truncate text-sm font-medium">{row.source_title}</div>
             {row.snippet && (
-              <div
+              <MatchHighlight
+                html={row.snippet}
                 className="mt-0.5 line-clamp-2 text-xs text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: row.snippet }}
               />
             )}
             <div className="mt-1.5 text-[11px] text-muted-foreground">
