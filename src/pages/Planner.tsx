@@ -54,7 +54,7 @@ function DemoPlanner() {
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <PageHeader
         title="Planner"
-        subtitle="Organize work into buckets, move cards as they progress, and track health"
+        subtitle="Your team's work — drag cards through the buckets and spot what's slipping"
         actions={<ViewTabs view={view} setView={setView} />}
       />
       <div className="flex-1 overflow-y-auto">
@@ -96,7 +96,7 @@ function ProductionPlanner() {
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <PageHeader
         title="Planner"
-        subtitle="Organize work into buckets, move cards as they progress, and track health"
+        subtitle="Your team's work — drag cards through the buckets and spot what's slipping"
         actions={
           <div className="flex items-center gap-3">
             {projects.length > 0 ? (
