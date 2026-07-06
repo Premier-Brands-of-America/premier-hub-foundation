@@ -57,6 +57,7 @@ export interface GraphViewFilters {
   statuses?: string[];   // undefined = all statuses visible
   hideOrphans?: boolean; // drop degree-0 nodes
   search?: string;       // dims non-matching nodes (does not remove them)
+  hiddenDepartments?: string[]; // org mode: departments to hide (by name)
 }
 
 /** d3-force tuning, exposed as sliders (mirrors Obsidian's four forces + node size). */

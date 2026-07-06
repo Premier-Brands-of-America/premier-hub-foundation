@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
 import { useAuth } from "@/hooks/useAuth";
-import { useQueue } from "@/hooks/useRequests";
-import { buildTeamLoad } from "@/lib/workloadMetrics";
+import { GRAPH_WORKLOAD_WEIGHT, GRAPH_WORKLOAD_OVERLOAD } from "@/components/graph/graphColors";
 import { MemoryInsightsPanel } from "@/components/memory/MemoryInsightsPanel";
 import { DEFAULT_FORCES } from "@/types/graph";
 import { Network, Share2, Brain, SlidersHorizontal } from "lucide-react";
@@ -120,6 +119,13 @@ function applyViewFilters(payload: GraphPayload, view: GraphViewFilters): GraphP
   if (view.statuses) {
     const allow = new Set(view.statuses);
     nodes = nodes.filter((n) => !n.status || allow.has(n.status));
+  }
+  if (view.hiddenDepartments?.length) {
+    const hidden = new Set(view.hiddenDepartments);
+    nodes = nodes.filter((n) => {
+      const d = (n.metadata as Record<string, unknown> | null | undefined)?.department;
+      return !(typeof d === "string" && hidden.has(d));
+    });
   }
   let nodeIds = new Set(nodes.map((n) => n.id));
   let edges = payload.edges.filter((e) => {
@@ -311,34 +317,44 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
   );
   const filtered = useMemo(() => applyViewFilters(scoped, view), [scoped, view]);
 
-  // Workload reflection (§3.2): compute per-person open Workload Points from the
-  // request queue (client-side, no SQL) and stamp them onto `user` nodes so the
-  // canvas can size + ring them. Person nodes key off entityId/label (lowercased)
-  // to match `requestLead().key`. Works in preview and production alike.
-  const { data: queueData } = useQueue();
-  const workloadByKey = useMemo(() => {
-    const team = buildTeamLoad(queueData ?? [], "all_open");
-    const m = new Map<string, { points: number; overloaded: boolean }>();
-    for (const p of team.people) {
-      m.set(p.person.key, { points: p.points, overloaded: p.band === "over" });
-    }
-    return m;
-  }, [queueData]);
-
+  // Workload reflection: a person's node size reflects the work they're attached
+  // to IN THE GRAPH — only projects and tasks carry weight, and leading a project
+  // outweighs holding a task (owner 3 ≫ stakeholder 1.5 ≫ task 1). Computed from
+  // the graph's own owns/stakeholder/assigned_to edges, so it's coherent with what
+  // the canvas draws (no dependency on the request queue). Network mode only.
   const payload = useMemo<GraphPayload>(() => {
-    if (workloadByKey.size === 0) return filtered;
-    const nodes = filtered.nodes.map((n) => {
-      if (n.type !== "user") return n;
-      const key = (n.entityId || n.label || "").toLowerCase();
-      const load = workloadByKey.get(key);
-      if (!load) return n;
-      return {
-        ...n,
-        metadata: { ...(n.metadata ?? {}), workloadPoints: load.points, overloaded: load.overloaded },
-      };
-    });
+    if (mode !== "network") return filtered;
+    const typeOf = new Map(filtered.nodes.map((n) => [n.id, n.type] as const));
+    const points = new Map<string, number>();
+    const add = (id: string, w: number) => points.set(id, (points.get(id) ?? 0) + w);
+    for (const e of filtered.edges) {
+      const [s, t] = edgeEnds(e);
+      const su = typeOf.get(s) === "user";
+      const tu = typeOf.get(t) === "user";
+      const person = su ? s : tu ? t : null;
+      const other = su ? t : s;
+      if (!person) continue;
+      const ot = typeOf.get(other);
+      const W = GRAPH_WORKLOAD_WEIGHT;
+      if (e.type === "owns" && ot === "project") add(person, W.ownsProject);
+      else if (e.type === "stakeholder" && ot === "project") add(person, W.stakeholderProject);
+      else if (e.type === "assigned_to" && ot === "task") add(person, W.assignedTask);
+    }
+    if (points.size === 0) return filtered;
+    const nodes = filtered.nodes.map((n) =>
+      n.type === "user" && points.has(n.id)
+        ? {
+            ...n,
+            metadata: {
+              ...(n.metadata ?? {}),
+              workloadPoints: points.get(n.id),
+              overloaded: (points.get(n.id) ?? 0) >= GRAPH_WORKLOAD_OVERLOAD,
+            },
+          }
+        : n,
+    );
     return { ...filtered, nodes };
-  }, [filtered, workloadByKey]);
+  }, [filtered, mode]);
 
   const statusOptions = useMemo(() => {
     const set = new Set<string>();
@@ -364,6 +380,21 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
     }
     return m;
   }, [payload.nodes]);
+
+  // Which entity/relation types actually exist in THIS graph — drives which
+  // filter checkboxes are offered, so a mode never shows controls that do
+  // nothing (e.g. Project/Task checkboxes on the people-only org chart). Derived
+  // from `raw` (pre-filter) so toggling a type off doesn't make its checkbox vanish.
+  const presentTypes = useMemo(() => {
+    const s = new Set<NodeType>();
+    raw.nodes.forEach((n) => s.add(n.type));
+    return Array.from(s);
+  }, [raw.nodes]);
+  const presentRels = useMemo(() => {
+    const s = new Set<RelationType>();
+    raw.edges.forEach((e) => s.add(e.type));
+    return Array.from(s);
+  }, [raw.edges]);
 
   // Departments present (Org mode) → drives the department color legend. In org
   // mode people carry `metadata.department`; person nodes are colored by it.
@@ -465,6 +496,10 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
               view={view}
               onViewChange={setView}
               statusOptions={statusOptions}
+              mode={mode}
+              presentTypes={presentTypes}
+              presentRels={presentRels}
+              departments={departments}
             />
             <GraphControlsPanel
               forces={forces}

@@ -120,6 +120,21 @@ export function nodeRadius(degree: number, nodeSize: number): number {
   return Math.sqrt(degree + 1) * nodeSize;
 }
 
+/**
+ * Graph-workload weights — the node-size signal in the Network graph is driven
+ * by the work a person is ATTACHED TO in the graph itself (not the art-request
+ * queue): only projects and tasks carry weight, and being in charge of a project
+ * weighs most. Owner ≫ stakeholder ≫ task. (Owner's request, July 2026.)
+ */
+export const GRAPH_WORKLOAD_WEIGHT = {
+  ownsProject: 3, // "a cargo del project" — the heaviest signal
+  stakeholderProject: 1.5,
+  assignedTask: 1,
+} as const;
+
+/** At/above this many graph-workload points, a person gets the over-capacity ring. */
+export const GRAPH_WORKLOAD_OVERLOAD = 8;
+
 /** Min/max radius multipliers for workload-scaled person nodes (× nodeSize). */
 const WLP_MIN_MULT = 1.1;  // an idle/unloaded person is still clearly a node
 const WLP_MAX_MULT = 6.0;  // a heavily loaded person towers (~5.5× the min)

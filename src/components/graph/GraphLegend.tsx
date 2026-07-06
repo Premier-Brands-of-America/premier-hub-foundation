@@ -159,7 +159,7 @@ export function GraphLegend({ counts, showWorkload, departments }: Props) {
                 style={{ width: 18, height: 18 }}
               />
               <span className="text-[10px] leading-tight text-muted-foreground">
-                Bigger = more open points. Vermilion ring = over capacity.
+                Bigger = more projects &amp; tasks (leading a project counts most). Vermilion ring = heavily loaded.
               </span>
             </div>
           </div>
