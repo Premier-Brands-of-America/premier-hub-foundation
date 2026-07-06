@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 type SortOption = "newest" | "oldest" | "due_date" | "title";
 
-export type ProjectViewMode = "assigned" | "owned" | "public" | "completed";
+export type ProjectViewMode = "all" | "assigned" | "owned" | "public" | "completed";
 
 interface ProjectListPageProps {
   mode: ProjectViewMode;
@@ -34,11 +34,17 @@ const SORT_OPTIONS = [
 ];
 
 const viewConfig: Record<ProjectViewMode, { title: string; description: string; emptyMessage: string; emptyHint: string }> = {
+  all: {
+    title: "Projects",
+    description: "Every active project you can see",
+    emptyMessage: "No projects yet",
+    emptyHint: "Create your first project — it'll show up here right away.",
+  },
   assigned: {
-    title: "My Assigned Projects",
-    description: "Projects you are a stakeholder on",
-    emptyMessage: "No assigned projects",
-    emptyHint: "When you're added as a stakeholder on a project, it will appear here.",
+    title: "Assigned to me",
+    description: "Active projects you're a stakeholder on (but don't own)",
+    emptyMessage: "Nothing assigned to you",
+    emptyHint: "When someone adds you as a stakeholder, it appears here.",
   },
   owned: {
     title: "Projects I Own",
@@ -86,6 +92,13 @@ const ProjectListPage = ({ mode }: ProjectListPageProps) => {
     let result = [...allProjects];
 
     switch (mode) {
+      case "all":
+        // Every active project the fetch returned (already RLS-scoped to what
+        // this user can see). This is the default so a just-created project —
+        // which you OWN, and which "Assigned" deliberately excludes — is never
+        // invisible.
+        result = result.filter((p) => p.status === "active");
+        break;
       case "assigned":
         result = result.filter(
           (p) => p.status === "active" && p.owner_id !== userId &&

@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isPreviewEnvironment } from "@/lib/environment";
-import { buildOrgGraph } from "@/lib/orgGraphDemo";
+import { buildOrgGraph, cleanOrgPayload } from "@/lib/orgGraphDemo";
 import { buildMemoryGraph } from "@/lib/memoryGraphDemo";
 import { currentDemoViewer } from "@/lib/aclDemo";
 import { demoListQueue } from "@/lib/demoRequestsStore";
@@ -136,7 +136,13 @@ export async function fetchGraphFor(mode: GraphMode, filters: GraphFilters = {})
       return fetchGraph(filters);
     }
     const row = (Array.isArray(data) ? data[0] : data) as { nodes: GraphNode[] | null; edges: GraphEdge[] | null } | null;
-    return { nodes: (row?.nodes ?? []) as GraphNode[], edges: (row?.edges ?? []) as GraphEdge[], truncated: false };
+    // Clean the RPC output client-side (drop orphans + department bubbles, stamp
+    // department onto people) so prod matches the demo cleanup without a migration.
+    return cleanOrgPayload({
+      nodes: (row?.nodes ?? []) as GraphNode[],
+      edges: (row?.edges ?? []) as GraphEdge[],
+      truncated: false,
+    });
   }
   if (mode === "memory") {
     if (IS_PREVIEW) return buildMemoryGraph(memoryViewer());

@@ -41,6 +41,57 @@ const ORG: OrgSeed[] = [
   { id: "mock-uid-006", name: "Riley Roberts", title: "Financial Analyst", department: "Finance", office: "Chicago", managerId: "vp-fin" },
 ];
 
+/**
+ * Clean a REAL org payload (from the get_org_chart_data RPC) the same way the
+ * demo builder does — because prod org data goes through the RPC, not this file,
+ * so the cleanup must be reapplied client-side (no SQL migration needed):
+ *  - Derive each person's department from any `member_of` edge → dept node,
+ *    stamp it onto `metadata.department`, then DROP the standalone department
+ *    nodes + member_of edges (they cluttered the canvas as lone bubbles).
+ *  - Keep only people connected to the hierarchy (have a reports_to edge in
+ *    either direction) — drop the orphan cloud of managerless/reportless emails.
+ */
+export function cleanOrgPayload(payload: GraphPayload): GraphPayload {
+  const nodes = payload.nodes ?? [];
+  const edges = payload.edges ?? [];
+
+  const isDept = (n: GraphNode) => n.type === "department";
+  const deptLabel = new Map<string, string>();
+  for (const n of nodes) if (isDept(n)) deptLabel.set(n.id, n.label ?? "");
+
+  // person → department, harvested from member_of edges before we drop them.
+  const personDept = new Map<string, string>();
+  for (const e of edges) {
+    if (e.type === "member_of" && deptLabel.has(e.target)) {
+      personDept.set(e.source, deptLabel.get(e.target)!);
+    }
+  }
+
+  // Connectivity from reports_to edges (either endpoint).
+  const connected = new Set<string>();
+  for (const e of edges) {
+    if (e.type === "reports_to") {
+      connected.add(e.source);
+      connected.add(e.target);
+    }
+  }
+
+  const keptNodes = nodes
+    .filter((n) => !isDept(n))
+    .filter((n) => connected.has(n.id))
+    .map((n) => {
+      const dept = personDept.get(n.id) ?? (n.metadata?.department as string | undefined);
+      return dept ? { ...n, metadata: { ...n.metadata, department: dept } } : n;
+    });
+  const keptIds = new Set(keptNodes.map((n) => n.id));
+
+  const keptEdges = edges.filter(
+    (e) => e.type === "reports_to" && keptIds.has(e.source) && keptIds.has(e.target),
+  );
+
+  return { nodes: keptNodes, edges: keptEdges, truncated: payload.truncated };
+}
+
 export function buildOrgGraph(): GraphPayload {
   // Who has at least one direct report? (used with "has a manager" to drop orphans)
   const hasReport = new Set<string>();

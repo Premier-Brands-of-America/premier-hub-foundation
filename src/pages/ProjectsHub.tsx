@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectListPage, { type ProjectViewMode } from "./ProjectListPage";
 
 const TABS: { value: ProjectViewMode; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "assigned", label: "Assigned" },
   { value: "owned", label: "Owned" },
   { value: "public", label: "Public" },
@@ -15,7 +16,7 @@ const TABS: { value: ProjectViewMode; label: string }[] = [
  * ProjectListPage already accepts a `mode`, so this just switches it.
  */
 export default function ProjectsHub() {
-  const [view, setView] = useState<ProjectViewMode>("assigned");
+  const [view, setView] = useState<ProjectViewMode>("all");
   return (
     <div className="space-y-4">
       <Tabs value={view} onValueChange={(v) => setView(v as ProjectViewMode)}>

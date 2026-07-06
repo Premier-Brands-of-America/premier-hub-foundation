@@ -121,16 +121,16 @@ export function nodeRadius(degree: number, nodeSize: number): number {
 }
 
 /** Min/max radius multipliers for workload-scaled person nodes (× nodeSize). */
-const WLP_MIN_MULT = 1.2; // an idle/unloaded person is still clearly a node
-const WLP_MAX_MULT = 4.0; // caps a heavily loaded person (~3.3× the min)
-const WLP_REF = 12; // WLP that maps to the max radius (≈ 120% of default capacity)
+const WLP_MIN_MULT = 1.1;  // an idle/unloaded person is still clearly a node
+const WLP_MAX_MULT = 6.0;  // a heavily loaded person towers (~5.5× the min)
+const WLP_REF = 8;         // WLP that maps to the max radius (≈ one week's budget)
 
 /**
  * Radius for a person node driven by workload points (graph-space).
- * Area-proportional (sqrt) and clamped to [MIN,MAX]×nodeSize. When points are
- * unknown (undefined/null), falls back to the degree-based `nodeRadius` so mixed
- * payloads still render sensibly. With nodeSize=5: 0pts→6.0px, 3→~13.5px,
- * 6→~16.9px, 10→~20.5px, ≥12→20.0px (a clear ~3.3× spread).
+ * Area-proportional (sqrt) and clamped to [MIN,MAX]×nodeSize. Tuned so the size
+ * difference is obvious from just a couple of points (not only at high load):
+ * with nodeSize=5 → 0pts≈5.5px, 1.5pts≈15px, 3≈20px, 4.5≈24px, ≥8→30px — a clear
+ * ~5.5× spread. Unknown points (null) fall back to degree-based `nodeRadius`.
  */
 export function personNodeRadius(
   points: number | undefined | null,
