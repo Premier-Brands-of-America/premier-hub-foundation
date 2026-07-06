@@ -10,6 +10,7 @@
  * `points / capacity` (utilization) drives all coloring. See AUDIT/workload-spec.md.
  */
 import type { ArtRequest, RequestPriority, RequestType } from "@/types/request";
+import { daysUntil } from "@/lib/dueDate";
 import { requestLead, byPriorityThenDue, type RequestPerson } from "@/lib/requestMeta";
 
 // ---- Tunable model constants (the whole model lives here) ----
@@ -102,13 +103,15 @@ export function inWindow(r: ArtRequest, win: WindowKey, now: Date = new Date()):
   return t !== null && !Number.isNaN(t) && t >= start.getTime() && t < end.getTime();
 }
 
-/** Is a request overdue relative to `now` (whole-day: due date strictly before today)? */
+/**
+ * Is a request overdue relative to `now` (whole-day: due date strictly before
+ * today)? Uses `daysUntil` — the same UTC calendar-day math the rest of the app
+ * uses (DueDateBadge/dueLabel) — so a date-only "YYYY-MM-DD" due date never reads
+ * as overdue from a timezone offset (the bug: UTC-midnight parse vs local midnight).
+ */
 export function isOverdue(r: ArtRequest, now: Date = new Date()): boolean {
   if (!r.due_date) return false;
-  const t = Date.parse(r.due_date);
-  if (Number.isNaN(t)) return false;
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  return t < startOfToday;
+  return daysUntil(r.due_date, now) < 0;
 }
 
 export interface PersonLoad {
