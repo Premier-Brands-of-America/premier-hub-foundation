@@ -15,18 +15,11 @@ import {
   LineChart,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ChartCard } from "@/components/charts/ChartCard";
 import {
   statusBreakdown,
   byDepartment,
@@ -74,37 +67,9 @@ const legendStyle = { fontSize: 11, color: "hsl(var(--muted-foreground))" };
 const axisTick = { fontSize: 11, fill: "hsl(var(--muted-foreground))" } as const;
 const labelStyle = { fontSize: 11, fill: "hsl(var(--muted-foreground))" } as const;
 
-function ChartCard({
-  title,
-  description,
-  isEmpty,
-  children,
-}: {
-  title: string;
-  description?: string;
-  isEmpty?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent className="h-64">
-        {isEmpty ? (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No data yet
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            {children as React.ReactElement}
-          </ResponsiveContainer>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+// ChartCard now lives in @/components/charts/ChartCard (shared with Workload);
+// re-exported here so existing imports of it from this module keep working.
+export { ChartCard };
 
 /** Centered big-number total drawn in the donut hole. */
 function donutCenter(total: number) {

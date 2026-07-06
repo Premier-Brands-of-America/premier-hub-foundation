@@ -1,6 +1,6 @@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { SLASH_COMMANDS, type SlashCommand } from "@/lib/slash-commands";
+import { SLASH_COMMANDS, SLASH_GROUP_ORDER, type SlashCommand } from "@/lib/slash-commands";
 
 interface Props {
   open: boolean;
@@ -19,6 +19,12 @@ export function SlashMenu({ open, query, onQueryChange, onSelect, onClose, ancho
       )
     : SLASH_COMMANDS;
 
+  // Group into Basic / Insert / Hub, preserving group order, dropping empties.
+  const groups = SLASH_GROUP_ORDER.map((g) => ({
+    group: g,
+    commands: items.filter((c) => c.group === g),
+  })).filter((g) => g.commands.length > 0);
+
   return (
     <Popover open={open} onOpenChange={(o) => !o && onClose()}>
       <PopoverTrigger asChild>
@@ -32,15 +38,17 @@ export function SlashMenu({ open, query, onQueryChange, onSelect, onClose, ancho
           <CommandInput placeholder="Filter blocks…" value={query} onValueChange={onQueryChange} autoFocus />
           <CommandList>
             <CommandEmpty>No blocks.</CommandEmpty>
-            <CommandGroup heading="Insert">
-              {items.map((c) => (
-                <CommandItem key={c.id} value={c.id} onSelect={() => onSelect(c)} className="gap-2">
-                  <c.icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="flex-1">{c.label}</span>
-                  <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">{c.hint}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {groups.map(({ group, commands }) => (
+              <CommandGroup key={group} heading={group}>
+                {commands.map((c) => (
+                  <CommandItem key={c.id} value={c.id} onSelect={() => onSelect(c)} className="gap-2">
+                    <c.icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="flex-1">{c.label}</span>
+                    <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">{c.hint}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
           </CommandList>
         </Command>
       </PopoverContent>

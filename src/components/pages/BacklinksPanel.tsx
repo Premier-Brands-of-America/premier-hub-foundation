@@ -15,10 +15,12 @@ interface Props {
   pageTitle?: string;
   /** When present, renders a close affordance (rail/expandable usage). */
   onClose?: () => void;
+  /** Suppress the card header (when a parent already labels the section). */
+  hideHeader?: boolean;
   className?: string;
 }
 
-export function BacklinksPanel({ targetType, targetId, pageTitle, onClose, className }: Props) {
+export function BacklinksPanel({ targetType, targetId, pageTitle, onClose, hideHeader, className }: Props) {
   const { data = [], isLoading } = useBacklinks(targetType, targetId);
   const navigate = useNavigate();
 
@@ -35,33 +37,35 @@ export function BacklinksPanel({ targetType, targetId, pageTitle, onClose, class
 
   return (
     <Card className={cn("border-0 shadow-none", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Link2 className="h-3.5 w-3.5" />
-          </span>
-          Mentioned in
-          <Info
-            className="h-3.5 w-3.5 cursor-help text-muted-foreground"
-            aria-label="What is this?"
-            title="Other pages, projects, tasks or requests that link to or mention this item. It's an automatic list of where this shows up across the hub."
-          />
-        </CardTitle>
-        <div className="flex items-center gap-1.5">
-          <span className="stat-numeral text-sm text-muted-foreground">{data.length}</span>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded p-1 text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
-              aria-label="Collapse backlinks"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      {!hideHeader && (
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <Link2 className="h-3.5 w-3.5" />
+            </span>
+            Mentioned in
+            <Info
+              className="h-3.5 w-3.5 cursor-help text-muted-foreground"
+              aria-label="What is this?"
+              title="Other pages, projects, tasks or requests that link to or mention this item. It's an automatic list of where this shows up across the hub."
+            />
+          </CardTitle>
+          <div className="flex items-center gap-1.5">
+            <span className="stat-numeral text-sm text-muted-foreground">{data.length}</span>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded p-1 text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground"
+                aria-label="Collapse backlinks"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </CardHeader>
+      )}
+      <CardContent className={cn("space-y-2", hideHeader && "p-0")}>
         {isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
         {!isLoading && data.length === 0 && (
           <div className="space-y-2.5">

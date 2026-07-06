@@ -3,6 +3,8 @@ import { isPreviewEnvironment } from "@/lib/environment";
 import { buildOrgGraph } from "@/lib/orgGraphDemo";
 import { buildMemoryGraph } from "@/lib/memoryGraphDemo";
 import { currentDemoViewer } from "@/lib/aclDemo";
+import { demoListQueue } from "@/lib/demoRequestsStore";
+import { buildTeamLoad } from "@/lib/workloadMetrics";
 import type {
   GraphEdge, GraphFilters, GraphMode, GraphNode, GraphPayload, NodeType,
 } from "@/types/graph";
@@ -14,13 +16,32 @@ const ALL_MEMORY_TYPES: NodeType[] = ["project", "task", "request", "page", "use
 function mockGraph(): GraphPayload {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
-  const users = ["Alex", "Sam", "Jordan", "Riley"];
-  users.forEach((n, i) =>
+
+  // Users are the real request leads so the Network graph and the Workload page
+  // tell the same story: workload points are stamped onto each person node
+  // (§3.2/§4.5), so Jaclyn (over capacity) renders as the big vermilion-ringed
+  // node and Dan smaller/healthy. Extra designers keep the constellation full.
+  const team = buildTeamLoad(demoListQueue(), "all_open");
+  const loadByKey = new Map(team.people.map((p) => [p.person.key, p]));
+  const users: { key: string; label: string }[] = [
+    { key: "jaclyn", label: "Jaclyn" },
+    { key: "dan", label: "Dan" },
+    { key: "u-riley", label: "Riley" },
+    { key: "u-sam", label: "Sam" },
+  ];
+  users.forEach((u) => {
+    const load = loadByKey.get(u.key);
     nodes.push({
-      id: `user:u${i}`, entityId: `u${i}`, type: "user", label: n,
-      metadata: { role: "designer" },
-    }),
-  );
+      id: `user:${u.key}`,
+      entityId: u.key,
+      type: "user",
+      label: u.label,
+      metadata: {
+        role: "designer",
+        ...(load ? { workloadPoints: load.points, overloaded: load.band === "over" } : {}),
+      },
+    });
+  });
   for (let i = 0; i < 5; i++) {
     nodes.push({
       id: `project:p${i}`, entityId: `p${i}`, type: "project",
@@ -28,7 +49,7 @@ function mockGraph(): GraphPayload {
       metadata: { progress: 20 + i * 15 },
     });
     edges.push({
-      id: `e-owns-${i}`, source: `user:u${i % users.length}`,
+      id: `e-owns-${i}`, source: `user:${users[i % users.length].key}`,
       target: `project:p${i}`, type: "owns",
     });
   }
@@ -39,7 +60,7 @@ function mockGraph(): GraphPayload {
     });
     edges.push({
       id: `e-tassign-${i}`, source: `task:t${i}`,
-      target: `user:u${i % users.length}`, type: "assigned_to",
+      target: `user:${users[i % users.length].key}`, type: "assigned_to",
     });
     edges.push({
       id: `e-trel-${i}`, source: `task:t${i}`,
@@ -54,7 +75,7 @@ function mockGraph(): GraphPayload {
     });
     edges.push({
       id: `e-rassign-${i}`, source: `request:r${i}`,
-      target: `user:u${(i + 1) % users.length}`, type: "assigned_to",
+      target: `user:${users[(i + 1) % users.length].key}`, type: "assigned_to",
     });
   }
   return { nodes, edges, truncated: false };

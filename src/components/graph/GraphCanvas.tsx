@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useState } from "react";
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import {
-  getForegroundColor, getNodeColor, getStatusColor, nodeRadius,
+  getForegroundColor, getNodeColor, getStatusColor, nodeRadius, personNodeRadius,
   RELATION_STYLES, edgeDash, getCardColor,
   getSelectionColor, getHoverColor, getVoidColor, rawVar, getNodeColorRaw,
+  departmentColorVar,
 } from "./graphColors";
 import { entityImageUri } from "@/lib/avatars/entityAvatars";
 import { DEFAULT_FORCES, type GraphEdge, type GraphForces, type GraphNode, type GraphPayload, type NodeType } from "@/types/graph";
@@ -26,8 +27,28 @@ interface Props {
   height: number;
 }
 
-type FGNode = GraphNode & { __color?: string; __raw?: string; __border?: string | null; __deg?: number; __uri?: string | null };
+type FGNode = GraphNode & {
+  __color?: string;
+  __raw?: string;
+  __border?: string | null;
+  __deg?: number;
+  __uri?: string | null;
+  /** Open workload points (person nodes only) → drives radius. undefined = size by degree. */
+  __wlp?: number;
+  /** True when this person is over their weekly capacity → vermilion load ring. */
+  __overloaded?: boolean;
+  /** Raw `H S% L%` triplet for a department-colored person body (org mode). */
+  __deptRaw?: string | null;
+};
 type FGData = { nodes: FGNode[]; links: GraphEdge[] };
+
+/** Drawn radius: person nodes scale with open workload points; everything else by degree. */
+function radiusFor(node: FGNode, nodeSize: number): number {
+  if (node.type === "user") {
+    return personNodeRadius(node.__wlp, node.__deg ?? 0, nodeSize);
+  }
+  return nodeRadius(node.__deg ?? 0, nodeSize);
+}
 
 /** Entity types that render a real avatar/icon image inside the node circle.
  *  Persons get a portrait; projects & tasks get a seeded icon. Everything else
@@ -54,6 +75,7 @@ function resolveThemeTokens() {
     cardColor: getCardColor(),
     cyanRaw: rawVar("--signal-cyan-300", "349 85% 62%"),
     gridRaw: rawVar("--graph-grid", "26 6% 40%"),
+    destructiveRaw: rawVar("--destructive", "14 85% 58%"),
   };
 }
 
@@ -133,6 +155,16 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       // Resolve the avatar/icon data-URI ONCE per data change (DiceBear's
       // toDataUri() is expensive — never call it inside the per-frame painter).
       base.__uri = imageUriFor(base);
+      // Workload reflection (person nodes): points drive the radius, overloaded
+      // draws a vermilion ring. Carried in the existing metadata bag (§3.2), so
+      // no GraphNode type change — a missing/typo'd value degrades to degree-size.
+      const meta = n.metadata as Record<string, unknown> | null | undefined;
+      const wlp = meta?.workloadPoints;
+      base.__wlp = typeof wlp === "number" && Number.isFinite(wlp) ? wlp : undefined;
+      base.__overloaded = meta?.overloaded === true;
+      // Org mode colors person nodes by department (replaces bare dept bubbles).
+      const dept = typeof meta?.department === "string" ? meta.department : null;
+      base.__deptRaw = n.type === "user" && dept ? rawVar(departmentColorVar(dept), base.__raw ?? "162 42% 36%") : null;
       return base;
     });
     const next: FGData = { nodes: nextNodes, links: data.edges.map((e) => ({ ...e })) };
@@ -257,6 +289,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         backgroundColor="transparent"
         cooldownTicks={cooldownTicks}
         nodeRelSize={forces.nodeSize}
+        /* Physics sizing stays degree-based (spacing unaffected); only the DRAWN
+           radius reflects workload — see radiusFor / nodeCanvasObject (§3.3). */
         nodeVal={(node: FGNode) => (node.__deg ?? 0) + 1}
         useWorkerForCalc={useWorker}
         minZoom={0.4}
@@ -338,16 +372,18 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         nodeCanvasObject={(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
           const x0 = node.x ?? 0;
           const y0 = node.y ?? 0;
-          const r = nodeRadius(node.__deg ?? 0, forces.nodeSize);
+          const r = radiusFor(node, forces.nodeSize);
           const dimmed = highlightedSet ? !highlightedSet.has(node.id) : false;
           const isSelected = node.id === selectedId;
           const isHovered = node.id === hoverId;
           const isFocus = isSelected || isHovered;
           const isHub = (node.__deg ?? 0) >= HUB_DEGREE;
 
-          const { labelColor, selectionColor, hoverColor, cardColor, cyanRaw } = resolveThemeTokens();
-          const color = node.__color ?? "hsl(30 6% 64%)";
-          const raw = node.__raw ?? "30 6% 64%";
+          const { labelColor, selectionColor, hoverColor, cardColor, cyanRaw, destructiveRaw } = resolveThemeTokens();
+          // Org-mode person nodes are tinted by department (replaces the bare
+          // department bubbles); otherwise use the entity hue.
+          const raw = node.__deptRaw ?? node.__raw ?? "30 6% 64%";
+          const color = node.__deptRaw ? `hsl(${node.__deptRaw})` : node.__color ?? "hsl(30 6% 64%)";
 
           // Idle bob so the constellation breathes.
           const now = typeof performance !== "undefined" ? performance.now() : 0;
@@ -430,6 +466,17 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
             ctx.stroke();
           }
 
+          // 3b. Over-capacity load ring — a bold vermilion ring on people who are
+          //     over their weekly budget. A big + red-ringed node reads instantly
+          //     as "drowning." Drawn just outside any status ring, below selection.
+          if (node.__overloaded && !isSelected) {
+            ctx.beginPath();
+            ctx.arc(x, y, r + 4.5 / globalScale, 0, 2 * Math.PI);
+            ctx.lineWidth = 2 / globalScale;
+            ctx.strokeStyle = `hsl(${destructiveRaw} / 0.95)`;
+            ctx.stroke();
+          }
+
           // 4. Selection ring = electric-violet · hover ring = signal-cyan.
           if (isSelected) {
             ctx.beginPath();
@@ -486,7 +533,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         nodePointerAreaPaint={(node: FGNode, color: string, ctx: CanvasRenderingContext2D) => {
           const x = node.x ?? 0;
           const y = node.y ?? 0;
-          const r = nodeRadius(node.__deg ?? 0, forces.nodeSize);
+          const r = radiusFor(node, forces.nodeSize);
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.arc(x, y, r + 3, 0, 2 * Math.PI);

@@ -97,10 +97,10 @@ const Dashboard = () => {
         {/* (1) greeting + inline KPI strip */}
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-1 pb-2">
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] tabular-nums text-muted-foreground">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] tabular-nums text-muted-foreground">
               {eyebrow}
             </p>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+            <h1 className="font-display text-[2.6rem] font-medium leading-[1.05] tracking-[-0.01em] text-foreground">
               {greeting()}, {firstName}
             </h1>
           </div>

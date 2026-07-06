@@ -80,9 +80,10 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                "group flex items-center gap-1 rounded-md px-1.5 py-1 text-sm transition-colors duration-fast hover:bg-accent",
+                // The signature: selected row wears the 2px crimson edge-rail.
+                "group relative flex items-center gap-1 rounded-md px-1.5 py-1 text-sm transition-colors duration-fast hover:bg-accent",
                 activeId === node.id
-                  ? "bg-primary/10 font-medium text-foreground"
+                  ? "bg-primary/10 font-medium text-foreground before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:content-['']"
                   : "text-muted-foreground",
               )}
               aria-current={activeId === node.id ? "page" : undefined}
@@ -110,6 +111,18 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
                 </span>
                 <span className="truncate">{node.title || "Untitled"}</span>
               </button>
+              {/* Hover "+" to add a subpage inline (Notion convention). */}
+              {!flat && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleCreate(node.id); }}
+                  className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity duration-fast hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                  aria-label={`Add a page inside ${node.title || "Untitled"}`}
+                  title="Add subpage"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              )}
               {/* Hover "…" overflow — only actions with a real service are offered. */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

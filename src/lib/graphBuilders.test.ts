@@ -36,9 +36,12 @@ const admin: VisibilityViewer = {
 describe("buildOrgGraph", () => {
   const g = buildOrgGraph();
 
-  it("includes department nodes and user nodes", () => {
-    expect(g.nodes.some((n) => n.type === "department" && n.label === "Marketing")).toBe(true);
-    expect(g.nodes.some((n) => n.type === "user" && n.label === "Jane Doe")).toBe(true);
+  it("emits user nodes carrying their department in metadata (no standalone dept bubbles)", () => {
+    // Cleanup (spec §4): department name-nodes are removed; department is a color.
+    expect(g.nodes.some((n) => n.type === "department")).toBe(false);
+    const jane = g.nodes.find((n) => n.type === "user" && n.label === "Jane Doe");
+    expect(jane).toBeDefined();
+    expect((jane?.metadata as Record<string, unknown>)?.department).toBe("Marketing");
   });
 
   it("emits reports_to edges, and the CEO reports to no one", () => {
@@ -49,10 +52,24 @@ describe("buildOrgGraph", () => {
     expect(reports.some((e) => e.source === "user:mock-uid-004" && e.target === "user:mock-uid-001")).toBe(true);
   });
 
-  it("every user belongs to a department (member_of)", () => {
-    const members = g.edges.filter((e) => e.type === "member_of");
-    const users = g.nodes.filter((n) => n.type === "user");
-    expect(members.length).toBe(users.length);
+  it("emits no member_of edges (departments are color-coded, not nodes)", () => {
+    expect(g.edges.some((e) => e.type === "member_of")).toBe(false);
+  });
+
+  it("includes only people with a manager or a direct report (no orphans)", () => {
+    // Every kept user is either the CEO (has reports) or has a managerId.
+    const userIds = new Set(g.nodes.filter((n) => n.type === "user").map((n) => n.entityId));
+    const managerTargets = new Set(
+      g.edges.filter((e) => e.type === "reports_to").map((e) => String(e.target).replace(/^user:/, "")),
+    );
+    for (const n of g.nodes.filter((x) => x.type === "user")) {
+      const managerId = (n.metadata as Record<string, unknown>)?.managerId ?? null;
+      const isManager = managerTargets.has(n.entityId);
+      expect(managerId !== null || isManager).toBe(true);
+    }
+    // sanity: the CEO is present (has reports) and Jane is present (has a manager)
+    expect(userIds.has("ceo")).toBe(true);
+    expect(userIds.has("mock-uid-001")).toBe(true);
   });
 });
 

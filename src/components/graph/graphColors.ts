@@ -120,6 +120,53 @@ export function nodeRadius(degree: number, nodeSize: number): number {
   return Math.sqrt(degree + 1) * nodeSize;
 }
 
+/** Min/max radius multipliers for workload-scaled person nodes (× nodeSize). */
+const WLP_MIN_MULT = 1.2; // an idle/unloaded person is still clearly a node
+const WLP_MAX_MULT = 4.0; // caps a heavily loaded person (~3.3× the min)
+const WLP_REF = 12; // WLP that maps to the max radius (≈ 120% of default capacity)
+
+/**
+ * Radius for a person node driven by workload points (graph-space).
+ * Area-proportional (sqrt) and clamped to [MIN,MAX]×nodeSize. When points are
+ * unknown (undefined/null), falls back to the degree-based `nodeRadius` so mixed
+ * payloads still render sensibly. With nodeSize=5: 0pts→6.0px, 3→~13.5px,
+ * 6→~16.9px, 10→~20.5px, ≥12→20.0px (a clear ~3.3× spread).
+ */
+export function personNodeRadius(
+  points: number | undefined | null,
+  degree: number,
+  nodeSize: number,
+): number {
+  if (points == null) return nodeRadius(degree, nodeSize);
+  const t = Math.min(Math.max(points, 0) / WLP_REF, 1); // 0..1
+  const mult = WLP_MIN_MULT + (WLP_MAX_MULT - WLP_MIN_MULT) * Math.sqrt(t);
+  return mult * nodeSize;
+}
+
+/**
+ * Department → design-system color token, for coloring org-chart person nodes and
+ * the department legend (replaces the standalone department name-bubbles). Uses
+ * distinct existing entity/status hues; NEVER the crimson brand `--primary`
+ * (data never wears the accent). Keyed case-insensitively by department name; an
+ * unknown department falls back to the neutral person hue.
+ */
+export const DEPARTMENT_COLOR_VAR: Record<string, string> = {
+  executive: "--entity-concept", // orchid
+  marketing: "--entity-request", // violet
+  "information technology": "--entity-task", // azure
+  it: "--entity-task",
+  finance: "--status-done", // jade
+  sales: "--warning", // amber
+  operations: "--status-info", // info blue
+  "art department": "--entity-project", // (fallback for the art dept, if present)
+};
+
+/** Resolve a department name to its color token, defaulting to the person hue. */
+export function departmentColorVar(department: string | null | undefined): string {
+  if (!department) return "--entity-person";
+  return DEPARTMENT_COLOR_VAR[department.trim().toLowerCase()] ?? "--entity-person";
+}
+
 export const RELATION_STYLES: Record<RelationType, { dash?: number[]; weight: number }> = {
   owns: { weight: 2 },
   stakeholder: { weight: 1.5 },

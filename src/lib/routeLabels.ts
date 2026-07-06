@@ -27,7 +27,7 @@ export const routeLabels: Record<string, string> = {
   "/requests/new/easy": "New Art Request",
   "/requests/new/full-brief": "New Art Request",
   "/queue": "Queue",
-  "/workload": "Department Workload",
+  "/workload": "Team Workload",
   "/reports": "Reports",
   "/audit": "Audit Log",
   "/profile": "Profile",

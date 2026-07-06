@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueue } from "@/hooks/useRequests";
+import { buildTeamLoad } from "@/lib/workloadMetrics";
 import { MemoryInsightsPanel } from "@/components/memory/MemoryInsightsPanel";
 import { DEFAULT_FORCES } from "@/types/graph";
 import { Network, Share2, Brain, SlidersHorizontal } from "lucide-react";
@@ -307,7 +309,36 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
     () => (filters.center_id ? localSubgraph(raw, filters.center_id, filters.depth ?? 1) : raw),
     [raw, filters.center_id, filters.depth],
   );
-  const payload = useMemo(() => applyViewFilters(scoped, view), [scoped, view]);
+  const filtered = useMemo(() => applyViewFilters(scoped, view), [scoped, view]);
+
+  // Workload reflection (§3.2): compute per-person open Workload Points from the
+  // request queue (client-side, no SQL) and stamp them onto `user` nodes so the
+  // canvas can size + ring them. Person nodes key off entityId/label (lowercased)
+  // to match `requestLead().key`. Works in preview and production alike.
+  const { data: queueData } = useQueue();
+  const workloadByKey = useMemo(() => {
+    const team = buildTeamLoad(queueData ?? [], "all_open");
+    const m = new Map<string, { points: number; overloaded: boolean }>();
+    for (const p of team.people) {
+      m.set(p.person.key, { points: p.points, overloaded: p.band === "over" });
+    }
+    return m;
+  }, [queueData]);
+
+  const payload = useMemo<GraphPayload>(() => {
+    if (workloadByKey.size === 0) return filtered;
+    const nodes = filtered.nodes.map((n) => {
+      if (n.type !== "user") return n;
+      const key = (n.entityId || n.label || "").toLowerCase();
+      const load = workloadByKey.get(key);
+      if (!load) return n;
+      return {
+        ...n,
+        metadata: { ...(n.metadata ?? {}), workloadPoints: load.points, overloaded: load.overloaded },
+      };
+    });
+    return { ...filtered, nodes };
+  }, [filtered, workloadByKey]);
 
   const statusOptions = useMemo(() => {
     const set = new Set<string>();
@@ -333,6 +364,18 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
     }
     return m;
   }, [payload.nodes]);
+
+  // Departments present (Org mode) → drives the department color legend. In org
+  // mode people carry `metadata.department`; person nodes are colored by it.
+  const departments = useMemo(() => {
+    if (mode !== "org") return undefined;
+    const set = new Set<string>();
+    for (const n of payload.nodes) {
+      const d = (n.metadata as Record<string, unknown> | null | undefined)?.department;
+      if (typeof d === "string" && d.trim()) set.add(d.trim());
+    }
+    return set.size > 0 ? Array.from(set).sort() : undefined;
+  }, [payload.nodes, mode]);
 
   const rooted = !!filters.center_id;
 
@@ -468,7 +511,11 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
             {!isLoading && payload.nodes.length > 0 && (
               <GraphStats payload={payload} />
             )}
-            <GraphLegend counts={nodeCounts} />
+            <GraphLegend
+              counts={nodeCounts}
+              showWorkload={mode === "network"}
+              departments={departments}
+            />
           </div>
         </>
       )}

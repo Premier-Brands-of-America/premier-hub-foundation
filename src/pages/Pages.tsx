@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PageTree } from "@/components/pages/PageTree";
 import { PageEditor } from "@/components/pages/PageEditor";
 import { PageHeader as PageDocHeader } from "@/components/pages/PageHeader";
@@ -13,7 +14,7 @@ import { useBacklinks } from "@/hooks/use-backlinks";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/PageHeader";
-import { FilePlus, FileText, Folder, Link2, Loader2 } from "lucide-react";
+import { ChevronDown, FilePlus, FileText, Folder, Link2, Loader2 } from "lucide-react";
 import type { Page } from "@/types/pages";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errors";
@@ -27,6 +28,9 @@ const MOBILE_TABS = [
   { id: "editor", label: "Editor", icon: FileText },
   { id: "backlinks", label: "Links", icon: Link2 },
 ] as const;
+
+/** Centered reading/writing measure — the calm canvas the redesign reclaims. */
+const MEASURE = "mx-auto w-full max-w-[760px]";
 
 export default function PagesPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,23 +57,27 @@ export default function PagesPage() {
     <PageTree activeId={id} onSelect={(pid) => navigate(`/pages/${pid}`)} />
   );
 
+  // The document canvas: a single centered column carrying the page head, the
+  // one always-formatted writing surface, then the "Mentioned in" section.
   const Editor = page ? (
     <div className="flex h-full flex-col overflow-auto">
       <ActiveAccessBanner targetType="page" targetId={page.id} onRevoked={() => refetch()} />
-      <div className="flex flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex w-full flex-1 flex-col">
+      <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <div className={MEASURE}>
           <PageBreadcrumbs pageId={page.id} />
-          {/* The one bold element on this screen: the crimson edge-rail document header. */}
+          {/* The one bold element: the crimson edge-rail on the page head. */}
           <div className="edge-rail">
             <PageDocHeader page={page} />
           </div>
-          <div className="mt-6 min-h-0 flex-1">
+          <div className="mt-6">
             <PageEditor
               pageId={page.id}
               initialContent={page.body_md ?? ""}
               onChange={(md) => saveBody.mutate(md)}
             />
           </div>
+          {/* Backlinks live at the bottom of the reading column, not a 3rd rail. */}
+          <BacklinksSection page={page} />
         </div>
       </div>
     </div>
@@ -97,6 +105,7 @@ export default function PagesPage() {
     </div>
   );
 
+  // Mobile "Links" tab reuses the same panel (already safe: MatchHighlight).
   const Back = page ? (
     <div className="h-full overflow-auto p-4">
       <BacklinksPanel targetType="page" targetId={page.id} pageTitle={page.title || "Untitled"} />
@@ -115,8 +124,8 @@ export default function PagesPage() {
         }
       />
 
-      {/* Desktop: tree · canvas, with backlinks demoted to a collapsible rail so
-          the writing column reclaims the full width and centers at ~760px. */}
+      {/* Desktop: two regions only — tree · canvas. Backlinks are demoted to a
+          section inside the canvas so the writing column reclaims the width. */}
       <div className="hidden h-[calc(100vh-4rem)] lg:block">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={22} minSize={16}>
@@ -124,10 +133,7 @@ export default function PagesPage() {
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={78} minSize={40}>
-            <div className="flex h-full bg-background">
-              <div className="min-w-0 flex-1">{Editor}</div>
-              {page && <BacklinksRail page={page} />}
-            </div>
+            <div className="h-full bg-background">{Editor}</div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
@@ -190,40 +196,40 @@ export default function PagesPage() {
 }
 
 /**
- * Backlinks demoted to a collapsible rail (desktop). Collapsed, it's a slim
- * ~40px vertical "Links · N" tab; expanded, a 280px panel. It never occupies
- * the canvas by default, so the writing column keeps its full width.
+ * "Mentioned in" as a collapsible section at the foot of the reading column
+ * (Notion/Obsidian placement), replacing the old permanent right rail. Collapsed
+ * by default when the list is long, so it never crowds the writing surface.
  */
-function BacklinksRail({ page }: { page: Page }) {
-  const [open, setOpen] = useState(false);
+function BacklinksSection({ page }: { page: Page }) {
   const { data = [] } = useBacklinks("page", page.id);
-
-  if (open) {
-    return (
-      <aside className="flex h-full w-[280px] shrink-0 flex-col overflow-auto border-l border-border bg-card">
-        <BacklinksPanel
-          targetType="page"
-          targetId={page.id}
-          pageTitle={page.title || "Untitled"}
-          onClose={() => setOpen(false)}
-        />
-      </aside>
-    );
-  }
+  const [open, setOpen] = useState(data.length > 0 && data.length <= 4);
 
   return (
-    <aside className="flex h-full w-10 shrink-0 flex-col items-center border-l border-border bg-card pt-3">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-expanded={false}
-        aria-label={`Show backlinks · ${data.length} mentioning this page`}
-        title="Backlinks"
-        className="flex items-center justify-center gap-2 rounded-md px-1.5 py-3 text-xs font-medium tabular-nums text-muted-foreground transition-colors duration-fast hover:bg-accent hover:text-foreground [writing-mode:vertical-rl]"
-      >
-        <Link2 className="h-3.5 w-3.5 rotate-90" aria-hidden />
-        Links · {data.length}
-      </button>
-    </aside>
+    <div className="mt-12 border-t border-border pt-4">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="group flex w-full items-center gap-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn("h-3.5 w-3.5 transition-transform duration-fast", !open && "-rotate-90")}
+              aria-hidden
+            />
+            <Link2 className="h-3.5 w-3.5" aria-hidden />
+            Mentioned in
+            <span className="stat-numeral tabular-nums text-muted-foreground">{data.length}</span>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
+          <BacklinksPanel
+            targetType="page"
+            targetId={page.id}
+            pageTitle={page.title || "Untitled"}
+            hideHeader
+          />
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   );
 }
