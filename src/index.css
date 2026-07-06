@@ -50,14 +50,14 @@
     --duration-deliberate: 420ms;
     --motion-ambient:     2400ms; /* idle neuron pulse / particle drift cycle */
 
-    /* ---- NexoString accent ramps (theme-independent) ----
-       Fixed chromatic accents reused by the force-graph + selection/hover
-       rings. signal-cyan = active/hover + brand hub; electric-violet =
-       inspector/selected state. Defined once so the canvas (which can't read
-       Tailwind) can resolve hsl(var(--signal-cyan-300)) directly. */
-    --signal-cyan-200: 168 88% 72%;
-    --signal-cyan-300: 168 88% 58%;
-    --signal-cyan-400: 168 88% 42%;
+    /* ---- Accent ramps (theme-independent) ----
+       Fixed chromatic accents reused by the force-graph hover/selection
+       rings. Legacy token NAMES kept (canvas resolves them directly) but the
+       values now carry the Pressroom system: crimson-ink hover ramp +
+       electric-violet reserved for the graph's selected state. */
+    --signal-cyan-200: 349 85% 74%;
+    --signal-cyan-300: 349 85% 62%;
+    --signal-cyan-400: 349 80% 46%;
     --electric-violet-200: 246 92% 72%;
     --electric-violet-300: 246 92% 58%;
 
@@ -156,98 +156,99 @@
   }
 
   .dark {
-    /* =============== DARK — NexoString "constellation" palette ===========
-       Replicates the owner's NexoString design system (02_design_system.md):
-       a deep near-black NEUTRAL ramp on a cool-slate hue (228°, 12% sat — the
-       minimum that survives night-shift filters without reading dead-blue),
-       with signal-cyan (168 88) as the single primary/active accent and
-       electric-violet (246 92) reserved for selection. Crimson is RETIRED
-       from dark mode entirely. */
+    /* =============== DARK — "Pressroom" carbon =============== =========
+       Warm carbon-paper neutrals (24° hue, the same warm family as the
+       light theme and the shared sidebar rail) with Premier crimson as the
+       ONE saturated accent — restored per DESIGN_LANGUAGE.md ("dark crimson
+       349 90% 64% + near-black label = 5.43:1 AA"). Danger is separated
+       from the brand by temperature: vermilion (14°), never crimson.
+       Data/status hues are pinned to the SAME hue families as light mode so
+       color-as-data never changes meaning with the theme. */
 
-    /* Near-black neutral ramp (228 12 *): void → panel → elevated → popover */
-    --background: 228 12% 3%;          /* surface-void  ≈ #070709 */
-    --foreground: 228 12% 92%;         /* primary text  (16.6:1)  */
+    /* Carbon ramp (24° warm): void → panel → elevated → popover */
+    --background: 24 10% 5.5%;         /* carbon void ≈ #100e0d */
+    --foreground: 30 10% 93%;          /* primary text */
 
-    --card: 228 12% 8%;                /* elevated card ≈ #121317 */
-    --card-foreground: 228 12% 92%;
+    --card: 24 8% 8.5%;                /* elevated card */
+    --card-foreground: 30 10% 93%;
 
-    --popover: 228 12% 12%;            /* overlay/popover ≈ #1b1c22 */
-    --popover-foreground: 228 12% 92%;
+    --popover: 24 8% 11%;              /* overlay/popover */
+    --popover-foreground: 30 10% 93%;
 
-    /* Primary accent = SIGNAL-CYAN (the active path + brand hub). Near-black
-       label on the cyan fill — the NexoString signature that makes the accent
-       read as chosen, not a default. */
-    --primary: 168 88% 60%;
-    --primary-foreground: 228 12% 6%;
+    /* Primary accent = Premier crimson, lifted for carbon. Near-black label
+       on the crimson fill (never white on the dark crimson). */
+    --primary: 349 90% 64%;
+    --primary-foreground: 345 40% 9%;
 
-    --secondary: 228 12% 12%;
-    --secondary-foreground: 228 12% 88%;
+    --secondary: 24 7% 13%;
+    --secondary-foreground: 30 9% 88%;
 
-    --muted: 228 12% 12%;
-    --muted-foreground: 228 12% 58%;   /* tertiary text */
+    --muted: 24 7% 12.5%;
+    --muted-foreground: 28 6% 60%;     /* tertiary text */
 
     /* shadcn "accent" = subtle hover surface (NOT the brand accent) */
-    --accent: 228 12% 16%;
-    --accent-foreground: 228 12% 92%;
+    --accent: 24 7% 15.5%;
+    --accent-foreground: 30 10% 93%;
 
-    /* Destructive/error = warm danger-red 354 (distinct from rose nodes) */
-    --destructive: 354 80% 58%;
-    --destructive-foreground: 228 12% 96%;
+    /* Destructive/error = vermilion (14°) — warm, unmistakably not the
+       cool crimson brand accent */
+    --destructive: 14 85% 58%;
+    --destructive-foreground: 20 40% 8%;
 
-    /* Success = mint-lime 150; warning = saffron-amber 42 */
-    --success: 150 60% 56%;
-    --success-foreground: 150 60% 7%;
+    /* Success = jade 152; warning = amber 38 (hue-stable with light) */
+    --success: 152 55% 52%;
+    --success-foreground: 152 60% 7%;
 
-    --warning: 42 92% 62%;
-    --warning-foreground: 42 70% 8%;
+    --warning: 38 90% 58%;
+    --warning-foreground: 32 70% 8%;
 
-    /* Hairline borders — neutral-600 / divider on near-black */
-    --border: 228 12% 18%;
-    --input: 228 12% 22%;
-    --ring: 168 88% 58%;               /* signal-cyan focus ring */
+    /* Hairline borders on carbon */
+    --border: 24 7% 17%;
+    --input: 24 7% 20%;
+    --ring: 349 90% 62%;               /* crimson focus ring */
 
-    /* Selection/focus accent = ELECTRIC-VIOLET (inspector/selected state) */
+    /* Selection accent (graph inspector/selected state only) */
     --selection: 246 92% 72%;
 
-    /* Graph canvas void + dot-grid hue (neutral-400) */
-    --surface-void: 228 12% 3%;
-    --graph-grid: 228 12% 42%;
+    /* Graph canvas void + dot-grid hue */
+    --surface-void: 24 10% 5%;
+    --graph-grid: 26 6% 40%;
 
-    /* Sidebar — near-black rail, signal-cyan active item (crimson retired) */
-    --sidebar-background: 228 12% 5%;
-    --sidebar-foreground: 228 12% 72%;
-    --sidebar-primary: 168 88% 62%;
-    --sidebar-primary-foreground: 228 12% 6%;
-    --sidebar-accent: 228 12% 12%;
-    --sidebar-accent-foreground: 228 12% 92%;
-    --sidebar-border: 228 12% 16%;
-    --sidebar-ring: 168 88% 58%;
-    --sidebar-muted: 228 12% 52%;
+    /* Sidebar — the SAME warm carbon rail as light mode (one rail, one
+       product), crimson active item in both themes */
+    --sidebar-background: 24 8% 9%;
+    --sidebar-foreground: 30 6% 80%;
+    --sidebar-primary: 348 65% 60%;
+    --sidebar-primary-foreground: 345 30% 11%;
+    --sidebar-accent: 24 6% 16%;
+    --sidebar-accent-foreground: 30 8% 95%;
+    --sidebar-border: 24 6% 18%;
+    --sidebar-ring: 348 65% 58%;
+    --sidebar-muted: 28 5% 55%;
 
-    /* Entity tokens → NexoString neuron hues, desaturated-but-glowing on
-       near-black so the constellation reads cohesive, not flat. Electric-
-       violet is intentionally NOT used here — it is reserved for selection. */
-    --entity-project: 168 78% 60%;     /* signal-cyan — hub/brand */
-    --entity-task: 200 78% 64%;        /* azure */
-    --entity-request: 38 90% 64%;      /* saffron-amber */
-    --entity-page: 228 12% 64%;        /* neutral slate */
-    --entity-person: 338 82% 72%;      /* rose-magenta */
-    --entity-department: 86 62% 62%;   /* electric-lime */
-    --entity-concept: 280 78% 74%;     /* orchid — AI-discovered concepts */
+    /* Entity tokens — SAME hue per entity as light mode, lifted for carbon.
+       Project carries the brand crimson; nothing else is allowed near it. */
+    --entity-project: 349 80% 64%;     /* crimson — brand-primary entity */
+    --entity-task: 200 70% 62%;        /* azure */
+    --entity-request: 258 55% 68%;     /* violet */
+    --entity-page: 30 6% 64%;          /* warm neutral */
+    --entity-person: 162 45% 56%;      /* sea-green */
+    --entity-department: 32 70% 60%;   /* ochre */
+    --entity-concept: 280 60% 70%;     /* orchid — AI-discovered concepts */
 
-    --status-todo: 228 12% 62%;
-    --status-in-progress: 42 92% 60%;
-    --status-blocked: 354 78% 62%;
-    --status-done: 150 60% 56%;
-    --status-success: 150 60% 56%;
-    --status-warning: 42 92% 60%;
-    --status-info: 168 78% 60%;
-    --status-neutral: 228 12% 60%;
-    --status-danger: 354 78% 62%;
-    --priority-low: 205 60% 62%;
-    --priority-medium: 42 90% 60%;
-    --priority-high: 28 88% 62%;
-    --priority-urgent: 354 78% 62%;
+    --status-todo: 28 6% 62%;
+    --status-in-progress: 207 70% 62%;
+    --status-blocked: 14 80% 60%;
+    --status-done: 152 55% 52%;
+    --status-success: 152 55% 52%;
+    --status-warning: 38 90% 58%;
+    --status-info: 215 60% 64%;
+    --status-neutral: 28 6% 60%;
+    --status-danger: 14 80% 60%;
+    --priority-low: 205 45% 60%;
+    --priority-medium: 38 85% 58%;
+    --priority-high: 26 85% 60%;
+    --priority-urgent: 14 80% 60%;
   }
 }
 

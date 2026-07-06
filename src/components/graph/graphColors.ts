@@ -51,19 +51,19 @@ export function getCardColor(): string {
   return cssVar("--card", "hsl(0 0% 100%)");
 }
 
-/** Selection ring — electric-violet (NexoString inspector/selected accent). */
+/** Selection ring — electric-violet (inspector/selected accent). */
 export function getSelectionColor(): string {
   return cssVar("--selection", "hsl(246 92% 72%)");
 }
 
-/** Hover ring — signal-cyan (NexoString active accent). */
+/** Hover ring — crimson-ink active accent (legacy token name). */
 export function getHoverColor(): string {
-  return cssVar("--signal-cyan-300", "hsl(168 88% 58%)");
+  return cssVar("--signal-cyan-300", "hsl(349 85% 62%)");
 }
 
-/** The graph canvas backdrop — surface-void (near-black in dark mode). */
+/** The graph canvas backdrop — surface-void (carbon in dark mode). */
 export function getVoidColor(): string {
-  return cssVar("--surface-void", "hsl(228 12% 3%)");
+  return cssVar("--surface-void", "hsl(24 10% 5%)");
 }
 
 /** Raw `H S% L%` triplet of any CSS var — for building canvas gradients and

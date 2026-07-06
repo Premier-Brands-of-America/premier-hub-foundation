@@ -52,7 +52,7 @@ function resolveThemeTokens() {
     selectionColor: getSelectionColor(),
     hoverColor: getHoverColor(),
     cardColor: getCardColor(),
-    cyanRaw: rawVar("--signal-cyan-300", "168 88% 58%"),
+    cyanRaw: rawVar("--signal-cyan-300", "349 85% 62%"),
     gridRaw: rawVar("--graph-grid", "228 12% 42%"),
   };
 }
@@ -330,7 +330,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         }}
         linkDirectionalParticleColor={(l: GraphEdge) => {
           const src = l.source as unknown as FGNode;
-          const raw = src?.__raw ?? rawVar("--signal-cyan-300", "168 88% 58%");
+          const raw = src?.__raw ?? rawVar("--signal-cyan-300", "349 85% 62%");
           const [sid, tid] = edgeEnds(l);
           const emph = highlightedSet ? highlightedSet.has(sid) && highlightedSet.has(tid) : false;
           return `hsl(${raw} / ${emph ? 0.95 : 0.5})`;

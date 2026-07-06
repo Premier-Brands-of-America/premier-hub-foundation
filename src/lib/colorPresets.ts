@@ -34,16 +34,16 @@ export const DEFAULT_LIGHT: ColorTriple = {
   background: "30 14% 98%",
 };
 export const DEFAULT_DARK: ColorTriple = {
-  text: "228 12% 92%",
-  highlight: "168 88% 60%",
-  background: "228 12% 3%",
+  text: "30 10% 93%",
+  highlight: "349 90% 64%",
+  background: "24 10% 5.5%",
 };
 
 export const colorPresets: ColorPreset[] = [
   {
     id: "default",
     name: "Premier",
-    hint: "The shipped look — crimson / signal-cyan",
+    hint: "The shipped look — Premier crimson on carbon",
     light: DEFAULT_LIGHT,
     dark: DEFAULT_DARK,
   },

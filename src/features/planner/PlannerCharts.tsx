@@ -44,7 +44,7 @@ import type { CountDatum } from "./plannerMetrics";
 /** Status order: Not started, In progress, Completed. */
 const STATUS_COLORS = [
   "hsl(var(--muted-foreground))",
-  "hsl(var(--primary))",
+  "hsl(var(--status-in-progress))",
   "hsl(var(--status-done))",
 ];
 /** Health order: Overdue, Due soon, On track, No date. */
@@ -311,7 +311,7 @@ export function PlannerCharts({ board }: { board: Board }) {
             tick={axisTick}
           />
           <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
-          <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} maxBarSize={40}>
+          <Bar dataKey="value" fill="hsl(var(--status-in-progress))" radius={[0, 4, 4, 0]} maxBarSize={40}>
             <LabelList dataKey="value" position="right" style={labelStyle} />
           </Bar>
         </BarChart>

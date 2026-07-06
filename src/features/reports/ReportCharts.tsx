@@ -39,10 +39,11 @@ import {
 import { REPORT_CHART_META, type ReportChartId } from "@/lib/reportPrefs";
 import type { ReportItem } from "@/lib/reportsMetrics";
 
-/** Status order: Not started, In progress, In review, Completed. */
+/** Status order: Not started, In progress, In review, Completed.
+    Data never wears the brand accent — in-progress is azure, review amber. */
 const STATUS_COLORS = [
   "hsl(var(--muted-foreground))",
-  "hsl(var(--primary))",
+  "hsl(var(--status-in-progress))",
   "hsl(var(--warning))",
   "hsl(var(--status-done))",
 ];
@@ -198,7 +199,7 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
             <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
             <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
-            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={40}>
+            <Bar dataKey="value" fill="hsl(var(--status-in-progress))" radius={[4, 4, 0, 0]} maxBarSize={40}>
               <LabelList dataKey="value" position="top" style={labelStyle} />
             </Bar>
           </BarChart>
@@ -215,7 +216,7 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
             <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} />
             <YAxis type="category" dataKey="name" width={90} axisLine={false} tickLine={false} tick={axisTick} />
             <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
-            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} maxBarSize={40}>
+            <Bar dataKey="value" fill="hsl(var(--status-in-progress))" radius={[0, 4, 4, 0]} maxBarSize={40}>
               <LabelList dataKey="value" position="right" style={labelStyle} />
             </Bar>
           </BarChart>
@@ -235,9 +236,9 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
             <Line
               type="monotone"
               dataKey="value"
-              stroke="hsl(var(--primary))"
+              stroke="hsl(var(--status-in-progress))"
               strokeWidth={2}
-              dot={{ r: 3, fill: "hsl(var(--primary))" }}
+              dot={{ r: 3, fill: "hsl(var(--status-in-progress))" }}
               activeDot={{ r: 4 }}
             >
               <LabelList dataKey="value" position="top" style={labelStyle} />
