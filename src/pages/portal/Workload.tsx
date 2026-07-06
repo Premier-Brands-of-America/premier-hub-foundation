@@ -142,7 +142,9 @@ function CapacityByPersonChart({
   onSelect: (key: string) => void;
 }) {
   const maxPoints = rows.reduce((m, r) => Math.max(m, r.points), 0);
-  const xMax = Math.max(capacity * 1.2, maxPoints * 1.05, 1);
+  // Round the axis ceiling to a whole point so the tick reads "15", not
+  // "14.700000000000001" (float artifact of maxPoints * 1.05).
+  const xMax = Math.ceil(Math.max(capacity * 1.2, maxPoints * 1.05, 1));
   const height = Math.max(180, rows.length * 44);
   return (
     <ResponsiveContainer width="100%" height={height}>
