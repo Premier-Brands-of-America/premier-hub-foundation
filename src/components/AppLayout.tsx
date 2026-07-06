@@ -13,6 +13,7 @@ import { GlobalCommandPalette } from "@/components/search/GlobalCommandPalette";
 import { SearchTrigger } from "@/components/search/SearchTrigger";
 import { useDesignMode } from "@/providers/DesignModeProvider";
 import { PageHeaderProvider, usePageHeaderState } from "@/components/PageHeader";
+import { ColorBar } from "@/components/pressroom";
 import { titleForPath } from "@/lib/routeLabels";
 import { toast } from "sonner";
 import {
@@ -97,6 +98,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               onToggleDensity={handleToggleDensity}
               onSignOut={handleSignOut}
             />
+
+            {/* Signature press color-bar under the header — the calibration
+                strip that runs along a press sheet, here spanning the workspace. */}
+            <ColorBar height={3} className="shrink-0" />
 
             <main id="main-content" className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
               {children}

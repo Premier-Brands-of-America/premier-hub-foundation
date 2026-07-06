@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Clock, CalendarRange, LayoutGrid, Check } from "lucide-react";
+import { AlertTriangle, Clock, CalendarRange, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,7 +12,6 @@ import {
   WorkItemRow,
   type Kpi,
 } from "@/components/pressroom";
-import { DashboardView } from "@/components/dashboard/DashboardView";
 import { DayRail } from "@/components/dashboard/DayRail";
 import { useMyDay, type DayItem } from "@/components/dashboard/useMyDay";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
@@ -39,7 +37,6 @@ const Dashboard = () => {
   useRealtimeInvalidation("tasks", ["tasks"]);
 
   const day = useMyDay();
-  const [showCustomize, setShowCustomize] = useState(false);
 
   const eyebrow = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -246,23 +243,6 @@ const Dashboard = () => {
           </section>
         )}
 
-        {/* quiet, secondary access to the editable card grid */}
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={() => setShowCustomize((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-expanded={showCustomize}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
-            {showCustomize ? "Hide custom cards" : "Customize dashboard"}
-          </button>
-          {showCustomize && (
-            <div className="mt-3">
-              <DashboardView />
-            </div>
-          )}
-        </div>
       </main>
 
       {/* ── day rail (stacks below main on mobile) ── */}

@@ -3,6 +3,7 @@ import { MOCK_USERS } from "@/contexts/PreviewAuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
 import { brand } from "@/config/brand";
 import { Badge } from "@/components/ui/badge";
+import { ColorBar, CropFrame } from "@/components/pressroom";
 import { Shield, User, Settings, Activity, ChevronRight } from "lucide-react";
 
 const roleIcons = [User, Settings, Activity];
@@ -18,16 +19,18 @@ const PreviewLogin = () => {
         className="pointer-events-none absolute -top-1/4 left-1/2 h-[60vh] w-[60vh] -translate-x-1/2 rounded-full bg-[hsl(var(--primary)/0.10)] blur-3xl"
       />
 
-      <div className="relative w-full max-w-md">
+      <CropFrame className="relative w-full max-w-md">
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          {/* Press color-bar caps the sheet — the signature calibration strip. */}
+          <ColorBar height={4} />
           {/* Branded crest header */}
-          <div className="edge-rail border-b border-border px-8 pb-6 pt-8">
+          <div className="border-b border-border px-8 pb-6 pt-8">
             <div className="flex flex-col items-center text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-muted/40">
                 <BrandLogo size="lg" className="h-9 w-9" />
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <h1 className="text-xl text-foreground">{brand.appName}</h1>
+                <h1 className="font-display text-2xl font-semibold text-foreground">{brand.appName}</h1>
                 <Badge
                   variant="outline"
                   className="border-[hsl(var(--primary)/0.30)] bg-[hsl(var(--primary)/0.10)] text-[10px] font-medium tracking-wide text-primary"
@@ -82,9 +85,9 @@ const PreviewLogin = () => {
         </div>
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
-          Development Login &middot; &copy; {new Date().getFullYear()} {brand.companyName}
+          Preview build &middot; &copy; {new Date().getFullYear()} {brand.companyName}
         </p>
-      </div>
+      </CropFrame>
     </div>
   );
 };

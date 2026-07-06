@@ -27,8 +27,18 @@
   :root {
     /* ---- Shared, theme-independent tokens (type / radius / motion) ---- */
     --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace;
+    /* Display = Fraunces, an old-style editorial print serif (the "Press Room"
+       voice). Numbers stay in tabular Inter — Fraunces is for words, not KPIs. */
+    --font-display: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    /* Press color-bar register hues — the CMYK strip motif + print-flavored
+       data-viz. Pinned identically in both themes (a printed swatch doesn't
+       change color when the lights go down). */
+    --register-c: 192 88% 45%;   /* cyan */
+    --register-m: 330 82% 54%;   /* magenta */
+    --register-y: 45 92% 52%;    /* yellow */
+    --register-k: 24 10% 18%;    /* key/black (ink) */
 
     /* Radii — sm 6 / md 8 / lg 12 / xl 16; cards lg, inputs/buttons md */
     --radius-sm: 6px;
@@ -70,15 +80,17 @@
        neutral but never cold/blue. The only saturated hue in the system is
        the Premier-crimson accent (logo #c10230 ≈ 347°) — crimson never
        tints the grays. */
-    --background: 30 14% 98%;
-    --foreground: 24 10% 12%;
+    /* Paper: a warm proofing-table cream, not clinical white — cards sit on it
+       like sheets on a light table. Ink is a warm near-black, not pure gray. */
+    --background: 38 32% 95%;
+    --foreground: 22 16% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 24 10% 12%;
+    --card: 40 44% 99%;
+    --card-foreground: 22 16% 11%;
 
-    /* Popovers/menus/command palette sit on the brightest surface */
-    --popover: 0 0% 100%;
-    --popover-foreground: 24 10% 12%;
+    /* Popovers/menus/command palette sit on the brightest sheet */
+    --popover: 40 44% 99%;
+    --popover-foreground: 22 16% 11%;
 
     /* Single saturated accent — Premier crimson. Derive hover/active by
        lightness (±4–6%), never a new hex. White text = 5.7:1 (AA). */
@@ -165,15 +177,16 @@
        Data/status hues are pinned to the SAME hue families as light mode so
        color-as-data never changes meaning with the theme. */
 
-    /* Carbon ramp (24° warm): void → panel → elevated → popover */
-    --background: 24 10% 5.5%;         /* carbon void ≈ #100e0d */
-    --foreground: 30 10% 93%;          /* primary text */
+    /* Press-room ink ramp (24° warm): a deep, rich near-black with a red-brown
+       undertone — the room the proofs are pulled in, never cold slate. */
+    --background: 22 18% 5%;           /* ink void ≈ #0f0b09 */
+    --foreground: 40 22% 92%;          /* warm paper-white text */
 
-    --card: 24 8% 8.5%;                /* elevated card */
-    --card-foreground: 30 10% 93%;
+    --card: 22 14% 8%;                 /* elevated coated stock */
+    --card-foreground: 40 22% 92%;
 
-    --popover: 24 8% 11%;              /* overlay/popover */
-    --popover-foreground: 30 10% 93%;
+    --popover: 22 14% 10.5%;           /* overlay/popover */
+    --popover-foreground: 40 22% 92%;
 
     /* Primary accent = Premier crimson, lifted for carbon. Near-black label
        on the crimson fill (never white on the dark crimson). */

@@ -52,9 +52,11 @@ const workspaceNav = [
   { title: "Pages", url: "/pages", icon: FileType2 },
 ];
 
-// REQUESTS — the art-request portal (intake + triage).
+// ART REQUESTS — the art-request portal (intake + triage). Named "Art Requests"
+// (not just "Requests") so it never reads as generic — the portal is exclusively
+// for the Art Department.
 const requestsNav: NavItemConfig[] = [
-  { label: "Art Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
+  { label: "My Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
   { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
 ];
 
@@ -124,9 +126,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Requests */}
+        {/* Art Requests */}
         <SidebarGroup>
-          <SidebarGroupLabel>Requests</SidebarGroupLabel>
+          <SidebarGroupLabel>Art Requests</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {requestsNav.map((item) => (
