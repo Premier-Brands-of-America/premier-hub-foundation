@@ -3,6 +3,7 @@ import { addDays, differenceInCalendarDays, format, isSameDay } from "date-fns";
 import { CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { EventBar } from "./EventBar";
 import type { ColorBy, DateRange, TimelineEntityType, TimelineEvent } from "@/types/timeline";
 
@@ -17,6 +18,17 @@ interface Props {
 }
 
 const DAY_PX = 40;
+/** Fixed left label column (mono code + title + assignee) so bars aren't floating. */
+const LABEL_W = 260;
+/** Shared header height so the label column and day header stay row-aligned. */
+const HEADER_H = 44;
+
+/** Short mono tag from the real entity type (no fabricated ticket numbers). */
+const TYPE_CODE: Record<TimelineEntityType, string> = {
+  task: "TASK",
+  project: "PROJ",
+  request: "REQ",
+};
 
 function parseDate(iso: string | null): Date | null {
   if (!iso) return null;
@@ -34,6 +46,7 @@ export function GanttView({
   const totalDays = Math.max(1, differenceInCalendarDays(range.to, range.from) + 1);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragState, setDragState] = useState<{ id: string; offsetDays: number } | null>(null);
+  const [dragPos, setDragPos] = useState<number | null>(null);
 
   const days = useMemo(() => {
     const arr: Date[] = [];
@@ -57,12 +70,9 @@ export function GanttView({
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    // no-op visual update via re-render below
     if (!dragState) return;
     setDragPos(e.clientX);
   };
-
-  const [dragPos, setDragPos] = useState<number | null>(null);
 
   const handlePointerUp = (e: React.PointerEvent, event: TimelineEvent) => {
     if (!dragState || dragState.id !== `${event.entity_type}-${event.id}`) {
@@ -85,11 +95,43 @@ export function GanttView({
   };
 
   const today = new Date();
+  const laneWidth = totalDays * DAY_PX;
 
   return (
-    <div className="h-full overflow-auto">
-      <div style={{ minWidth: totalDays * DAY_PX }}>
-        {/* header */}
+    <div className="flex h-full overflow-auto">
+      {/* Fixed left label column — sticky so it stays put while the lane scrolls */}
+      <div
+        className="sticky left-0 z-20 flex-none border-r border-border bg-card"
+        style={{ width: LABEL_W }}
+      >
+        {/* header spacer aligns with the day-row header on the right */}
+        <div
+          className="sticky top-0 z-10 flex items-center border-b border-border bg-card px-3 text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground"
+          style={{ height: HEADER_H }}
+        >
+          {visibleItems.length} {visibleItems.length === 1 ? "item" : "items"}
+        </div>
+        {visibleItems.map((event) => (
+          <div
+            key={`${event.entity_type}-${event.id}`}
+            className="flex items-center gap-2 border-b border-border px-3"
+            style={{ height: rowHeight }}
+          >
+            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+              {TYPE_CODE[event.entity_type]}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium">{event.title}</span>
+            {event.owner_id && (
+              <EntityAvatar type="user" seed={event.owner_id} size="xs" className="shrink-0" />
+            )}
+          </div>
+        ))}
+        {visibleItems.length === 0 && <div style={{ height: 200 }} />}
+      </div>
+
+      {/* Scrollable lane area */}
+      <div className="flex-1" style={{ minWidth: laneWidth }}>
+        {/* day header */}
         <div className="sticky top-0 z-10 flex border-b border-border bg-card">
           {days.map((d, i) => {
             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
@@ -98,12 +140,17 @@ export function GanttView({
               <div
                 key={i}
                 className={cn(
-                  "border-r border-border py-1.5 text-center text-xs",
+                  "flex flex-col items-center justify-center border-r border-border text-center text-xs",
                   isWeekend && "bg-muted/40",
                 )}
-                style={{ width: DAY_PX }}
+                style={{ width: DAY_PX, height: HEADER_H }}
               >
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{format(d, "EEE")}</div>
+                <div className={cn(
+                  "text-[10px] uppercase tracking-wide",
+                  isToday ? "font-semibold text-primary" : "text-muted-foreground",
+                )}>
+                  {format(d, "EEE")}
+                </div>
                 <div
                   className={cn(
                     "mx-auto flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium tabular-nums",
@@ -124,18 +171,28 @@ export function GanttView({
           style={{ height: Math.max(visibleItems.length * rowHeight, 200) }}
           onPointerMove={handlePointerMove}
         >
-          {/* day grid lines */}
+          {/* day grid lines + weekend shading + crimson today line */}
           <div className="pointer-events-none absolute inset-0 flex">
-            {days.map((d, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "h-full border-r border-border/60",
-                  (d.getDay() === 0 || d.getDay() === 6) && "bg-muted/20",
-                )}
-                style={{ width: DAY_PX }}
-              />
-            ))}
+            {days.map((d, i) => {
+              const isToday = isSameDay(d, today);
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "relative h-full border-r border-border/60",
+                    (d.getDay() === 0 || d.getDay() === 6) && "bg-muted/20",
+                  )}
+                  style={{ width: DAY_PX }}
+                >
+                  {isToday && (
+                    <div
+                      className="absolute inset-y-0 left-0 w-0.5 bg-primary before:absolute before:-left-[3px] before:-top-1 before:h-2 before:w-2 before:rounded-full before:bg-primary before:content-['']"
+                      aria-hidden
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {visibleItems.map((event, idx) => {

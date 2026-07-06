@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { legendFor } from "./eventColors";
 import type {
   ColorBy,
   DateRange,
@@ -52,7 +53,8 @@ export function TimelineToolbar({
         size="sm"
       >
         <ToggleGroupItem value="month" aria-label="Month view">Month</ToggleGroupItem>
-        <ToggleGroupItem value="timeline" aria-label="Timeline view">Timeline</ToggleGroupItem>
+        <ToggleGroupItem value="week" aria-label="Week view">Week</ToggleGroupItem>
+        <ToggleGroupItem value="gantt" aria-label="Gantt view">Gantt</ToggleGroupItem>
       </ToggleGroup>
 
       <div className="h-5 w-px bg-border" aria-hidden="true" />
@@ -98,6 +100,19 @@ export function TimelineToolbar({
             <SelectItem value="type">Type</SelectItem>
           </SelectContent>
         </Select>
+        {/* Generated legend — swatches are the exact tokens the bars paint. */}
+        <ul className="flex items-center gap-3" aria-label={`Legend: colored by ${colorBy}`}>
+          {legendFor(colorBy).map((e) => (
+            <li key={e.token} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: `hsl(var(${e.token}))` }}
+                aria-hidden="true"
+              />
+              {e.label}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <Popover>

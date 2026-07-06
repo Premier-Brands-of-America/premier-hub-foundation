@@ -34,8 +34,12 @@ function todayBounds(): { start: Date; end: Date } {
   return { start, end };
 }
 
-/** A couple of demo meetings for the preview dashboard — all TODAY. */
-function demoTodayEvents(start: Date): CalendarEvent[] {
+/**
+ * A couple of demo meetings for the preview dashboard — all TODAY.
+ * Exported so the Day Rail (Home) can fuse the same meetings onto its spine
+ * without a second source of truth for the day's schedule.
+ */
+export function demoTodayEvents(start: Date): CalendarEvent[] {
   const at = (hour: number, min = 0) => {
     const d = new Date(start);
     d.setHours(hour, min, 0, 0);

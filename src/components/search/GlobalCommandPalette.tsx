@@ -14,16 +14,38 @@ import { MatchHighlight } from "@/components/search/MatchHighlight";
 import { useSearch, useSearchPeople } from "@/hooks/use-search";
 import { useRecentItems } from "@/hooks/use-recent-items";
 import type { SearchEntityType, SearchHit } from "@/types/search";
-import { Calendar, FilePlus2, FolderPlus, LayoutDashboard, PlusSquare, User } from "lucide-react";
+import {
+  Calendar, CheckSquare, FilePlus2, FileType2, FolderKanban, Home, Inbox,
+  KanbanSquare, ListChecks, Network, PlusSquare, ScrollText, Settings, User, BarChart3, Wrench,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Jump-to destinations — every real nav target, so the palette navigates the
+// whole 8-item IA (not the 6 hardcoded actions the old build shipped).
+const NAV_TARGETS: { label: string; to: string; icon: LucideIcon }[] = [
+  { label: "Home", to: "/", icon: Home },
+  { label: "My Tasks", to: "/tasks", icon: CheckSquare },
+  { label: "Planner", to: "/planner", icon: KanbanSquare },
+  { label: "Calendar", to: "/timeline", icon: Calendar },
+  { label: "Projects", to: "/projects", icon: FolderKanban },
+  { label: "Pages", to: "/pages", icon: FileType2 },
+  { label: "Art Requests", to: "/requests", icon: ListChecks },
+  { label: "Queue", to: "/queue", icon: Inbox },
+  { label: "Reports", to: "/reports", icon: BarChart3 },
+  { label: "Explore", to: "/graph", icon: Network },
+  { label: "Admin Tools", to: "/admin", icon: Wrench },
+  { label: "Audit Log", to: "/audit", icon: ScrollText },
+  { label: "Settings", to: "/admin/settings", icon: Settings },
+];
+
 function routeFor(type: SearchEntityType | "user", id: string): string {
   switch (type) {
-    case "project": return `/owned-projects?focus=${id}`;
+    case "project": return `/projects/${id}`;
     case "task":    return `/tasks?focus=${id}`;
     case "request": return `/requests/${id}`;
     case "page":    return `/pages/${id}`;
@@ -73,7 +95,7 @@ export function GlobalCommandPalette({ open, onOpenChange }: Props) {
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder="Search projects, tasks, requests, pages, people…"
+        placeholder="Search or jump to…"
         value={query}
         onValueChange={setQuery}
       />
@@ -83,25 +105,33 @@ export function GlobalCommandPalette({ open, onOpenChange }: Props) {
         </CommandEmpty>
 
         <CommandGroup heading="Quick actions">
-          <CommandItem onSelect={() => go("/tasks")}>
-            <PlusSquare className="mr-2 h-4 w-4" />Create task
+          <CommandItem value="action new task" onSelect={() => go("/tasks")}>
+            <PlusSquare className="mr-2 h-4 w-4" />New task
           </CommandItem>
-          <CommandItem onSelect={() => go("/owned-projects")}>
-            <FolderPlus className="mr-2 h-4 w-4" />New project
+          <CommandItem value="action new project" onSelect={() => go("/projects")}>
+            <FolderKanban className="mr-2 h-4 w-4" />New project
           </CommandItem>
-          <CommandItem onSelect={() => go("/requests/new")}>
-            <FilePlus2 className="mr-2 h-4 w-4" />New request
+          <CommandItem value="action new art request" onSelect={() => go("/requests/new")}>
+            <FilePlus2 className="mr-2 h-4 w-4" />New art request
           </CommandItem>
-          <CommandItem onSelect={() => go("/pages")}>
-            <PlusSquare className="mr-2 h-4 w-4" />New page
-          </CommandItem>
-          <CommandItem onSelect={() => go("/")}>
-            <LayoutDashboard className="mr-2 h-4 w-4" />Go to dashboard
-          </CommandItem>
-          <CommandItem onSelect={() => go("/timeline")}>
-            <Calendar className="mr-2 h-4 w-4" />Open timeline
+          <CommandItem value="action new page" onSelect={() => go("/pages")}>
+            <FileType2 className="mr-2 h-4 w-4" />New page
           </CommandItem>
         </CommandGroup>
+
+        {!showResults && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Go to">
+              {NAV_TARGETS.map((n) => (
+                <CommandItem key={n.to} value={`go ${n.label}`} onSelect={() => go(n.to)}>
+                  <n.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                  {n.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
 
         {!showResults && recent.length > 0 && (
           <>

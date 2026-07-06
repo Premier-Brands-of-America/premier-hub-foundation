@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { ChevronRight, ChevronDown, Plus, FileText, Archive, Edit } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronRight, ChevronDown, Plus, FileText, Archive, Edit, MoreHorizontal, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ContextMenu,
@@ -8,6 +9,13 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { usePageTree, useCreatePage } from "@/hooks/use-pages";
 import { useArchivePage } from "@/hooks/use-page";
@@ -36,9 +44,18 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   const createMut = useCreatePage();
   const archiveMut = useArchivePage();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState("");
   const [createParent, setCreateParent] = useState<{ open: boolean; parentId: string | null }>({ open: false, parentId: null });
   const [renameState, setRenameState] = useState<{ open: boolean; id: string; title: string } | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
+
+  const q = query.trim().toLowerCase();
+  // When searching, flatten to a title match across the whole tree (nesting is
+  // meaningless once filtered). Otherwise render the real hierarchy.
+  const matches = useMemo(
+    () => (q ? nodes.filter((n) => (n.title || "Untitled").toLowerCase().includes(q)) : []),
+    [nodes, q],
+  );
 
   const byParent = new Map<string | null, PageTreeNode[]>();
   for (const n of nodes) {
@@ -52,10 +69,11 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
   const handleRename = (id: string, currentTitle: string) =>
     setRenameState({ open: true, id, title: currentTitle });
 
-  const renderNode = (node: PageTreeNode) => {
+  // `flat` (search mode) renders a single matching row with no chevron/subtree.
+  const renderNode = (node: PageTreeNode, flat = false) => {
     const kids = byParent.get(node.id) ?? [];
     const isOpen = expanded[node.id] ?? true;
-    const hasKids = kids.length > 0;
+    const hasKids = !flat && kids.length > 0;
     return (
       <li key={node.id} role="treeitem" aria-expanded={hasKids ? isOpen : undefined}>
         <ContextMenu>
@@ -74,6 +92,7 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
                 className="shrink-0 p-0.5 text-muted-foreground"
                 onClick={() => setExpanded((e) => ({ ...e, [node.id]: !isOpen }))}
                 aria-label={isOpen ? "Collapse" : "Expand"}
+                disabled={flat}
               >
                 {hasKids ? (
                   isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
@@ -91,14 +110,31 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
                 </span>
                 <span className="truncate">{node.title || "Untitled"}</span>
               </button>
-              <button
-                type="button"
-                className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity duration-fast hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-                onClick={(e) => { e.stopPropagation(); handleCreate(node.id); }}
-                aria-label="Add child page"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
+              {/* Hover "…" overflow — only actions with a real service are offered. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity duration-fast hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Actions for ${node.title || "Untitled"}`}
+                  >
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onClick={() => handleRename(node.id, node.title)}>
+                    <Edit className="mr-2 h-3.5 w-3.5" /> Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleCreate(node.id)}>
+                    <Plus className="mr-2 h-3.5 w-3.5" /> New subpage
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setArchiveId(node.id)} className="text-destructive focus:text-destructive">
+                    <Archive className="mr-2 h-3.5 w-3.5" /> Archive
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent>
@@ -115,7 +151,7 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
         </ContextMenu>
         {hasKids && isOpen && (
           <ul role="group" className="ml-4 border-l border-border/50 pl-1">
-            {kids.map(renderNode)}
+            {kids.map((k) => renderNode(k))}
           </ul>
         )}
       </li>
@@ -124,31 +160,50 @@ export function PageTree({ rootId, activeId, onSelect }: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-12 items-center justify-between border-b border-border px-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          All pages
-        </h2>
+      <div className="flex flex-col gap-2 border-b border-border p-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search pages…"
+            aria-label="Search pages"
+            className="h-8 pl-8 text-xs"
+          />
+        </div>
+        {/* The one primary action on this pane — crimson. */}
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          size="sm"
+          className="h-8 w-full gap-1.5 text-xs"
           onClick={() => handleCreate(null)}
-          aria-label="New page"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5" /> New page
         </Button>
+      </div>
+      <div className="flex items-baseline justify-between px-3 pt-2.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {q ? "Results" : "All pages"}
+        </h2>
+        <span className="text-[11px] tabular-nums text-muted-foreground">
+          {q ? matches.length : nodes.length}
+        </span>
       </div>
       <ScrollArea className="flex-1">
         <ul role="tree" className="space-y-0.5 p-2">
           {isLoading && <li className="px-2 py-1 text-xs text-muted-foreground">Loading pages…</li>}
-          {!isLoading && roots.length === 0 && (
+          {!isLoading && !q && roots.length === 0 && (
             <li className="px-2 py-6 text-center text-xs text-muted-foreground">
               No pages yet.
               <br />
-              Use <span className="font-medium text-foreground">+</span> to create your first one.
+              Use <span className="font-medium text-foreground">New page</span> to create your first one.
             </li>
           )}
-          {roots.map(renderNode)}
+          {!isLoading && q && matches.length === 0 && (
+            <li className="px-2 py-6 text-center text-xs text-muted-foreground">
+              No pages match “{query.trim()}”.
+            </li>
+          )}
+          {q ? matches.map((n) => renderNode(n, true)) : roots.map((n) => renderNode(n))}
         </ul>
       </ScrollArea>
       <PromptDialog

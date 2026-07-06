@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
+import { Pencil, Eye } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MentionPicker } from "@/components/pages/MentionPicker";
 import { SlashMenu } from "@/components/pages/SlashMenu";
 import { MentionLink } from "@/components/pages/MentionLink";
@@ -11,6 +13,8 @@ import { MENTION_TOKEN_RE, mentionToken, parseMentionRefs } from "@/lib/entity-l
 import { slashInsertion, type SlashCommand } from "@/lib/slash-commands";
 import type { RelationRef, EntityType } from "@/types/relations";
 import { cn } from "@/lib/utils";
+
+type EditorMode = "write" | "preview";
 
 interface Props {
   pageId: string;
@@ -30,6 +34,9 @@ const AUTOSAVE_MS = 800;
 
 export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props) {
   const [value, setValue] = useState(initialContent);
+  // Preview-first: the rendered page is the primary surface; markdown is an
+  // escape hatch reached via the Write toggle, not the default writing pane.
+  const [mode, setMode] = useState<EditorMode>("preview");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [menuQuery, setMenuQuery] = useState("");
@@ -48,6 +55,7 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
     lastSavedRef.current = initialContent;
     setSavedAt(null);
     setMenu(null);
+    setMode("preview");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
@@ -155,7 +163,9 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
+      {/* Doc bar: save state on the left, Write/Preview toggle on the right.
+          Single writing surface — no more SOURCE / PREVIEW split. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
         <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           {readOnly ? (
             "Read-only"
@@ -172,35 +182,61 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
             </>
           )}
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <kbd className="kbd">/</kbd> blocks
-          <span className="text-border">·</span>
-          <kbd className="kbd">[[</kbd> or <kbd className="kbd">@</kbd> to link
-        </span>
-      </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="flex min-h-0 flex-col">
-          <span className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Source
-          </span>
-          <Textarea
-            ref={textareaRef}
-            value={value}
-            onChange={handleChange}
-            onBlur={flush}
-            readOnly={readOnly}
-            placeholder="Start writing… / for blocks, [[ to link pages, tasks, and projects, /meet for meeting notes."
-            className={cn("h-full min-h-[400px] flex-1 resize-none font-mono text-sm leading-relaxed")}
-            aria-label="Page body"
-          />
+        <div className="flex items-center gap-3">
+          {mode === "write" && (
+            <span className="hidden items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
+              <kbd className="kbd">/</kbd> blocks
+              <span className="text-border">·</span>
+              <kbd className="kbd">[[</kbd> or <kbd className="kbd">@</kbd> to link
+            </span>
+          )}
+          {!readOnly && (
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={(v) => { if (v) setMode(v as EditorMode); }}
+              variant="outline"
+              size="sm"
+              aria-label="Editor mode"
+              className="gap-0 rounded-md border border-border p-0.5"
+            >
+              <ToggleGroupItem
+                value="write"
+                aria-label="Write"
+                className="h-7 gap-1.5 rounded-[5px] border-0 px-2.5 text-xs data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Write
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="preview"
+                aria-label="Preview"
+                className="h-7 gap-1.5 rounded-[5px] border-0 px-2.5 text-xs data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+              >
+                <Eye className="h-3.5 w-3.5" /> Preview
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
-        <div className="flex min-h-0 flex-col">
-          <span className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Preview
-          </span>
-          <div className="prose prose-sm dark:prose-invert h-full min-h-[400px] max-w-none flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-4">
-            {renderBody(value, titleMap)}
-          </div>
+      </div>
+
+      {/* Comfortable centered reading/writing column (~760px). */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className="mx-auto min-h-0 w-full max-w-[760px]">
+          {readOnly || mode === "preview" ? (
+            <div className="prose prose-sm dark:prose-invert min-h-[400px] max-w-none text-[15px] leading-relaxed">
+              {renderBody(value, titleMap)}
+            </div>
+          ) : (
+            <Textarea
+              ref={textareaRef}
+              value={value}
+              onChange={handleChange}
+              onBlur={flush}
+              placeholder="Start writing… / for blocks, [[ to link pages, tasks, and projects, /meet for meeting notes."
+              className="min-h-[60vh] w-full resize-none border-0 bg-transparent px-0 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0"
+              aria-label="Page body"
+            />
+          )}
         </div>
       </div>
 
@@ -226,7 +262,7 @@ export function PageEditor({ pageId, initialContent, onChange, readOnly }: Props
 
 /** Split out the `view`/`meet` fenced blocks and render the rest as markdown. */
 function renderBody(md: string, titleMap: Record<string, string>): React.ReactNode {
-  if (!md.trim()) return <p className="text-muted-foreground">Your formatted page appears here as you write.</p>;
+  if (!md.trim()) return <p className="text-muted-foreground">Nothing here yet. Switch to Write to start this page.</p>;
   const re = /```(view|meet)\n([\s\S]*?)```\n?/g;
   const parts: React.ReactNode[] = [];
   let last = 0;

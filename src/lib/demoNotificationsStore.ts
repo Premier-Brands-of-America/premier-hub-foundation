@@ -34,8 +34,58 @@ function save(list: AppNotification[]): void {
   }
 }
 
-/** Notifications for a recipient, newest-first. */
+// One-time realistic seed per viewer so the bell demonstrates its value in
+// preview (an empty feed read as "the notifications feature is dead"). Seeds
+// the kinds of events the hub actually generates: assignment, status change,
+// @mention, comment, and a due-soon nudge. Prod is untouched.
+const SEEDED_KEY = "phv2:demo-notifications-seeded";
+
+function minsAgo(m: number): string {
+  return new Date(Date.now() - m * 60_000).toISOString();
+}
+
+function seedFor(userId: string): AppNotification[] {
+  const mk = (
+    n: number,
+    type: string,
+    title: string,
+    message: string,
+    link: string | null,
+    mins: number,
+    is_read = false,
+  ): AppNotification => ({
+    id: `demo-notif-seed-${userId}-${n}`,
+    user_id: userId,
+    type,
+    title,
+    message,
+    link,
+    is_read,
+    created_at: minsAgo(mins),
+  });
+  return [
+    mk(1, "warning", "CVS Caring Mill label proof is overdue", "ART-1003 was due yesterday — Megan is assigned.", "/requests/demo-seed-cvs", 8),
+    mk(2, "info", "You were assigned Target holiday cap art", "Jaclyn routed ART-1005 to you · due tomorrow.", "/requests/demo-seed-target", 42),
+    mk(3, "info", "Dan mentioned you on Trojan promo banner set", '"@Alex can you confirm the dieline before proofing?"', "/requests/demo-seed-trojan", 95),
+    mk(4, "success", "Whole Foods signage moved to Proofing", "Megan advanced ART-1010 — 2 proofs waiting on you.", "/queue", 180, true),
+    mk(5, "warning", "3 art requests are due this week", "Kroger, Publix, and Sephora deliverables land before Friday.", "/reports", 320, true),
+  ];
+}
+
+/** Notifications for a recipient, newest-first (seeds a demo feed once). */
 export function demoListNotifications(userId: string): AppNotification[] {
+  if (userId) {
+    try {
+      const seeded = JSON.parse(localStorage.getItem(SEEDED_KEY) || "{}") as Record<string, boolean>;
+      if (!seeded[userId]) {
+        save([...seedFor(userId), ...load()]);
+        seeded[userId] = true;
+        localStorage.setItem(SEEDED_KEY, JSON.stringify(seeded));
+      }
+    } catch {
+      /* noop — seeding is best-effort */
+    }
+  }
   return load()
     .filter((n) => n.user_id === userId)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));

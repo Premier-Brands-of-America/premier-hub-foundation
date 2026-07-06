@@ -27,7 +27,7 @@ export function OpenInMemoryGraphButton({
       className={cn("gap-1.5 text-xs", className)}
       onClick={() => navigate(`/memory?mode=memory&ct=${type}&ci=${encodeURIComponent(id)}&depth=2`)}
     >
-      <Brain className="h-3.5 w-3.5" /> Open in Memory Graph
+      <Brain className="h-3.5 w-3.5" /> View in Graph
     </Button>
   );
 }

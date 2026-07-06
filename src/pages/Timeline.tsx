@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { addDays, endOfMonth, startOfMonth } from "date-fns";
 import { TimelineToolbar } from "@/components/timeline/TimelineToolbar";
 import { CalendarView } from "@/components/timeline/CalendarView";
+import { WeekView } from "@/components/timeline/WeekView";
 import { GanttView } from "@/components/timeline/GanttView";
 import { EntityDetailSheet } from "@/components/timeline/EntityDetailSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/PageHeader";
+import { dueUrgency } from "@/lib/dueDate";
 import { useTimeline } from "@/hooks/use-timeline";
 import { useRescheduleEvent } from "@/hooks/use-reschedule-event";
 import { useRealtimeInvalidation } from "@/hooks/use-realtime";
@@ -17,7 +19,8 @@ import type {
 export default function TimelinePage() {
   const { user } = useAuth();
   const today = new Date();
-  const [view, setView] = useState<TimelineView>("month");
+  // Week is the default surface (Month | Week | Gantt).
+  const [view, setView] = useState<TimelineView>("week");
   const [filters, setFilters] = useState<TimelineFilters>({
     types: ["task", "project", "request"],
   });
@@ -40,6 +43,22 @@ export default function TimelinePage() {
 
   const events = useMemo(() => data ?? [], [data]);
 
+  // Live header subtitle from the data currently in range.
+  const subtitle = useMemo(() => {
+    if (isLoading) return "Loading…";
+    const scheduled = events.filter((e) => e.start_date && e.end_date);
+    const overdue = scheduled.filter(
+      (e) => dueUrgency(e.end_date ?? e.start_date, today) === "overdue",
+    ).length;
+    const total = scheduled.length;
+    const totalLabel = `${total} scheduled ${total === 1 ? "item" : "items"}`;
+    return overdue > 0
+      ? `${totalLabel} · ${overdue} overdue`
+      : totalLabel;
+    // `today` is a fresh Date each render; intentionally excluded to avoid churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, isLoading]);
+
   const handleEventClick = (e: TimelineEvent) => {
     setSelected({ type: e.entity_type, id: e.id });
   };
@@ -53,8 +72,8 @@ export default function TimelinePage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <PageHeader
-        title="Timeline"
-        subtitle="Tasks, projects, and requests on one canvas"
+        title="Calendar"
+        subtitle={subtitle}
       />
 
       <TimelineToolbar
@@ -88,6 +107,14 @@ export default function TimelinePage() {
             /* Open on the CURRENT month — range.from is padded a week back and
                lands in the previous month for the first 7 days of any month. */
             initialMonth={today}
+          />
+        ) : view === "week" ? (
+          <WeekView
+            events={events}
+            colorBy={colorBy}
+            onEventClick={handleEventClick}
+            /* Open on the current week regardless of the padded fetch range. */
+            initialDate={today}
           />
         ) : (
           <GanttView

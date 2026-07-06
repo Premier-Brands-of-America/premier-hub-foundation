@@ -13,18 +13,19 @@ import { PageHeader } from "@/components/PageHeader";
 import type { Task } from "@/types/tasks";
 import * as taskService from "@/services/taskService";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
-import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
+import { WorkItemRow, KpiStrip, SectionHeader, taskProofState } from "@/components/pressroom";
+import { daysUntil } from "@/lib/dueDate";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
-type SortOption = "newest" | "oldest" | "due_date" | "title";
+type SortOption = "smart" | "due_date" | "newest" | "title";
 type FilterOption = "all" | "active" | "complete";
 
 const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
+  { value: "smart", label: "Smart" },
   { value: "due_date", label: "Due date" },
+  { value: "newest", label: "Recently created" },
   { value: "title", label: "Title" },
 ];
 
@@ -33,6 +34,28 @@ const FILTER_TABS: { value: FilterOption; label: string }[] = [
   { value: "active", label: "Active" },
   { value: "complete", label: "Done" },
 ];
+
+/** Bucket a task by due date for the grouped "smart" view. */
+type Bucket = "overdue" | "today" | "week" | "later" | "nodate" | "done";
+const BUCKET_LABEL: Record<Bucket, string> = {
+  overdue: "Overdue",
+  today: "Today",
+  week: "This week",
+  later: "Later",
+  nodate: "No due date",
+  done: "Done",
+};
+const BUCKET_ORDER: Bucket[] = ["overdue", "today", "week", "later", "nodate", "done"];
+
+function bucketOf(t: Task): Bucket {
+  if (t.status === "complete") return "done";
+  if (!t.due_date) return "nodate";
+  const d = daysUntil(t.due_date);
+  if (d < 0) return "overdue";
+  if (d === 0) return "today";
+  if (d <= 7) return "week";
+  return "later";
+}
 
 const TasksPage = () => {
   const { user, profile } = useAuth();
@@ -45,7 +68,7 @@ const TasksPage = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortOption>("newest");
+  const [sort, setSort] = useState<SortOption>("smart");
   const [filter, setFilter] = useState<FilterOption>("all");
 
   const invalidateTasks = () => queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -73,55 +96,100 @@ const TasksPage = () => {
 
   const selectedTask = useMemo(() => tasks.find((t) => t.id === selectedTaskId) ?? null, [tasks, selectedTaskId]);
 
-  const filteredAndSorted = useMemo(() => {
+  const filtered = useMemo(() => {
     let result = [...tasks];
     if (filter === "active") result = result.filter((t) => t.status === "active");
     if (filter === "complete") result = result.filter((t) => t.status === "complete");
-
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((t) =>
-        t.title.toLowerCase().includes(q) ||
-        (t.description && t.description.toLowerCase().includes(q))
+      result = result.filter(
+        (t) => t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q)),
       );
     }
-
-    switch (sort) {
-      case "newest": result.sort((a, b) => b.created_at.localeCompare(a.created_at)); break;
-      case "oldest": result.sort((a, b) => a.created_at.localeCompare(b.created_at)); break;
-      case "due_date":
-        result.sort((a, b) => {
-          if (!a.due_date && !b.due_date) return 0;
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return a.due_date.localeCompare(b.due_date);
-        });
-        break;
-      case "title": result.sort((a, b) => a.title.localeCompare(b.title)); break;
-    }
-
     return result;
-  }, [tasks, filter, search, sort]);
+  }, [tasks, filter, search]);
 
-  const counts = useMemo(() => ({
-    all: tasks.length,
-    active: tasks.filter((t) => t.status === "active").length,
-    complete: tasks.filter((t) => t.status === "complete").length,
-  }), [tasks]);
+  const flatSorted = useMemo(() => {
+    const r = [...filtered];
+    const byDue = (a: Task, b: Task) => {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return a.due_date.localeCompare(b.due_date);
+    };
+    switch (sort) {
+      case "due_date": r.sort(byDue); break;
+      case "newest": r.sort((a, b) => b.created_at.localeCompare(a.created_at)); break;
+      case "title": r.sort((a, b) => a.title.localeCompare(b.title)); break;
+      default: break;
+    }
+    return r;
+  }, [filtered, sort]);
 
-  const handleSelect = (id: string) => {
-    setSelectedTaskId(id === selectedTaskId ? null : id);
-  };
+  // Smart view groups by due bucket; other sorts render a flat list.
+  const groups = useMemo(() => {
+    if (sort !== "smart") return null;
+    const m = new Map<Bucket, Task[]>();
+    for (const t of filtered) {
+      const b = bucketOf(t);
+      (m.get(b) ?? m.set(b, []).get(b)!).push(t);
+    }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+    }
+    return BUCKET_ORDER.filter((b) => (m.get(b)?.length ?? 0) > 0).map((b) => ({ bucket: b, items: m.get(b)! }));
+  }, [filtered, sort]);
 
+  const counts = useMemo(() => {
+    const active = tasks.filter((t) => t.status === "active");
+    return {
+      all: tasks.length,
+      active: active.length,
+      complete: tasks.filter((t) => t.status === "complete").length,
+      overdue: active.filter((t) => t.due_date && daysUntil(t.due_date) < 0).length,
+      today: active.filter((t) => t.due_date && daysUntil(t.due_date) === 0).length,
+    };
+  }, [tasks]);
+
+  const tabCount = (v: FilterOption) => (v === "all" ? counts.all : v === "active" ? counts.active : counts.complete);
   const remaining = total - tasks.length;
-  const tabCount = (v: FilterOption) =>
-    v === "all" ? counts.all : v === "active" ? counts.active : counts.complete;
+
+  const renderRow = (task: Task) => (
+    <WorkItemRow
+      key={task.id}
+      title={task.title}
+      state={taskProofState(task.status, task.percent_complete)}
+      dueDate={task.due_date}
+      done={task.status === "complete"}
+      onClick={() => setSelectedTaskId(task.id === selectedTaskId ? null : task.id)}
+      className={cn(task.id === selectedTaskId && "border-border bg-accent/50")}
+      leading={
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleToggleComplete(task); }}
+          aria-label={task.status === "complete" ? "Reopen task" : "Mark complete"}
+          className={cn(
+            "flex h-4 w-4 items-center justify-center rounded-full border transition-colors",
+            task.status === "complete"
+              ? "border-[hsl(var(--status-done))] bg-[hsl(var(--status-done))] text-white"
+              : "border-muted-foreground/50 hover:border-foreground",
+          )}
+        >
+          {task.status === "complete" && (
+            <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M2.5 6.5l2.5 2.5 4.5-5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      }
+    />
+  );
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       <PageHeader
         title="My Tasks"
-        subtitle={total > 0 ? `${counts.active} active · ${counts.complete} complete` : "Track and complete your work"}
+        subtitle={total > 0 ? `${counts.active} active · ${counts.complete} done` : "Track and complete your work"}
         actions={
           <Button onClick={() => setShowCreate(true)} size="sm" className="gap-2">
             <Plus className="h-3.5 w-3.5" /> New task
@@ -130,31 +198,19 @@ const TasksPage = () => {
       />
 
       <div className={cn("flex flex-col", selectedTask ? "hidden md:flex md:w-1/2 xl:w-3/5" : "w-full", "transition-all")}>
-        {/* Toolbar: stat band + filters */}
-        <div className="border-b border-border bg-card px-4 py-4 sm:px-6">
-          {/* The one bold element — a crimson edge-rail stat band. */}
-          <section className="edge-rail flex items-center gap-6">
-            <div>
-              <p className="stat-numeral text-2xl leading-none text-foreground">{counts.all}</p>
-              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Total</p>
-            </div>
-            <div>
-              <p className="stat-numeral text-2xl leading-none text-foreground">{counts.active}</p>
-              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Active</p>
-            </div>
-            <div>
-              <p className="stat-numeral text-2xl leading-none text-[hsl(var(--status-done))]">{counts.complete}</p>
-              <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Complete</p>
-            </div>
-          </section>
-
-          {/* Filter tabs + search + sort */}
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div
-              role="tablist"
-              aria-label="Filter tasks by status"
-              className="inline-flex items-center gap-0.5 rounded-md bg-muted/50 p-0.5"
-            >
+        {/* Toolbar: inline KPI strip + filters + search + sort */}
+        <div className="border-b border-border px-4 py-3 sm:px-6">
+          <KpiStrip
+            className="mb-3"
+            items={[
+              { value: counts.active, label: "active", onClick: () => setFilter("active"), active: filter === "active" },
+              { value: counts.overdue, label: "overdue", token: counts.overdue ? "--status-danger" : undefined },
+              { value: counts.today, label: "due today", token: counts.today ? "--status-warning" : undefined },
+              { value: counts.complete, label: "done", onClick: () => setFilter("complete"), active: filter === "complete" },
+            ]}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div role="tablist" aria-label="Filter tasks by status" className="inline-flex items-center gap-0.5 rounded-md bg-muted/50 p-0.5">
               {FILTER_TABS.map((tab) => {
                 const active = filter === tab.value;
                 return (
@@ -165,12 +221,8 @@ const TasksPage = () => {
                     type="button"
                     onClick={() => setFilter(tab.value)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-[5px] px-2.5 py-1 text-xs font-medium",
-                      "transition-colors duration-fast ease-standard outline-none",
-                      "focus-visible:ring-2 focus-visible:ring-ring/35",
-                      active
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
+                      "inline-flex items-center gap-1.5 rounded-[5px] px-2.5 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
+                      active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {tab.label}
@@ -179,7 +231,6 @@ const TasksPage = () => {
                 );
               })}
             </div>
-
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:w-56 sm:flex-none">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -192,7 +243,8 @@ const TasksPage = () => {
                 />
               </div>
               <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-                <SelectTrigger className="h-8 w-[120px] text-xs" aria-label="Sort tasks">
+                <SelectTrigger className="h-8 w-[150px] text-xs" aria-label="Sort tasks">
+                  <span className="text-muted-foreground">Sort:&nbsp;</span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -209,16 +261,14 @@ const TasksPage = () => {
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {loading ? (
             <TaskListSkeleton />
-          ) : filteredAndSorted.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <EmptyState
               icon={<ClipboardList className="h-6 w-6" />}
-              title={search ? "No matching tasks" : filter !== "all" ? `No ${filter} tasks` : "No tasks yet"}
+              title={search ? "No matching tasks" : filter !== "all" ? `No ${filter === "complete" ? "done" : filter} tasks` : "Inbox zero"}
               description={
-                search
-                  ? "Try a different search term."
-                  : filter !== "all"
-                    ? "Switch filters or create a new task."
-                    : "Create your first task to get started."
+                search ? "Try a different search term."
+                  : filter !== "all" ? "Switch filters or create a new task."
+                  : "Nothing on your plate. Create a task to get started."
               }
               action={
                 !search && filter === "all" ? (
@@ -228,31 +278,34 @@ const TasksPage = () => {
                 ) : undefined
               }
             />
-          ) : (
-            <div className="space-y-2">
-              {filteredAndSorted.map((task) => (
-                <TaskListItem
-                  key={task.id}
-                  task={task}
-                  selected={task.id === selectedTaskId}
-                  onSelect={() => handleSelect(task.id)}
-                  onToggleComplete={() => handleToggleComplete(task)}
-                />
+          ) : groups ? (
+            <div className="space-y-5">
+              {groups.map(({ bucket, items }) => (
+                <section key={bucket} className="space-y-1">
+                  <SectionHeader
+                    label={BUCKET_LABEL[bucket]}
+                    count={items.length}
+                    tone={bucket === "overdue" ? "--status-danger" : bucket === "today" ? "--status-warning" : undefined}
+                    className="mb-1"
+                  />
+                  <div className="space-y-0.5">{items.map(renderRow)}</div>
+                </section>
               ))}
               {hasNextPage && (
                 <div className="flex justify-center py-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                    className="gap-2"
-                  >
-                    {isFetchingNextPage ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</>
-                    ) : (
-                      `Load more (${remaining} remaining)`
-                    )}
+                  <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="gap-2">
+                    {isFetchingNextPage ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</> : `Load more (${remaining} remaining)`}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {flatSorted.map(renderRow)}
+              {hasNextPage && (
+                <div className="flex justify-center py-4">
+                  <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="gap-2">
+                    {isFetchingNextPage ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</> : `Load more (${remaining} remaining)`}
                   </Button>
                 </div>
               )}
@@ -262,12 +315,8 @@ const TasksPage = () => {
       </div>
 
       {selectedTask && (
-        <div className="w-full md:w-1/2 xl:w-2/5 border-l border-border">
-          <TaskDetailPanel
-            task={selectedTask}
-            onClose={() => setSelectedTaskId(null)}
-            onTaskUpdated={invalidateTasks}
-          />
+        <div className="w-full border-l border-border md:w-1/2 xl:w-2/5">
+          <TaskDetailPanel task={selectedTask} onClose={() => setSelectedTaskId(null)} onTaskUpdated={invalidateTasks} />
         </div>
       )}
 

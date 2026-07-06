@@ -89,18 +89,31 @@ export function CalendarView({ events, colorBy, onEventClick, initialMonth }: Pr
                 {format(day, "d")}
               </div>
               <div className="flex flex-col gap-0.5 overflow-hidden">
-                {visible.map((e) => (
-                  <button
-                    key={`${e.entity_type}-${e.id}`}
-                    type="button"
-                    onClick={() => onEventClick(e)}
-                    aria-label={`${e.entity_type}: ${e.title}`}
-                    className="text-[10px] truncate rounded px-1.5 py-0.5 text-white text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    style={{ backgroundColor: `hsl(var(${getEventColorVar(e, colorBy)}))` }}
-                  >
-                    {e.title}
-                  </button>
-                ))}
+                {visible.map((e) => {
+                  const token = getEventColorVar(e, colorBy);
+                  return (
+                    <button
+                      key={`${e.entity_type}-${e.id}`}
+                      type="button"
+                      onClick={() => onEventClick(e)}
+                      aria-label={`${e.entity_type}: ${e.title}`}
+                      title={e.title}
+                      className="flex items-center gap-1.5 truncate rounded border px-1.5 py-0.5 text-left text-[10px] font-medium transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      style={{
+                        backgroundColor: `hsl(var(${token}) / 0.16)`,
+                        borderColor: `hsl(var(${token}) / 0.4)`,
+                        color: `hsl(var(${token}))`,
+                      }}
+                    >
+                      <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: `hsl(var(${token}))` }}
+                        aria-hidden
+                      />
+                      <span className="truncate">{e.title}</span>
+                    </button>
+                  );
+                })}
                 {overflow > 0 && (
                   <EventListPopover
                     events={dayEvents}

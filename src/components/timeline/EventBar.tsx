@@ -27,17 +27,24 @@ export function EventBar({
             onClick={onClick}
             onPointerDown={onPointerDown}
             className={cn(
-              "h-6 rounded-md text-xs text-white px-2 truncate text-left",
-              "shadow-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "flex h-6 items-center gap-1.5 rounded-md border px-2 text-xs font-medium truncate text-left",
+              "transition-[filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
               className,
             )}
             style={{
-              backgroundColor: `hsl(var(${colorVar}))`,
+              backgroundColor: `hsl(var(${colorVar}) / 0.16)`,
+              borderColor: `hsl(var(${colorVar}) / 0.42)`,
+              color: `hsl(var(${colorVar}))`,
               ...style,
             }}
           >
-            {event.title}
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: `hsl(var(${colorVar}))` }}
+              aria-hidden
+            />
+            <span className="truncate">{event.title}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent>

@@ -17,7 +17,8 @@ export interface DateRange {
 }
 
 export type ColorBy = "status" | "priority" | "type";
-export type TimelineView = "month" | "timeline";
+// Week is the default surface; "gantt" is the compact strip (was "timeline").
+export type TimelineView = "month" | "week" | "gantt";
 
 export interface TimelineFilters {
   types: TimelineEntityType[];
