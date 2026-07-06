@@ -75,10 +75,13 @@ export function cleanOrgPayload(payload: GraphPayload): GraphPayload {
       connected.add(e.target);
     }
   }
+  // Safeguard: if the directory carries no reporting edges at all, don't blank
+  // the canvas — keep every person (still drop dept bubbles + stamp department).
+  const filterByConnectivity = connected.size > 0;
 
   const keptNodes = nodes
     .filter((n) => !isDept(n))
-    .filter((n) => connected.has(n.id))
+    .filter((n) => !filterByConnectivity || connected.has(n.id))
     .map((n) => {
       const dept = personDept.get(n.id) ?? (n.metadata?.department as string | undefined);
       return dept ? { ...n, metadata: { ...n.metadata, department: dept } } : n;
