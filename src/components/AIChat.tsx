@@ -16,16 +16,54 @@ interface Message {
   content: string;
 }
 
-function getMockResponse(question: string): string {
+// Preview answers read the same demo stores as /tasks and /projects — the
+// assistant must never contradict what those pages show. Read-only: it only
+// summarizes, never mutates. If a store can't be loaded, fall back to a
+// generic pointer instead of breaking the chat.
+async function getMockResponse(question: string): Promise<string> {
   const q = question.toLowerCase();
   if (q.includes("assigned") || q.includes("project")) {
-    return "Based on your current data, here's a summary of your projects:\n\n- You don't have any projects created yet in this preview session.\n\n**Tip:** Create a project from the sidebar navigation, then come back and ask me again!";
+    try {
+      const { fetchProjects } = await import("@/services/projectService");
+      const { items } = await fetchProjects(0);
+      if (items.length === 0) {
+        return "Based on your current data, here's a summary of your projects:\n\n- You don't have any projects created yet.\n\n**Tip:** Create a project from the sidebar navigation, then come back and ask me again!";
+      }
+      const active = items.filter((p) => p.status === "active").length;
+      const lines = items.slice(0, 5).map((p) => `- **${p.title}** — ${p.status}`);
+      return `Based on your current data, here's a summary of your projects:\n\n${lines.join("\n")}\n\nYou have ${items.length} project${items.length === 1 ? "" : "s"} in view — ${active} ${active === 1 ? "is" : "are"} active.`;
+    } catch {
+      return "I couldn't read your projects just now — head to **Projects** to review them directly.";
+    }
   }
   if (q.includes("overdue") || q.includes("task")) {
-    return "Looking at your tasks:\n\n- You don't have any tasks created yet in this preview session.\n\n**Tip:** Head to **My Tasks** to create some, then I can help you track deadlines and progress.";
+    try {
+      const { fetchTasks } = await import("@/services/taskService");
+      const { items } = await fetchTasks(0);
+      const active = items
+        .filter((t) => t.status === "active")
+        .sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+      if (active.length === 0) {
+        return "Looking at your tasks:\n\n- You don't have any active tasks right now.\n\n**Tip:** Head to **My Tasks** to create some, then I can help you track deadlines and progress.";
+      }
+      const today = new Date().toISOString().split("T")[0];
+      const weekOut = new Date(Date.now() + 7 * 86_400_000).toISOString().split("T")[0];
+      const overdue = active.filter((t) => t.due_date && t.due_date < today).length;
+      const dueSoon = active.filter((t) => t.due_date && t.due_date >= today && t.due_date <= weekOut).length;
+      const fmt = (d: string) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const lines = active.slice(0, 5).map((t) => `- **${t.title}**${t.due_date ? ` — due ${fmt(t.due_date)}` : ""}`);
+      const tail = [
+        `You have ${active.length} active task${active.length === 1 ? "" : "s"}`,
+        overdue > 0 ? `${overdue} ${overdue === 1 ? "is" : "are"} overdue` : null,
+        dueSoon > 0 ? `${dueSoon} ${dueSoon === 1 ? "is" : "are"} due this week` : null,
+      ].filter(Boolean).join(" — ");
+      return `Looking at your tasks:\n\n${lines.join("\n")}\n\n${tail}.`;
+    } catch {
+      return "I couldn't read your tasks just now — head to **My Tasks** to review them directly.";
+    }
   }
   if (q.includes("activity") || q.includes("change") || q.includes("recent")) {
-    return "Here's your recent activity summary:\n\n- No recent activity recorded yet in this preview session.\n\nOnce you start creating tasks and projects, I'll be able to summarize changes, updates, and stakeholder activity for you.";
+    return "Here's your recent activity summary:\n\n- No recent activity recorded yet.\n\nOnce you start creating tasks and projects, I'll be able to summarize changes, updates, and stakeholder activity for you.";
   }
   return `I'm the **Premier Project Hub AI Assistant** — a read-only helper that can answer questions about your tasks, projects, stakeholders, and activity.\n\nHere are some things you can ask me:\n- *What projects am I assigned to?*\n- *Which tasks are overdue?*\n- *Summarize recent changes on a project*\n- *Who owns the most active projects?*\n\n> ⚠️ I'm currently in **preview mode** with limited mock data. Connect to production for full access.`;
 }
@@ -55,7 +93,7 @@ export function AIChat({ variant, onClose }: AIChatProps) {
     setIsLoading(true);
 
     if (IS_PREVIEW) {
-      const response = getMockResponse(content);
+      const response = await getMockResponse(content);
       let soFar = "";
       const words = response.split(" ");
       for (let i = 0; i < words.length; i++) {

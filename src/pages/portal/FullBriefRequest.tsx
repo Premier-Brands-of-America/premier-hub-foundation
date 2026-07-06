@@ -91,7 +91,8 @@ export default function FullBriefRequest() {
   const form = useForm<FullBriefValues>({
     resolver: zodResolver(fullBriefSchema),
     defaultValues: { ...defaultFullBriefValues, department_id: "" },
-    mode: "onChange",
+    // onTouched: a pristine form never shows validation errors before interaction.
+    mode: "onTouched",
   });
   const { control, handleSubmit, watch, setValue, getValues, formState, trigger, reset, register } = form;
   const errors = formState.errors;
@@ -117,7 +118,7 @@ export default function FullBriefRequest() {
 
   useEffect(() => {
     if (!getValues("department_id") && orgDeptId) {
-      setValue("department_id", orgDeptId);
+      setValue("department_id", orgDeptId, { shouldValidate: true });
     }
   }, [orgDeptId, setValue, getValues]);
 

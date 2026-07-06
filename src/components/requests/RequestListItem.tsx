@@ -54,7 +54,10 @@ export function RequestListItem({
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <StatusBadge status={request.status} />
           <PriorityBadge priority={request.priority} />
-          {request.due_date && <DueDateBadge due={request.due_date} />}
+          {/* Done work is done — never alarm a completed request as overdue */}
+          {request.due_date && request.status !== "complete" && request.status !== "archived" && (
+            <DueDateBadge due={request.due_date} />
+          )}
           {departmentName && (
             <span className="text-[11px] text-muted-foreground">{departmentName}</span>
           )}

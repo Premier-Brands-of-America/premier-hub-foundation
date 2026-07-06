@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isPreviewEnvironment } from "@/lib/environment";
 import type { AttachmentKind, RequestAttachment } from "@/types/attachment";
 
 export const BUCKET = "art-requests";
@@ -7,6 +8,10 @@ export async function listAttachments(
   requestId: string,
   kind?: AttachmentKind,
 ): Promise<RequestAttachment[]> {
+  // Preview mode is fully self-contained: demo requests have no rows in the
+  // live DB, and querying it with demo ids produces 400s that then render as
+  // a fake "No attachments yet." empty state.
+  if (isPreviewEnvironment()) return [];
   let q = supabase
     .from("request_attachments")
     .select("*, uploader:profiles!request_attachments_uploaded_by_fkey(id, full_name, email)")

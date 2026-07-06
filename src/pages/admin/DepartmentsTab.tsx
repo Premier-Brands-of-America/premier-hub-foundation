@@ -60,7 +60,7 @@ export default function DepartmentsTab() {
       toast.success("Department saved");
       setEdit({ open: false });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Something went wrong. Please try again."),
   });
 
   const setActiveMutation = useMutation({
@@ -74,7 +74,7 @@ export default function DepartmentsTab() {
       toast.success(vars.is_active ? "Department reactivated" : "Department deactivated");
       setDeactivateRow(null);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Something went wrong. Please try again."),
   });
 
   const onAttemptDeactivate = async (row: DepartmentRow) => {

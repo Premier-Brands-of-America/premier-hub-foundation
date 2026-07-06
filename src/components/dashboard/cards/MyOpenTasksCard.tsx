@@ -33,7 +33,18 @@ export function MyOpenTasksCard({ config }: { config: WidgetConfig }) {
     queryKey: ["dashboard-card", "my-open-tasks", userId, limit],
     enabled: !!userId,
     queryFn: async (): Promise<TaskRow[]> => {
-      if (IS_PREVIEW || !userId) return [];
+      if (!userId) return [];
+      if (IS_PREVIEW) {
+        // Preview reads the same demo store as /tasks — the home screen and
+        // the task list must never disagree about the same person's work.
+        const { fetchTasks } = await import("@/services/taskService");
+        const { items } = await fetchTasks(0);
+        return items
+          .filter((t) => t.status === "active")
+          .sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"))
+          .slice(0, limit)
+          .map((t) => ({ id: t.id, title: t.title, due_date: t.due_date ?? null }));
+      }
       const { data, error } = await supabase
         .from("tasks")
         .select("id, title, due_date")

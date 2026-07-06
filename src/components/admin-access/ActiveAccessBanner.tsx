@@ -41,11 +41,11 @@ export function ActiveAccessBanner({ targetType, targetId, onRevoked }: ActiveAc
     setRevoking(true);
     try {
       await revokeAdminAccess(grant.id);
-      toast({ title: "Acceso de soporte revocado" });
+      toast({ title: "Support access revoked" });
       if (targetId) invalidate(targetType, targetId);
       onRevoked?.();
     } catch (err) {
-      showErrorToast(err, "No se pudo revocar el acceso");
+      showErrorToast(err, "Couldn't revoke access");
     } finally {
       setRevoking(false);
     }
@@ -62,7 +62,7 @@ export function ActiveAccessBanner({ targetType, targetId, onRevoked }: ActiveAc
       role="status"
     >
       <ShieldCheck className="h-4 w-4 shrink-0" />
-      <span className="font-medium">Acceso de soporte activo · vence {hhmm(grant.expires_at)}</span>
+      <span className="font-medium">Support access active · expires {hhmm(grant.expires_at)}</span>
       <Button
         variant="ghost"
         size="sm"
@@ -70,7 +70,7 @@ export function ActiveAccessBanner({ targetType, targetId, onRevoked }: ActiveAc
         onClick={revoke}
         disabled={revoking}
       >
-        {revoking ? "Revocando…" : "Revocar"}
+        {revoking ? "Revoking…" : "Revoke"}
       </Button>
     </div>
   );

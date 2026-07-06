@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Trash2, FileText, FileImage, File as FileIcon, FileArchive, FileVideo } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,6 +65,7 @@ interface AttachmentRowProps {
 function AttachmentRow({ att, canDelete, onDeleted }: AttachmentRowProps) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleDownload = async () => {
     try {
@@ -70,7 +81,6 @@ function AttachmentRow({ att, canDelete, onDeleted }: AttachmentRowProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete ${att.file_name}?`)) return;
     setBusy(true);
     try {
       await deleteAttachment(att);
@@ -100,16 +110,37 @@ function AttachmentRow({ att, canDelete, onDeleted }: AttachmentRowProps) {
         <Download className="h-4 w-4" />
       </Button>
       {canDelete && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          disabled={busy}
-          onClick={handleDelete}
-          aria-label={`Delete ${att.file_name}`}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={busy}
+            onClick={() => setConfirmOpen(true)}
+            aria-label={`Delete ${att.file_name}`}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this file?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  "{att.file_name}" will be removed from the request. This can't be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep it</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={handleDelete}
+                >
+                  Delete file
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </li>
   );

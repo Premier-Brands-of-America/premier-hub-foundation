@@ -58,8 +58,17 @@ const TasksPage = () => {
 
   const handleToggleComplete = async (task: Task) => {
     const newStatus = task.status === "active" ? "complete" : "active";
-    await taskService.updateTask(userId, task.id, { status: newStatus }, task);
-    invalidateTasks();
+    try {
+      await taskService.updateTask(userId, task.id, { status: newStatus }, task);
+    } catch (e) {
+      toast({
+        title: newStatus === "complete" ? "Couldn't complete the task" : "Couldn't reopen the task",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      invalidateTasks();
+    }
   };
 
   const selectedTask = useMemo(() => tasks.find((t) => t.id === selectedTaskId) ?? null, [tasks, selectedTaskId]);

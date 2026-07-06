@@ -85,7 +85,9 @@ export default function TimelinePage() {
             events={events}
             colorBy={colorBy}
             onEventClick={handleEventClick}
-            initialMonth={range.from}
+            /* Open on the CURRENT month — range.from is padded a week back and
+               lands in the previous month for the first 7 days of any month. */
+            initialMonth={today}
           />
         ) : (
           <GanttView

@@ -105,7 +105,7 @@ export function demoCreateGrant(
     demoPushNotification({
       user_id: owner.user_id,
       type: "warning",
-      title: `Un administrador accedió a tu ${meta.es} para soporte`,
+      title: `An admin accessed your ${meta.label.toLowerCase()} for support`,
       message: `${adminName}: ${reason.trim()} (acceso hasta ${hhmm}).`,
       link: meta.route(id),
     });

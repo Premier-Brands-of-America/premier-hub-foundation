@@ -53,7 +53,7 @@ function resolveThemeTokens() {
     hoverColor: getHoverColor(),
     cardColor: getCardColor(),
     cyanRaw: rawVar("--signal-cyan-300", "349 85% 62%"),
-    gridRaw: rawVar("--graph-grid", "228 12% 42%"),
+    gridRaw: rawVar("--graph-grid", "26 6% 40%"),
   };
 }
 
@@ -284,7 +284,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
           const dim = highlightedSet ? !emph : false;
 
           const { cyanRaw } = resolveThemeTokens();
-          const srcRaw = s.__raw ?? "228 12% 64%";
+          const srcRaw = s.__raw ?? "30 6% 64%";
           // Source→target gradient: entity hue fading into signal-cyan.
           const a0 = dim ? 0.05 : emph ? 0.55 : 0.16;
           const a1 = dim ? 0.06 : emph ? 0.7 : 0.24;
@@ -346,8 +346,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
           const isHub = (node.__deg ?? 0) >= HUB_DEGREE;
 
           const { labelColor, selectionColor, hoverColor, cardColor, cyanRaw } = resolveThemeTokens();
-          const color = node.__color ?? "hsl(228 12% 64%)";
-          const raw = node.__raw ?? "228 12% 64%";
+          const color = node.__color ?? "hsl(30 6% 64%)";
+          const raw = node.__raw ?? "30 6% 64%";
 
           // Idle bob so the constellation breathes.
           const now = typeof performance !== "undefined" ? performance.now() : 0;
@@ -363,7 +363,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
             const spin = reducedMotion ? 0 : (now / 9000) % (Math.PI * 2);
             ctx.beginPath();
             ctx.arc(x, y, ringR, 0, 2 * Math.PI);
-            ctx.strokeStyle = isFocus ? `hsl(${cyanRaw} / 0.5)` : "hsl(228 12% 42% / 0.25)";
+            ctx.strokeStyle = isFocus ? `hsl(${cyanRaw} / 0.5)` : "hsl(26 6% 40% / 0.25)";
             ctx.lineWidth = 1 / globalScale;
             ctx.setLineDash([3 / globalScale, 5 / globalScale]);
             ctx.stroke();

@@ -57,8 +57,8 @@ interface SeedRow {
 
 // Ordered roughly newest-first; we sort defensively below.
 const SEED: SeedRow[] = [
-  { actor: ACTORS.alex, area: "project", action_kind: "admin_access_revoked", action: "Revoked support access", entity_type: "Proyecto", entity_label: "Vendor contract (private)", min: 4 },
-  { actor: ACTORS.alex, area: "project", action_kind: "admin_access_granted", action: "Requested support access", entity_type: "Proyecto", entity_label: "Vendor contract (private)", detail: "Investigating a sync error the owner reported.", min: 14 },
+  { actor: ACTORS.alex, area: "project", action_kind: "admin_access_revoked", action: "Revoked support access", entity_type: "Project", entity_label: "Vendor contract (private)", min: 4 },
+  { actor: ACTORS.alex, area: "project", action_kind: "admin_access_granted", action: "Requested support access", entity_type: "Project", entity_label: "Vendor contract (private)", detail: "Investigating a sync error the owner reported.", min: 14 },
   { actor: ACTORS.alex, area: "admin", action_kind: "feature_flag.toggled", action: "Enabled feature flag", entity_type: "Feature Flag", entity_label: "reports", detail: "off → on (global)", min: 6 },
   { actor: ACTORS.sam, area: "request", action_kind: "request.submitted", action: "Submitted request", entity_type: "Art Request", entity_label: "ART-1042 · Kroger summer endcap", min: 18 },
   { actor: ACTORS.casey, area: "task", action_kind: "task.completed", action: "Completed task", entity_type: "Task", entity_label: "Wire up SharePoint provisioning", min: 41 },

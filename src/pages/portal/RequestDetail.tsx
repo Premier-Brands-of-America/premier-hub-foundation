@@ -2,6 +2,16 @@ import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Hash, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
@@ -40,6 +50,7 @@ export default function RequestDetail() {
   const navigate = useNavigate();
   const del = useDeleteRequest();
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!id) return null;
 
@@ -112,19 +123,37 @@ export default function RequestDetail() {
                 size="sm"
                 className="h-8 gap-1.5 text-destructive hover:text-destructive"
                 disabled={del.isPending}
-                onClick={async () => {
-                  if (!confirm("Delete this request? This can't be undone.")) return;
-                  try {
-                    await del.mutateAsync(request.id);
-                    toast.success("Request deleted");
-                    navigate("/requests");
-                  } catch (e) {
-                    toast.error((e as Error)?.message ?? "Could not delete request");
-                  }
-                }}
+                onClick={() => setDeleteOpen(true)}
               >
                 <Trash2 className="h-3.5 w-3.5" /> Delete
               </Button>
+              <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this request?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      "{request.title}" and its history will be removed. This can't be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep it</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        try {
+                          await del.mutateAsync(request.id);
+                          toast.success("Request deleted");
+                          navigate("/requests");
+                        } catch (e) {
+                          toast.error((e as Error)?.message ?? "Could not delete request");
+                        }
+                      }}
+                    >
+                      Delete request
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </div>
@@ -140,7 +169,9 @@ export default function RequestDetail() {
             <StatusBadge status={request.status} />
             <PriorityBadge priority={request.priority} />
             <TypeBadge>{typeLabel}</TypeBadge>
-            {request.due_date && <DueDateBadge due={request.due_date} />}
+            {request.due_date && request.status !== "complete" && request.status !== "archived" && (
+              <DueDateBadge due={request.due_date} />
+            )}
           </div>
         </div>
       </header>

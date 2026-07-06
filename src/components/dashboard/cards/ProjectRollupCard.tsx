@@ -39,7 +39,22 @@ export function ProjectRollupCard({ config }: { config: WidgetConfig }) {
     queryKey: ["dashboard-card", "project-rollup", scope, userId],
     enabled: !!userId,
     queryFn: async (): Promise<Record<string, number>> => {
-      if (IS_PREVIEW || !userId) return {};
+      if (!userId) return {};
+      if (IS_PREVIEW) {
+        // Preview reads the same demo store as /projects — the rollup must
+        // match what the project lists show for the signed-in mock viewer.
+        const { fetchProjects } = await import("@/services/projectService");
+        const { items } = await fetchProjects(0);
+        // Mirror prod scoping: "owned" = owner, "assigned" = stakeholder.
+        const scoped =
+          scope === "owned"
+            ? items.filter((p) => p.owner_id === userId)
+            : items.filter((p) => (p.stakeholders ?? []).some((s) => s.user_id === userId));
+        return scoped.reduce<Record<string, number>>((acc, p) => {
+          acc[p.status] = (acc[p.status] ?? 0) + 1;
+          return acc;
+        }, {});
+      }
       let statuses: string[] = [];
       if (scope === "owned") {
         const { data, error } = await supabase

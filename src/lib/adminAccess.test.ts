@@ -79,9 +79,9 @@ describe("resolveActiveGrant", () => {
 
 describe("targetTypeMeta", () => {
   it("maps each target type to its Spanish label and app route", () => {
-    expect(targetTypeMeta("project")).toMatchObject({ es: "proyecto", route: expect.any(Function) });
-    expect(targetTypeMeta("task").es).toBe("tarea");
-    expect(targetTypeMeta("page").es).toBe("página");
+    expect(targetTypeMeta("project")).toMatchObject({ label: "Project", route: expect.any(Function) });
+    expect(targetTypeMeta("task").label).toBe("Task");
+    expect(targetTypeMeta("page").label).toBe("Page");
     expect(targetTypeMeta("project").route("p1")).toBe("/projects/p1");
     expect(targetTypeMeta("task").route("t1")).toBe("/tasks/t1");
     expect(targetTypeMeta("page").route("pg1")).toBe("/pages/pg1");

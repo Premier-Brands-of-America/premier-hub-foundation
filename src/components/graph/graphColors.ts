@@ -74,7 +74,7 @@ export function rawVar(name: string, fallback: string): string {
 
 /** Raw triplet for a node's entity hue (for glow + edge gradients). */
 export function getNodeColorRaw(type: NodeType): string {
-  return cssVarRaw(NODE_COLOR_VAR[type], "228 12% 64%");
+  return cssVarRaw(NODE_COLOR_VAR[type], "30 6% 64%");
 }
 
 /**

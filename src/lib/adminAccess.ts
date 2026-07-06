@@ -69,18 +69,16 @@ export function resolveActiveGrant(
 }
 
 interface TargetMeta {
-  /** Spanish noun used in owner-facing notification copy (proyecto/tarea/página). */
-  es: string;
-  /** English label for admin-facing UI. */
+  /** Label used in UI copy and owner-facing notifications. */
   label: string;
   /** App route for the item — matches the notification link format `/<type>s/<id>`. */
   route: (id: string) => string;
 }
 
 const TARGET_META: Record<BreakGlassTargetType, TargetMeta> = {
-  project: { es: "proyecto", label: "Proyecto", route: (id) => `/projects/${id}` },
-  task: { es: "tarea", label: "Tarea", route: (id) => `/tasks/${id}` },
-  page: { es: "página", label: "Página", route: (id) => `/pages/${id}` },
+  project: { label: "Project", route: (id) => `/projects/${id}` },
+  task: { label: "Task", route: (id) => `/tasks/${id}` },
+  page: { label: "Page", route: (id) => `/pages/${id}` },
 };
 
 export function targetTypeMeta(type: BreakGlassTargetType): TargetMeta {

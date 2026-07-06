@@ -4,6 +4,7 @@ import { Upload, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { FeatureGate } from "@/components/FeatureGate";
+import { isPreviewEnvironment } from "@/lib/environment";
 import { useToast } from "@/hooks/use-toast";
 import {
   ALLOWED_MIME_EXT,
@@ -15,6 +16,8 @@ import {
 } from "@/types/attachment";
 import { uploadAttachment } from "@/services/attachments";
 import { cn } from "@/lib/utils";
+
+const IS_PREVIEW = isPreviewEnvironment();
 
 interface UploadItem {
   id: string;
@@ -178,6 +181,15 @@ function AttachmentUploaderInner({ requestId, kind, className }: AttachmentUploa
 }
 
 export function AttachmentUploader(props: AttachmentUploaderProps) {
+  // Preview has no demo storage backend — an upload here would write to the
+  // real Supabase bucket, so don't mount the dropzone at all.
+  if (IS_PREVIEW) {
+    return (
+      <p className={cn("text-xs text-muted-foreground", props.className)}>
+        Uploads are disabled in preview.
+      </p>
+    );
+  }
   return (
     <FeatureGate feature="file_uploads">
       <AttachmentUploaderInner {...props} />

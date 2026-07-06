@@ -29,16 +29,16 @@ export function RestrictedContentPanel({ targetType, targetId, onGranted }: Rest
         <Shield className="h-6 w-6" />
       </div>
       <div className="space-y-1.5">
-        <h2 className="text-lg font-semibold text-foreground">Contenido privado</h2>
+        <h2 className="text-lg font-semibold text-foreground">Private content</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          No tienes acceso a este {meta.es}. Como administrador puedes solicitar acceso temporal para dar
-          soporte. La acción queda <strong className="text-foreground">registrada</strong> en la bitácora de
-          auditoría y se <strong className="text-foreground">notifica al propietario</strong>.
+          You don't have access to this {meta.label.toLowerCase()}. As an admin you can request temporary
+          support access. The action is <strong className="text-foreground">logged</strong> in the audit
+          trail and the <strong className="text-foreground">owner is notified</strong>.
         </p>
       </div>
       <Button onClick={() => setOpen(true)} className="gap-2">
         <Shield className="h-4 w-4" />
-        Acceder para soporte
+        Request support access
       </Button>
 
       <RequestAccessDialog

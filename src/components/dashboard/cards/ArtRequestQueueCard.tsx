@@ -44,7 +44,35 @@ export function ArtRequestQueueCard({ config }: { config: WidgetConfig }) {
     queryKey: ["dashboard-card", "art-request-queue", view, userId, limit],
     enabled: !!userId,
     queryFn: async (): Promise<RequestRow[]> => {
-      if (IS_PREVIEW || !userId) return [];
+      if (!userId) return [];
+      if (IS_PREVIEW) {
+        // Preview reads the same demo store as /requests and /queue — the home
+        // screen and the queue must never disagree about the same open work.
+        const { listQueue } = await import("@/services/requests");
+        // Demo queue already excludes complete/archived (same filter as prod).
+        const open = await listQueue();
+        const scoped =
+          view === "mine"
+            ? open.filter((r) => r.requester_id === userId)
+            : view === "assigned"
+              ? open.filter((r) => r.assignee_id === userId)
+              : open;
+        // Mirror prod ordering per view: newest-first for "mine", otherwise
+        // priority desc (text order, as in prod) then due date asc, nulls last.
+        const sorted = [...scoped].sort((a, b) =>
+          view === "mine"
+            ? b.created_at.localeCompare(a.created_at)
+            : (view === "queue" ? b.priority.localeCompare(a.priority) : 0) ||
+              (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"),
+        );
+        return sorted.slice(0, limit).map((r) => ({
+          id: r.id,
+          title: r.title,
+          status: r.status,
+          priority: r.priority,
+          request_number: r.request_number,
+        }));
+      }
       const base = supabase
         .from("requests")
         .select("id, title, status, priority, request_number");

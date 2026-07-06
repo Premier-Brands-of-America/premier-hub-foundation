@@ -36,7 +36,21 @@ export function MiniGraphCard() {
   const query = useQuery({
     queryKey: ["dashboard-card", "mini-graph-counts"],
     queryFn: async (): Promise<Counts> => {
-      if (IS_PREVIEW) return { projects: 0, tasks: 0, pages: 0 };
+      if (IS_PREVIEW) {
+        // Preview counts come from the same demo stores as /projects, /tasks
+        // and /pages — the constellation must match what those pages show.
+        const [{ fetchProjects }, { fetchTasks }, { fetchPageTree }] = await Promise.all([
+          import("@/services/projectService"),
+          import("@/services/taskService"),
+          import("@/services/pagesService"),
+        ]);
+        const [proj, task, pages] = await Promise.all([
+          fetchProjects(0),
+          fetchTasks(0),
+          fetchPageTree(),
+        ]);
+        return { projects: proj.total, tasks: task.total, pages: pages.length };
+      }
       const [proj, task, page] = await Promise.all([
         supabase.from("projects").select("id", { count: "exact", head: true }),
         supabase.from("tasks").select("id", { count: "exact", head: true }),

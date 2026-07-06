@@ -153,7 +153,7 @@ function ToggleMatrix({
       qc.invalidateQueries({ queryKey: ["feature_flags"] });
       toast.success("Flag updated");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Something went wrong. Please try again."),
   });
 
   const reset = useMutation({
@@ -168,7 +168,7 @@ function ToggleMatrix({
       qc.invalidateQueries({ queryKey: ["feature_flags"] });
       toast.success("Reset");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Something went wrong. Please try again."),
   });
 
   const handleToggle = (key: FeatureKey, next: boolean) => {

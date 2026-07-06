@@ -49,18 +49,29 @@ export function KanbanBoard({
     setAddingBucket(false);
   }
 
+  const now = Date.now();
+  const overdueCount = board.board.cards.filter(
+    (c) =>
+      c.dueDate &&
+      c.status !== "completed" &&
+      new Date(c.dueDate).getTime() < now,
+  ).length;
+
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{board.board.projectTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            {board.board.cards.length} cards across {buckets.length} buckets
+            {board.board.cards.length} cards
+            {overdueCount > 0 && (
+              <span className="text-destructive"> · {overdueCount} overdue</span>
+            )}
           </p>
         </div>
         {showReset ? (
-          <Button variant="ghost" size="sm" onClick={board.reset} title="Reset demo board">
-            <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
+          <Button variant="ghost" size="sm" onClick={board.reset} title="Restore the demo board to its starting state">
+            <RotateCcw className="mr-1.5 h-4 w-4" /> Reset demo
           </Button>
         ) : (
           <Button variant="ghost" size="sm" onClick={board.reset} title="Refresh from server">

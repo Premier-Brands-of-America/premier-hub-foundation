@@ -257,6 +257,25 @@
     @apply border-border;
   }
 
+  /* Sidebar nav scrollbar — thin and ALWAYS visible while the rail
+     overflows, so the last items stay discoverable at short viewport
+     heights (overlay scrollbars hide until hover and made "Settings"
+     invisible below the fold). Renders nothing when content fits. */
+  [data-sidebar="content"]::-webkit-scrollbar {
+    width: 6px;
+  }
+  [data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background: hsl(var(--sidebar-border));
+    border-radius: 3px;
+  }
+  [data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--sidebar-muted));
+  }
+  [data-sidebar="content"] {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-border)) transparent;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);

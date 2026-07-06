@@ -62,7 +62,8 @@ export function KanbanCard({
         {card.title}
       </h4>
 
-      {card.dueDate && (
+      {/* Done work is done — a completed card never alarms as overdue */}
+      {card.dueDate && card.status !== "completed" && (
         <div className="mb-2">
           <DueDateBadge due={card.dueDate} />
         </div>

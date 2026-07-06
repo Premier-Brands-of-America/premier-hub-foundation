@@ -1,26 +1,20 @@
 import {
-  LayoutDashboard,
+  Home,
   CheckSquare,
   FolderKanban,
-  Crown,
-  Globe,
-  Archive,
   Bot,
   BarChart3,
   Settings,
   LogOut,
-  FilePlus,
-  Inbox,
   ListChecks,
-  Users2,
   ScrollText,
   FileType2,
   CalendarRange,
   Network,
   KanbanSquare,
-  Share2,
-  Brain,
   Wrench,
+  Inbox,
+  Activity,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -42,37 +36,39 @@ import {
 import { Button } from "@/components/ui/button";
 import { NavItem, type NavItemConfig } from "@/components/NavItem";
 
-const mainNav = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+// ── Consolidated IA (21 → ~8 role-aware): the sidebar names JOBS, not routes.
+// Project sibling lists (/assigned-, /owned-, …) are tabs of Projects.
+// Graph/Org/Memory are one "Explore" canvas (its in-view toggle switches lens).
+// AI Assistant lives in the top bar; "New request" is a button on Art Requests.
+// Department Workload is a tab inside Reports.
+
+// WORKSPACE — the daily surfaces, task-first.
+const workspaceNav = [
+  { title: "Home", url: "/", icon: Home },
   { title: "My Tasks", url: "/tasks", icon: CheckSquare },
   { title: "Planner", url: "/planner", icon: KanbanSquare },
-  { title: "Pages", url: "/pages", icon: FileType2 },
-  { title: "Timeline", url: "/timeline", icon: CalendarRange },
+  { title: "Calendar", url: "/timeline", icon: CalendarRange },
   { title: "Projects", url: "/projects", icon: FolderKanban },
+  { title: "Pages", url: "/pages", icon: FileType2 },
 ];
 
-const toolsNav = [
-  { title: "AI Assistant", url: "/ai-assistant", icon: Bot },
-  { title: "Graph", url: "/graph", icon: Network, requiresStaff: true },
-  { title: "Org", url: "/org", icon: Share2 },
-  { title: "Memory", url: "/memory", icon: Brain, requiresAdmin: true },
-  { title: "Diagnostics", url: "/diagnostics", icon: BarChart3, requiresDiagnostics: true },
-];
-
-// Art Department Requests — request-portal items only.
-const portalNav: NavItemConfig[] = [
-  { label: "Submit Art Request", to: "/requests/new", icon: FilePlus, feature: "art_request_portal", roles: ["requester", "designer", "admin"] },
-  { label: "My Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
+// REQUESTS — the art-request portal (intake + triage).
+const requestsNav: NavItemConfig[] = [
+  { label: "Art Requests", to: "/requests", icon: ListChecks, feature: "art_request_portal" },
   { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
-  { label: "Department Workload", to: "/workload", icon: Users2, feature: "department_dashboard", roles: ["admin"] },
-  { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["designer", "admin"] },
 ];
 
-// Administration — admin tooling + the app-wide Audit Log (also visible to
-// diagnostics users); Settings is admin-only.
+// INSIGHT — analytics + the knowledge graph, one entry each.
+const insightNav: NavItemConfig[] = [
+  { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["designer", "admin"] },
+  { label: "Explore", to: "/graph", icon: Network, roles: ["designer", "admin"] },
+];
+
+// ADMIN — everything system-facing, role-gated behind the group.
 const adminNav: NavItemConfig[] = [
   { label: "Admin Tools", to: "/admin", icon: Wrench, roles: ["admin"] },
   { label: "Audit Log", to: "/audit", icon: ScrollText, feature: "audit_trail", roles: ["admin"], requireDiagnostics: true },
+  { label: "Diagnostics", to: "/diagnostics", icon: Activity, roles: ["admin"], requireDiagnostics: true },
   { label: "Settings", to: "/admin/settings", icon: Settings, feature: "admin_settings", roles: ["admin"] },
 ];
 
@@ -82,13 +78,13 @@ export function AppSidebar() {
   const location = useLocation();
   const { profile, signOut, user } = useAuth();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Brand — a premium product rail header. The crimson hairline under
-            the logo echoes the signature edge-rail. */}
+        {/* Brand rail header. */}
         <div
           className={`flex items-center border-b border-sidebar-border ${
             collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-4"
@@ -109,18 +105,14 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Main Navigation */}
+        {/* Workspace */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map((item) => (
+              {workspaceNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink to={item.url} end activeClassName="font-medium">
                       <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
@@ -132,59 +124,34 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Art Department Requests */}
+        {/* Requests */}
         <SidebarGroup>
-          <SidebarGroupLabel>Art Department Requests</SidebarGroupLabel>
+          <SidebarGroupLabel>Requests</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {portalNav.map((item) => (
+              {requestsNav.map((item) => (
                 <NavItem key={item.to} item={item} collapsed={collapsed} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Tools */}
+        {/* Insight */}
         <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>Insight</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {toolsNav
-                .filter((item) => {
-                  if ((item as any).requiresDiagnostics) {
-                    return profile?.is_admin || profile?.can_view_diagnostics;
-                  }
-                  if ((item as any).requiresAdmin) {
-                    return profile?.is_admin || profile?.role === "admin";
-                  }
-                  if ((item as any).requiresStaff) {
-                    return profile?.is_admin || profile?.role === "designer" || profile?.role === "admin";
-                  }
-                  return true;
-                })
-                .map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <NavLink to={item.url} end activeClassName="font-medium">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+              {insightNav.map((item) => (
+                <NavItem key={item.to} item={item} collapsed={collapsed} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Administration — admin tooling + the app-wide Audit Log (admin or
-            diagnostics). Per-item gating lives in NavItem. */}
+        {/* Admin — the whole group is hidden from non-privileged users. */}
         {(profile?.is_admin || profile?.can_view_diagnostics) && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminNav.map((item) => (
@@ -203,9 +170,7 @@ export function AppSidebar() {
               <p className="text-xs font-medium text-sidebar-foreground truncate">
                 {profile?.full_name || user?.email || "User"}
               </p>
-              <p className="text-xs text-sidebar-muted truncate">
-                {user?.email}
-              </p>
+              <p className="text-xs text-sidebar-muted truncate">{user?.email}</p>
             </div>
           )}
           <Button

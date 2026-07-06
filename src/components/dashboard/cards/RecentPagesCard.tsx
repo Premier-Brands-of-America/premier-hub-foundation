@@ -39,7 +39,21 @@ export function RecentPagesCard({ config }: { config: WidgetConfig }) {
     queryKey: ["dashboard-card", "recent-pages", userId, limit],
     enabled: !!userId,
     queryFn: async (): Promise<PageRow[]> => {
-      if (IS_PREVIEW || !userId) return [];
+      if (!userId) return [];
+      if (IS_PREVIEW) {
+        // Preview reads the same demo store as /pages — recent edits here must
+        // match what the pages tree shows for this viewer. The tree is already
+        // visibility-scoped and excludes archived pages (same as prod's query);
+        // fetchPage fills in updated_at, which the tree nodes don't carry.
+        const { fetchPageTree, fetchPage } = await import("@/services/pagesService");
+        const nodes = await fetchPageTree();
+        const pages = await Promise.all(nodes.map((n) => fetchPage(n.id)));
+        return pages
+          .flatMap((p) => (p ? [p] : []))
+          .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+          .slice(0, limit)
+          .map((p) => ({ id: p.id, title: p.title, icon: p.icon, updated_at: p.updated_at }));
+      }
       const { data, error } = await supabase
         .from("pages")
         .select("id, title, icon, updated_at")

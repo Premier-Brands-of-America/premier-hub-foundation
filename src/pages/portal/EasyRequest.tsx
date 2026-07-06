@@ -59,7 +59,9 @@ export default function EasyRequest() {
   const form = useForm<EasyRequestValues>({
     resolver: zodResolver(easyRequestSchema),
     defaultValues: { ...defaultEasyValues, department_id: "" },
-    mode: "onChange",
+    // onTouched: a pristine form never shows validation errors — "Department
+    // required" used to paint red on first load, before any interaction.
+    mode: "onTouched",
   });
 
   const { control, handleSubmit, watch, setValue, getValues, formState, trigger, reset } = form;
@@ -85,7 +87,7 @@ export default function EasyRequest() {
   // Default department from the M365 org dept once resolved, only when empty.
   useEffect(() => {
     if (!getValues("department_id") && orgDeptId) {
-      setValue("department_id", orgDeptId);
+      setValue("department_id", orgDeptId, { shouldValidate: true });
     }
   }, [orgDeptId, setValue, getValues]);
 

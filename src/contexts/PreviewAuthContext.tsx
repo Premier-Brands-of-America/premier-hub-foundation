@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { AuthContext, type Profile } from "@/contexts/AuthContext";
-import { setPreviewViewer } from "@/lib/previewViewer";
+import { getPreviewViewer, setPreviewViewer } from "@/lib/previewViewer";
 
 export interface MockUserOption {
   label: string;
@@ -64,31 +64,47 @@ export const MOCK_USERS: MockUserOption[] = [
   },
 ];
 
+function buildMockAuth(p: Profile): { user: User; session: Session } {
+  const user = {
+    id: p.user_id,
+    email: p.email,
+    user_metadata: { full_name: p.full_name },
+    app_metadata: { provider: "preview" },
+    aud: "authenticated",
+    created_at: new Date().toISOString(),
+  } as unknown as User;
+
+  const session = {
+    access_token: "preview-token",
+    refresh_token: "preview-refresh",
+    expires_in: 999999,
+    token_type: "bearer",
+    user,
+  } as unknown as Session;
+
+  return { user, session };
+}
+
+/** Restore the persisted mock viewer so a page reload doesn't log you out. */
+function restoreProfile(): Profile | null {
+  const viewer = getPreviewViewer();
+  if (!viewer) return null;
+  return MOCK_USERS.find((m) => m.profile.user_id === viewer.userId)?.profile ?? null;
+}
+
 export function PreviewAuthProvider({ children }: { children: React.ReactNode }) {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [mockUser, setMockUser] = useState<User | null>(null);
-  const [mockSession, setMockSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(restoreProfile);
+  const [mockUser, setMockUser] = useState<User | null>(() =>
+    profile ? buildMockAuth(profile).user : null,
+  );
+  const [mockSession, setMockSession] = useState<Session | null>(() =>
+    profile ? buildMockAuth(profile).session : null,
+  );
 
   const signInAsMock = useCallback((p: Profile) => {
-    const fakeUser = {
-      id: p.user_id,
-      email: p.email,
-      user_metadata: { full_name: p.full_name },
-      app_metadata: { provider: "preview" },
-      aud: "authenticated",
-      created_at: new Date().toISOString(),
-    } as unknown as User;
-
-    const fakeSession = {
-      access_token: "preview-token",
-      refresh_token: "preview-refresh",
-      expires_in: 999999,
-      token_type: "bearer",
-      user: fakeUser,
-    } as unknown as Session;
-
-    setMockUser(fakeUser);
-    setMockSession(fakeSession);
+    const { user, session } = buildMockAuth(p);
+    setMockUser(user);
+    setMockSession(session);
     setProfile(p);
     // Mirror the viewer so the service layer can scope the ACL demo path.
     setPreviewViewer({
