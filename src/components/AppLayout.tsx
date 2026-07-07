@@ -165,8 +165,8 @@ function ShellHeader({
         <SidebarTrigger aria-label="Toggle sidebar" />
         <div className="hidden sm:block h-5 w-px bg-border/70" aria-hidden="true" />
         <div className="min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="font-display text-[15px] font-semibold leading-none tracking-tight text-foreground truncate">
+          <div className="flex items-baseline gap-2.5 min-w-0">
+            <h1 className="font-display text-[22px] font-medium leading-none tracking-[-0.01em] text-foreground truncate">
               {heading}
             </h1>
             {subtitle && (
@@ -175,7 +175,7 @@ function ShellHeader({
               </span>
             )}
           </div>
-          <div className="mt-0.5 hidden sm:block">
+          <div className="mt-1 hidden sm:block">
             <Breadcrumbs />
           </div>
         </div>

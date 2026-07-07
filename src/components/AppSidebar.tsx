@@ -36,6 +36,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { NavItem, type NavItemConfig } from "@/components/NavItem";
 
+/**
+ * Editorial section label — a letter-spaced caps title trailed by a hairline
+ * rule, like the section index in a printed brief. Gives the rail a press-room
+ * voice instead of the generic tiny-gray-caps every dashboard ships.
+ */
+function RuledLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarGroupLabel className="gap-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-muted">
+      <span className="shrink-0">{children}</span>
+      <span className="h-px flex-1 bg-sidebar-border" aria-hidden />
+    </SidebarGroupLabel>
+  );
+}
+
 // ── Consolidated IA (21 → ~8 role-aware): the sidebar names JOBS, not routes.
 // Project sibling lists (/assigned-, /owned-, …) are tabs of Projects.
 // Graph/Org/Memory are one "Explore" canvas (its in-view toggle switches lens).
@@ -97,11 +111,13 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h2 className="font-display text-sm font-semibold leading-tight text-sidebar-foreground truncate">
-                {brand.appName}
+              {/* Editorial masthead lockup: the brand name in the print serif,
+                  the rest as a letter-spaced kicker — a wordmark, not a label. */}
+              <h2 className="font-display text-lg font-semibold leading-none tracking-[-0.01em] text-sidebar-foreground truncate">
+                {brand.appName.split(" ")[0]}
               </h2>
-              <p className="text-[11px] leading-tight text-sidebar-muted truncate">
-                {brand.companyName}
+              <p className="mt-1 text-[9px] font-semibold uppercase leading-none tracking-[0.22em] text-sidebar-muted truncate">
+                {brand.appName.split(" ").slice(1).join(" ") || brand.companyName}
               </p>
             </div>
           )}
@@ -109,7 +125,7 @@ export function AppSidebar() {
 
         {/* Workspace */}
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <RuledLabel>Workspace</RuledLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {workspaceNav.map((item) => (
@@ -128,7 +144,7 @@ export function AppSidebar() {
 
         {/* Art Requests */}
         <SidebarGroup>
-          <SidebarGroupLabel>Art Requests</SidebarGroupLabel>
+          <RuledLabel>Art Requests</RuledLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {requestsNav.map((item) => (
@@ -140,7 +156,7 @@ export function AppSidebar() {
 
         {/* Insight */}
         <SidebarGroup>
-          <SidebarGroupLabel>Insight</SidebarGroupLabel>
+          <RuledLabel>Insight</RuledLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {insightNav.map((item) => (
@@ -153,7 +169,7 @@ export function AppSidebar() {
         {/* Admin — the whole group is hidden from non-privileged users. */}
         {(profile?.is_admin || profile?.can_view_diagnostics) && (
           <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <RuledLabel>Admin</RuledLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminNav.map((item) => (

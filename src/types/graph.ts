@@ -58,6 +58,11 @@ export interface GraphViewFilters {
   hideOrphans?: boolean; // drop degree-0 nodes
   search?: string;       // dims non-matching nodes (does not remove them)
   hiddenDepartments?: string[]; // org mode: departments to hide (by name)
+  // Entity/relation visibility is CLIENT-SIDE (view) filtering, not a server
+  // refetch — so unchecking a type just hides it and its checkbox stays put.
+  // undefined = all present types/relations visible.
+  entityTypes?: NodeType[];
+  relationTypes?: RelationType[];
 }
 
 /** d3-force tuning, exposed as sliders (mirrors Obsidian's four forces + node size). */

@@ -116,6 +116,11 @@ function filtersToParams(f: GraphFilters): URLSearchParams {
 /** Apply client-side view filters (status, orphans) without refetching. */
 function applyViewFilters(payload: GraphPayload, view: GraphViewFilters): GraphPayload {
   let nodes = payload.nodes;
+  // Entity-type visibility (client-side, so the checkbox never disappears).
+  if (view.entityTypes) {
+    const allow = new Set(view.entityTypes);
+    nodes = nodes.filter((n) => allow.has(n.type));
+  }
   if (view.statuses) {
     const allow = new Set(view.statuses);
     nodes = nodes.filter((n) => !n.status || allow.has(n.status));
@@ -132,6 +137,11 @@ function applyViewFilters(payload: GraphPayload, view: GraphViewFilters): GraphP
     const [s, t] = edgeEnds(e);
     return nodeIds.has(s) && nodeIds.has(t);
   });
+  // Relation-type visibility (client-side). undefined = all present relations.
+  if (view.relationTypes) {
+    const allowR = new Set(view.relationTypes);
+    edges = edges.filter((e) => allowR.has(e.type));
+  }
   if (view.hideOrphans) {
     const linked = new Set<string>();
     edges.forEach((e) => { const [s, t] = edgeEnds(e); linked.add(s); linked.add(t); });
@@ -401,12 +411,14 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
   const departments = useMemo(() => {
     if (mode !== "org") return undefined;
     const set = new Set<string>();
-    for (const n of payload.nodes) {
+    // Derive from `raw` (pre-filter) so hiding a department never removes its
+    // own checkbox — the option universe must be stable under toggling.
+    for (const n of raw.nodes) {
       const d = (n.metadata as Record<string, unknown> | null | undefined)?.department;
       if (typeof d === "string" && d.trim()) set.add(d.trim());
     }
     return set.size > 0 ? Array.from(set).sort() : undefined;
-  }, [payload.nodes, mode]);
+  }, [raw.nodes, mode]);
 
   const rooted = !!filters.center_id;
 
@@ -491,8 +503,6 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
           {/* Left panel: Filters + Forces */}
           <div className="absolute top-3 left-3 z-10 space-y-3">
             <GraphFiltersPanel
-              filters={filters}
-              onChange={setFilters}
               view={view}
               onViewChange={setView}
               statusOptions={statusOptions}

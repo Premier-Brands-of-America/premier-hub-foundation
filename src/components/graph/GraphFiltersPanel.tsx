@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { departmentColorVar } from "@/components/graph/graphColors";
-import type { GraphFilters, GraphMode, GraphViewFilters, NodeType, RelationType } from "@/types/graph";
+import type { GraphMode, GraphViewFilters, NodeType, RelationType } from "@/types/graph";
 
 const NODE_TYPES: NodeType[] = ["project", "task", "request", "page", "user"];
 const RELATION_TYPES: RelationType[] = [
@@ -14,8 +14,6 @@ const RELATION_TYPES: RelationType[] = [
 ];
 
 interface Props {
-  filters: GraphFilters;
-  onChange: (next: GraphFilters) => void;
   view: GraphViewFilters;
   onViewChange: (next: GraphViewFilters) => void;
   /** Distinct status values present in the current graph. */
@@ -35,30 +33,30 @@ interface Props {
  * graph currently shown: entity-type / relation-type checkboxes render only for
  * types present in the data (so Org — which is only people + reports_to — no
  * longer shows dead "Project/Task" checkboxes), and Org gets a Departments
- * section instead. A section with fewer than two options is hidden (nothing to
- * filter).
+ * section instead. All toggles are CLIENT-SIDE view filters over a stable option
+ * universe (derived from the unfiltered graph), so unchecking a box hides its
+ * nodes but keeps the box itself — you can always re-check it.
  */
 export function GraphFiltersPanel({
-  filters, onChange, view, onViewChange, statusOptions, mode, presentTypes, presentRels, departments,
+  view, onViewChange, statusOptions, mode, presentTypes, presentRels, departments,
 }: Props) {
   const typeOpts = NODE_TYPES.filter((t) => presentTypes.includes(t));
   const relOpts = RELATION_TYPES.filter((r) => presentRels.includes(r));
-  const activeTypes = filters.entity_types ?? NODE_TYPES;
-  const activeRels = filters.relation_types ?? [];
+  const activeTypes = view.entityTypes ?? typeOpts;
+  const activeRels = view.relationTypes ?? relOpts;
   const activeStatuses = view.statuses ?? statusOptions;
   const hiddenDepts = view.hiddenDepartments ?? [];
 
   const toggleType = (t: NodeType) => {
-    // Operate over the PRESENT types so toggling never resurrects a type that
-    // isn't in the graph. Start from all present types when unset.
-    const base = filters.entity_types ?? typeOpts;
-    const has = base.includes(t);
-    onChange({ ...filters, entity_types: has ? base.filter((x) => x !== t) : [...base, t] });
+    const has = activeTypes.includes(t);
+    const next = has ? activeTypes.filter((x) => x !== t) : [...activeTypes, t];
+    // All present selected → undefined ("show all"); keeps the URL/state clean.
+    onViewChange({ ...view, entityTypes: next.length === typeOpts.length ? undefined : next });
   };
   const toggleRel = (r: RelationType) => {
     const has = activeRels.includes(r);
     const next = has ? activeRels.filter((x) => x !== r) : [...activeRels, r];
-    onChange({ ...filters, relation_types: next.length ? next : undefined });
+    onViewChange({ ...view, relationTypes: next.length === relOpts.length ? undefined : next });
   };
   const toggleStatus = (s: string) => {
     const has = activeStatuses.includes(s);
