@@ -127,7 +127,21 @@ function renderDonut(data: CountDatum[], colors: string[]) {
         <Label position="center" content={donutCenter(sum(data))} />
       </Pie>
       <Tooltip contentStyle={tooltipStyle} />
-      <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
+      {/* Legend shows the COUNT next to each segment — donuts that hide their
+          numbers force the reader to guess arc lengths (audit finding). */}
+      <Legend
+        iconType="circle"
+        iconSize={8}
+        wrapperStyle={legendStyle}
+        formatter={(value, entry) => {
+          const n = (entry?.payload as { value?: number } | undefined)?.value ?? 0;
+          return (
+            <span style={{ color: "hsl(var(--muted-foreground))" }}>
+              {value} <span style={{ color: "hsl(var(--foreground))", fontWeight: 600 }}>{n}</span>
+            </span>
+          );
+        }}
+      />
     </PieChart>
   );
 }

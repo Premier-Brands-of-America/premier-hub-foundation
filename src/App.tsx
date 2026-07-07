@@ -177,7 +177,7 @@ function AppRoutes() {
           <Route path="/requests/:id" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><RequestDetail /></FeatureRoute></ProtectedRoute>} />
           <Route path="/requests" element={<ProtectedRoute><FeatureRoute feature="art_request_portal"><MyRequests /></FeatureRoute></ProtectedRoute>} />
           <Route path="/queue" element={<ProtectedRoute requireRole={["designer","admin"]}><FeatureRoute feature="art_request_portal"><Queue /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/workload" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="department_dashboard"><Workload /></FeatureRoute></ProtectedRoute>} />
+          <Route path="/workload" element={<ProtectedRoute requireRole={["designer", "admin"]}><FeatureRoute feature="department_dashboard"><Workload /></FeatureRoute></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="reports"><ReportsPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/audit" element={<ProtectedRoute requireRole="admin" allowDiagnostics><FeatureRoute feature="audit_trail"><AuditLogPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />

@@ -15,6 +15,7 @@ import {
   Wrench,
   Inbox,
   Activity,
+  Gauge,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -74,9 +75,12 @@ const requestsNav: NavItemConfig[] = [
   { label: "Queue", to: "/queue", icon: Inbox, feature: "art_request_portal", roles: ["designer", "admin"] },
 ];
 
-// INSIGHT — analytics + the knowledge graph, one entry each.
+// INSIGHT — analytics, workload, and the knowledge graph. Workload is a
+// first-class report (measuring who's drowning was a primary goal of the app),
+// not just the node-size lens on the graph.
 const insightNav: NavItemConfig[] = [
   { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["designer", "admin"] },
+  { label: "Workload", to: "/workload", icon: Gauge, feature: "department_dashboard", roles: ["designer", "admin"] },
   { label: "Explore", to: "/graph", icon: Network, roles: ["designer", "admin"] },
 ];
 

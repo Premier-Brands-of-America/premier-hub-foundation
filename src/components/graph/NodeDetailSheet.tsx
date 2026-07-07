@@ -15,11 +15,19 @@ interface Props {
 }
 
 const ROUTE_BY_TYPE: Partial<Record<GraphNode["type"], (id: string) => string>> = {
-  project: (id) => `/owned-projects?focus=${id}`,
+  project: (id) => `/projects/${id}`,
   task: () => `/tasks`,
   request: (id) => `/requests/${id}`,
   page: (id) => `/pages/${id}`,
 };
+
+/** Qualitative read of a person's graph-workload points (owns 3 / stakeholder 1.5 / task 1). */
+function workloadAssessment(points: number): { label: string; token: string; note: string } {
+  if (points >= 8) return { label: "Heavily loaded", token: "--status-danger", note: "At or over a full plate — consider redistributing." };
+  if (points >= 4) return { label: "Well-loaded", token: "--status-done", note: "A healthy, full workload." };
+  if (points > 0) return { label: "Has room", token: "--status-warning", note: "Room to take on more." };
+  return { label: "Idle", token: "--muted-foreground", note: "No projects or tasks attached in the graph." };
+}
 
 export function NodeDetailSheet({ open, onOpenChange, node, onFocusLocal }: Props) {
   const navigate = useNavigate();
@@ -82,15 +90,53 @@ export function NodeDetailSheet({ open, onOpenChange, node, onFocusLocal }: Prop
           )}
 
           {node.type === "user" && (
-            <div className="space-y-1">
-              {meta.jobTitle ? <p><span className="text-muted-foreground">Title:</span> {String(meta.jobTitle)}</p> : null}
-              {meta.department ? <p><span className="text-muted-foreground">Department:</span> {String(meta.department)}</p> : null}
-              {meta.officeLocation ? <p><span className="text-muted-foreground">Office:</span> {String(meta.officeLocation)}</p> : null}
-              {meta.mail || meta.email ? <p><span className="text-muted-foreground">Email:</span> {String(meta.mail ?? meta.email)}</p> : null}
-              {typeof meta.directReportsCount === "number" ? (
-                <p><span className="text-muted-foreground">Direct reports:</span> {meta.directReportsCount as number}</p>
-              ) : null}
-              {meta.role ? <p><span className="text-muted-foreground">Role:</span> {String(meta.role)}</p> : null}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                {meta.jobTitle ? <p><span className="text-muted-foreground">Title:</span> {String(meta.jobTitle)}</p> : null}
+                {meta.department ? <p><span className="text-muted-foreground">Department:</span> {String(meta.department)}</p> : null}
+                {meta.officeLocation ? <p><span className="text-muted-foreground">Office:</span> {String(meta.officeLocation)}</p> : null}
+                {meta.mail || meta.email ? <p><span className="text-muted-foreground">Email:</span> {String(meta.mail ?? meta.email)}</p> : null}
+                {typeof meta.directReportsCount === "number" ? (
+                  <p><span className="text-muted-foreground">Direct reports:</span> {meta.directReportsCount as number}</p>
+                ) : null}
+              </div>
+
+              {/* Workload assessment — the "valuation" shown on clicking a person.
+                  Uses the graph-workload points stamped in Network mode. */}
+              {typeof meta.workloadPoints === "number" && (() => {
+                const pts = meta.workloadPoints as number;
+                const a = workloadAssessment(pts);
+                const pct = Math.min(100, Math.round((pts / 10) * 100));
+                return (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Workload</span>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        style={{ backgroundColor: `hsl(var(${a.token}) / 0.14)`, color: `hsl(var(${a.token}))` }}
+                      >
+                        {a.label}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-1.5">
+                      <span className="font-display text-2xl font-semibold tabular-nums text-foreground">{pts.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">workload points · {pct}% of a full week</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: `hsl(var(${a.token}))` }} />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">{a.note}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-7 gap-1 px-1 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => navigate("/workload")}
+                    >
+                      Open full workload report →
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
