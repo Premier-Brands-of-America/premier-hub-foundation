@@ -73,9 +73,15 @@ function ProtectedRoute({
    *  isn't in `requireRole` (used by the Audit Log: admin + diagnostics). */
   allowDiagnostics?: boolean;
 }) {
-  const { session, loading, profile } = useAuth();
+  const { session, loading, profile, profileReady } = useAuth();
 
-  if (loading) {
+  // Wait for auth AND — on a role-gated route — for the profile (which carries
+  // the role) to finish loading. `profileReady === false` means a session
+  // resolved but its profile is still in flight; judging the role now would
+  // flash a false "Access denied" on refresh. `undefined` = preview (profile is
+  // set synchronously), so it never blocks there.
+  const waitingForProfile = !!requireRole && !!session && profileReady === false;
+  if (loading || waitingForProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center space-y-2">

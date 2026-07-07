@@ -23,6 +23,11 @@ export interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  /** True once the profile fetch has SETTLED for the current session (success or
+   *  not). Role/permission checks must wait for this or a refresh flashes a false
+   *  "Access denied" while the profile (which carries the role) is still loading.
+   *  Undefined in preview (profile is set synchronously → always ready). */
+  profileReady?: boolean;
   isPreview?: boolean;
   signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -36,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileReady, setProfileReady] = useState(false);
 
   const syncAndFetchProfile = async (userId: string, userMeta?: Record<string, any>, email?: string) => {
     if (userMeta || email) {
@@ -55,14 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("user_id", userId);
     }
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
 
-    if (!error && data) {
-      setProfile(data as Profile);
+      if (!error && data) {
+        setProfile(data as Profile);
+      }
+    } finally {
+      // Mark the profile fetch settled so permission checks can run without
+      // flashing "Access denied" during the load window.
+      setProfileReady(true);
     }
   };
 
@@ -73,9 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           const meta = session.user.user_metadata;
+          setProfileReady(false);
           setTimeout(() => syncAndFetchProfile(session.user.id, meta, session.user.email ?? undefined), 0);
         } else {
           setProfile(null);
+          setProfileReady(true); // nothing to load
         }
         setLoading(false);
       }
@@ -86,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         syncAndFetchProfile(session.user.id, session.user.user_metadata, session.user.email ?? undefined);
+      } else {
+        setProfileReady(true); // no session → nothing to load
       }
       setLoading(false);
     });
@@ -109,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signInWithMicrosoft, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, profileReady, signInWithMicrosoft, signOut }}>
       {children}
     </AuthContext.Provider>
   );
