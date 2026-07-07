@@ -7,6 +7,8 @@ export interface Kpi {
   token?: string;
   onClick?: () => void;
   active?: boolean;
+  /** Optional "?" contextual-help tooltip rendered after the label. */
+  hint?: React.ReactNode;
 }
 
 /**
@@ -30,8 +32,8 @@ export function KpiStrip({ items, className }: { items: Kpi[]; className?: strin
           </>
         );
         return (
-          <span key={i} className="inline-flex items-center">
-            {i > 0 && <span className="mr-4 text-border" aria-hidden>·</span>}
+          <span key={i} className="inline-flex items-center gap-1">
+            {i > 0 && <span className="mr-3 text-border" aria-hidden>·</span>}
             {k.onClick ? (
               <button
                 type="button"
@@ -46,6 +48,7 @@ export function KpiStrip({ items, className }: { items: Kpi[]; className?: strin
             ) : (
               inner
             )}
+            {k.hint}
           </span>
         );
       })}

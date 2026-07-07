@@ -12,6 +12,7 @@ import {
   WorkItemRow,
   type Kpi,
 } from "@/components/pressroom";
+import { GlossaryHint } from "@/lib/glossary";
 import { DayRail } from "@/components/dashboard/DayRail";
 import { useMyDay, type DayItem } from "@/components/dashboard/useMyDay";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
@@ -81,6 +82,7 @@ const Dashboard = () => {
       value: day.counts.teamQueue,
       label: "in team queue",
       onClick: () => navigate("/queue"),
+      hint: <GlossaryHint term="teamQueue" />,
     },
   ];
 

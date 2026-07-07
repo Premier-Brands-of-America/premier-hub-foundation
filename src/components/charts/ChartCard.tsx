@@ -26,6 +26,7 @@ export function ChartCard({
   emptyLabel = "No data yet",
   bare = false,
   bodyClassName,
+  hint,
   children,
 }: {
   title: string;
@@ -35,12 +36,17 @@ export function ChartCard({
   /** Render children directly (caller owns ResponsiveContainer + height). */
   bare?: boolean;
   bodyClassName?: string;
+  /** Optional "?" contextual-help tooltip shown next to the title. */
+  hint?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+        <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+          {title}
+          {hint}
+        </CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent className={cn(!bare && "h-64", bodyClassName)}>

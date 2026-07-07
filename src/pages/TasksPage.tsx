@@ -15,6 +15,7 @@ import * as taskService from "@/services/taskService";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { WorkItemRow, KpiStrip, SectionHeader, taskProofState } from "@/components/pressroom";
+import { GlossaryHint } from "@/lib/glossary";
 import { daysUntil } from "@/lib/dueDate";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -242,6 +243,7 @@ const TasksPage = () => {
                   aria-label="Search tasks"
                 />
               </div>
+              {sort === "smart" && <GlossaryHint term="smartSort" />}
               <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
                 <SelectTrigger className="h-8 w-[150px] text-xs" aria-label="Sort tasks">
                   <span className="text-muted-foreground">Sort:&nbsp;</span>

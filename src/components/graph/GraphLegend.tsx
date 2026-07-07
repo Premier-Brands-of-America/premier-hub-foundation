@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
+import { GlossaryHint } from "@/lib/glossary";
 import { EntityIcon } from "@/components/common/EntityIcon";
 import { NODE_COLOR_VAR, departmentColorVar } from "./graphColors";
 import type { NodeType } from "@/types/graph";
@@ -146,8 +147,9 @@ export function GraphLegend({ counts, showWorkload, departments }: Props) {
         <>
           <div className="border-t border-border/50" />
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+            <p className="mb-2 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Person size = workload
+              <GlossaryHint term="graphWorkload" side="left" />
             </p>
             <div className="flex items-center gap-3">
               <span

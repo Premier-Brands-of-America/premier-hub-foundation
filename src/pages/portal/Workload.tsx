@@ -46,6 +46,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EntityAvatar } from "@/components/common/EntityAvatar";
 import { KpiStrip, type Kpi } from "@/components/pressroom/KpiStrip";
 import { SectionHeader } from "@/components/pressroom/SectionHeader";
+import { GlossaryHint } from "@/lib/glossary";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { StatusBadge, PriorityBadge } from "@/components/requests/requestBadges";
 import { useQueue } from "@/hooks/useRequests";
@@ -388,15 +389,17 @@ export default function Workload() {
 
   const kpis: Kpi[] = [
     { value: team.people.length, label: "people" },
-    { value: team.totalPoints.toFixed(1), label: "open points" },
+    { value: team.totalPoints.toFixed(1), label: "open points", hint: <GlossaryHint term="workloadPoints" /> },
     {
       value: team.overCount,
       label: "over capacity",
       token: team.overCount > 0 ? "--destructive" : undefined,
+      hint: <GlossaryHint term="capacity" />,
     },
     {
       value: `${Math.round(team.teamUtil * 100)}%`,
       label: "team utilization",
+      hint: <GlossaryHint term="utilization" />,
       token:
         team.teamUtil >= 1
           ? "--destructive"

@@ -20,6 +20,7 @@ import {
   YAxis,
 } from "recharts";
 import { ChartCard } from "@/components/charts/ChartCard";
+import { GlossaryHint } from "@/lib/glossary";
 import {
   statusBreakdown,
   byDepartment,
@@ -163,7 +164,7 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
     case "due_health": {
       const data = dueHealth(items);
       return (
-        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
+        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0} hint={<GlossaryHint term="dueHealth" />}>
           {renderDonut(data, HEALTH_COLORS)}
         </ChartCard>
       );
@@ -206,7 +207,7 @@ export function ReportChart({ id, items }: { id: ReportChartId; items: ReportIte
     case "throughput": {
       const data = throughput(items);
       return (
-        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0}>
+        <ChartCard title={meta.title} description={meta.description} isEmpty={sum(data) === 0} hint={<GlossaryHint term="intake" />}>
           <LineChart data={data} margin={{ top: 16, right: 16, bottom: 4, left: -8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
