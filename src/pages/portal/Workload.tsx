@@ -30,6 +30,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Select,
@@ -62,15 +63,16 @@ import { buildOrgTree, flattenOrg, type OrgPerson } from "@/lib/orgChart";
 import { dueLabel, dueUrgency } from "@/lib/dueDate";
 import { cn } from "@/lib/utils";
 import {
+  bandFor,
   buildTotalLoad,
   comparePeople,
   DEFAULT_WEEKLY_CAPACITY_WLP,
   UNASSIGNED_KEY,
   type Band,
   type LoadItem,
+  type LoadKind,
   type PersonTotalLoad,
   type SortKey,
-  type WindowKey,
 } from "@/lib/workloadMetrics";
 import { getWorkloadPrefs, setWorkloadPrefs } from "@/lib/workloadPrefs";
 import type { ProjectWithMeta } from "@/types/projects";
@@ -85,11 +87,21 @@ const BAND_TOKEN: Record<Band, string> = {
   unassigned: "--muted-foreground",
 };
 
-const WINDOW_LABEL: Record<WindowKey, string> = {
-  this_week: "This week",
-  next_week: "Next week",
-  all_open: "All open",
+/** Time-horizon filter — the primary time control (replaces ISO-week windows). */
+type TimeKey = "all" | "overdue" | "30" | "60" | "90";
+const TIME_LABEL: Record<TimeKey, string> = {
+  all: "All open",
+  overdue: "Overdue",
+  "30": "≤ 30d",
+  "60": "≤ 60d",
+  "90": "≤ 90d",
 };
+/** Type filter chips. */
+const TYPE_OPTIONS: { key: LoadKind; label: string }[] = [
+  { key: "request", label: "Requests" },
+  { key: "project", label: "Projects" },
+  { key: "task", label: "Tasks" },
+];
 
 const SORT_LABEL: Record<SortKey, string> = {
   util: "Utilization",
@@ -124,15 +136,41 @@ const tooltipStyle = {
 } as const;
 const axisTick = { fontSize: 11, fill: "hsl(var(--muted-foreground))" } as const;
 const labelStyle = { fontSize: 11, fill: "hsl(var(--muted-foreground))", fontWeight: 600 } as const;
-/** Entity-hued bars for the work-by-type breakdown (Requests / Projects / Tasks). */
+/** Entity-hued bars for the work-by-type charts (Requests / Projects / Tasks). */
 const TYPE_COLORS = ["hsl(var(--entity-request))", "hsl(var(--entity-project))", "hsl(var(--entity-task))"];
-/** Due-date health order: Overdue, Due soon, On track, No date. */
-const HEALTH_COLORS = [
+/** Due-horizon order: Overdue, ≤30d, ≤60d, ≤90d, Later, Undated. */
+const HORIZON_COLORS = [
   "hsl(var(--destructive))",
   "hsl(var(--warning))",
+  "hsl(var(--status-in-progress))",
   "hsl(var(--status-done))",
   "hsl(var(--muted-foreground))",
+  "hsl(var(--border))",
 ];
+/** Single fill for the by-role bars. */
+const ROLE_FILL = "hsl(var(--status-in-progress))";
+
+/** Round to one decimal (avoids float drift from summing points). */
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** Recompute a person's totals from a filtered subset of their load items, so the
+ *  filter bar can slice by type/time/person and the KPIs, chart, and cards all
+ *  stay consistent with what's shown. */
+function withFilteredItems(p: PersonTotalLoad, items: LoadItem[]): PersonTotalLoad {
+  const points = round1(items.reduce((s, it) => s + it.points, 0));
+  const undatedPoints = round1(items.filter((it) => !it.due_date).reduce((s, it) => s + it.points, 0));
+  const util = p.capacity > 0 ? points / p.capacity : 0;
+  return {
+    ...p,
+    items,
+    points,
+    count: items.length,
+    overdue: items.filter((it) => it.overdue).length,
+    util,
+    band: bandFor(util, p.person.key === UNASSIGNED_KEY),
+    undatedPoints,
+  };
+}
 
 interface ChartRow {
   key: string;
@@ -529,14 +567,17 @@ export default function Workload() {
   const directory = useDirectory(projects);
 
   const initial = useMemo(() => getWorkloadPrefs(userId), [userId]);
-  const [win, setWin] = useState<WindowKey>(initial.window);
   const [sort, setSort] = useState<SortKey>(initial.sort);
   const [showUnassigned, setShowUnassigned] = useState(initial.showUnassigned);
   const [selected, setSelected] = useState<string | null>(null);
+  // Filter bar
+  const [time, setTime] = useState<TimeKey>("all");
+  const [typeSel, setTypeSel] = useState<LoadKind[]>(["request", "project", "task"]);
+  const [person, setPerson] = useState<string>("all");
 
-  function persist(next: Partial<{ window: WindowKey; sort: SortKey; showUnassigned: boolean }>) {
+  function persist(next: Partial<{ sort: SortKey; showUnassigned: boolean }>) {
     setWorkloadPrefs(userId, {
-      window: next.window ?? win,
+      window: initial.window,
       sort: next.sort ?? sort,
       showUnassigned: next.showUnassigned ?? showUnassigned,
     });
@@ -544,39 +585,70 @@ export default function Workload() {
 
   const { isAdmin, allowedKeys } = useWorkloadScope();
 
+  // Everything open; the filter bar (time / type / person) slices it client-side
+  // below without refetching.
   const fullTeam = useMemo(
-    () => buildTotalLoad({ requests, tasks, projects }, directory, win),
-    [requests, tasks, projects, directory, win],
+    () => buildTotalLoad({ requests, tasks, projects }, directory, "all_open"),
+    [requests, tasks, projects, directory],
   );
 
-  // ACL: a non-admin sees only their subtree (+ self); recompute team totals from
-  // the visible set so the KPIs reflect what they're allowed to see. Admins (null
-  // allowedKeys) see the full team unchanged.
+  // ACL: a non-admin sees only their subtree (+ self). Admins (null) see everyone.
   const team = useMemo(() => {
     if (allowedKeys === null) return fullTeam;
-    // Only the viewer's subtree — no Unassigned bucket (not their subordinate).
     const scored = fullTeam.people.filter(
       (p) => p.person.key !== UNASSIGNED_KEY && allowedKeys.has(p.person.key),
     );
-    const totalPoints = Math.round(scored.reduce((s, p) => s + p.points, 0) * 10) / 10;
-    const totalCapacity = scored.reduce((s, p) => s + p.capacity, 0);
+    return { ...fullTeam, people: scored };
+  }, [fullTeam, allowedKeys]);
+
+  // People offered in the person filter (full scoped set, by name).
+  const personOptions = useMemo(
+    () =>
+      team.people
+        .filter((p) => p.person.key !== UNASSIGNED_KEY)
+        .map((p) => ({ key: p.person.key, name: p.person.name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [team.people],
+  );
+
+  // Apply the filter bar to each person's items and recompute their totals + the
+  // team rollup from what's left. Time horizon: overdue + undated always count as
+  // "now"; dated items pass if due within N days.
+  const view = useMemo(() => {
+    const now = Date.now();
+    const pass = (it: LoadItem): boolean => {
+      if (!typeSel.includes(it.kind)) return false;
+      if (time === "all") return true;
+      if (time === "overdue") return it.overdue;
+      if (it.overdue || !it.due_date) return true;
+      const d = Date.parse(it.due_date);
+      return Number.isNaN(d) ? true : d <= now + Number(time) * 86_400_000;
+    };
+    let ppl = team.people
+      .map((p) => withFilteredItems(p, p.items.filter(pass)))
+      .filter((p) => p.items.length > 0);
+    if (person !== "all") ppl = ppl.filter((p) => p.person.key === person);
+    const nonU = ppl.filter((p) => p.person.key !== UNASSIGNED_KEY);
+    const totalPoints = round1(nonU.reduce((s, p) => s + p.points, 0));
+    const totalCapacity = nonU.reduce((s, p) => s + p.capacity, 0);
     return {
-      ...fullTeam,
-      people: scored,
+      people: ppl,
       totalPoints,
       totalCapacity,
       teamUtil: totalCapacity > 0 ? totalPoints / totalCapacity : 0,
-      overCount: scored.filter((p) => p.band === "over").length,
-      unassignedPoints: 0,
+      overCount: nonU.filter((p) => p.band === "over").length,
+      unassignedPoints: round1(
+        ppl.filter((p) => p.person.key === UNASSIGNED_KEY).reduce((s, p) => s + p.points, 0),
+      ),
     };
-  }, [fullTeam, allowedKeys]);
+  }, [team.people, typeSel, time, person]);
 
   const people = useMemo(() => {
     const filtered = showUnassigned
-      ? team.people
-      : team.people.filter((p) => p.person.key !== UNASSIGNED_KEY);
+      ? view.people
+      : view.people.filter((p) => p.person.key !== UNASSIGNED_KEY);
     return [...filtered].sort(comparePeople(sort));
-  }, [team.people, sort, showUnassigned]);
+  }, [view.people, sort, showUnassigned]);
 
   const chartRows = useMemo<ChartRow[]>(
     () =>
@@ -593,92 +665,108 @@ export default function Workload() {
     [people],
   );
 
-  // Total open contributions surfaced in the current window (across all people).
   const openItemCount = useMemo(
-    () => team.people.reduce((s, p) => s + p.count, 0),
-    [team.people],
+    () => view.people.reduce((s, p) => s + p.count, 0),
+    [view.people],
   );
 
-  // Breakdown of the SAME scoped work, presented as a report: composition by kind
-  // (requests / projects / tasks) and by due-date health, aggregated across
-  // everyone in scope. This is what merges the old standalone Reports view into
-  // Workload — one dataset, one presents points, this presents the mix.
-  const breakdown = useMemo(() => {
-    const items = team.people.flatMap((p) => p.items);
+  // Analytics over the filtered set: composition by type (count + points), by role,
+  // and by due-horizon (overdue / 30 / 60 / 90 / later / undated).
+  const charts = useMemo(() => {
+    const items = view.people.flatMap((p) => p.items);
+    const now = Date.now();
     const typeCount = { request: 0, project: 0, task: 0 };
-    const health: Record<string, number> = { overdue: 0, soon: 0, normal: 0, none: 0 };
+    const typePoints = { request: 0, project: 0, task: 0 };
+    const roleCount: Record<string, number> = {};
+    const h = { overdue: 0, d30: 0, d60: 0, d90: 0, later: 0, undated: 0 };
     for (const it of items) {
       typeCount[it.kind] += 1;
-      const k = dueUrgency(it.due_date ?? null);
-      health[k] += 1;
+      typePoints[it.kind] += it.points;
+      const role = it.role ?? "Other";
+      roleCount[role] = (roleCount[role] ?? 0) + 1;
+      if (it.overdue) h.overdue += 1;
+      else if (!it.due_date) h.undated += 1;
+      else {
+        const days = (Date.parse(it.due_date) - now) / 86_400_000;
+        if (days <= 30) h.d30 += 1;
+        else if (days <= 60) h.d60 += 1;
+        else if (days <= 90) h.d90 += 1;
+        else h.later += 1;
+      }
     }
     return {
       total: items.length,
-      byType: [
+      byTypeCount: [
         { name: "Requests", value: typeCount.request },
         { name: "Projects", value: typeCount.project },
         { name: "Tasks", value: typeCount.task },
       ],
-      dueHealth: [
-        { name: "Overdue", value: health.overdue },
-        { name: "Due soon", value: health.soon },
-        { name: "On track", value: health.normal },
-        { name: "No date", value: health.none },
+      byTypePoints: [
+        { name: "Requests", value: round1(typePoints.request) },
+        { name: "Projects", value: round1(typePoints.project) },
+        { name: "Tasks", value: round1(typePoints.task) },
+      ],
+      byRole: Object.entries(roleCount)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value),
+      dueHorizon: [
+        { name: "Overdue", value: h.overdue },
+        { name: "≤30d", value: h.d30 },
+        { name: "≤60d", value: h.d60 },
+        { name: "≤90d", value: h.d90 },
+        { name: "Later", value: h.later },
+        { name: "Undated", value: h.undated },
       ],
     };
-  }, [team.people]);
+  }, [view.people]);
 
   const kpis: Kpi[] = [
-    { value: team.people.length, label: "people" },
-    { value: team.totalPoints.toFixed(1), label: "open-work points", hint: <GlossaryHint term="workloadPoints" /> },
+    { value: view.people.length, label: "people" },
+    { value: view.totalPoints.toFixed(1), label: "open-work points", hint: <GlossaryHint term="workloadPoints" /> },
     {
-      value: team.overCount,
+      value: view.overCount,
       label: "over capacity",
-      token: team.overCount > 0 ? "--destructive" : undefined,
+      token: view.overCount > 0 ? "--destructive" : undefined,
       hint: <GlossaryHint term="capacity" />,
     },
     {
-      value: `${Math.round(team.teamUtil * 100)}%`,
-      label: "team utilization",
+      value: `${Math.round(view.teamUtil * 100)}%`,
+      label: "utilization",
       hint: <GlossaryHint term="utilization" />,
       token:
-        team.teamUtil >= 1
+        view.teamUtil >= 1
           ? "--destructive"
-          : team.teamUtil >= 0.85
+          : view.teamUtil >= 0.85
             ? "--warning"
-            : team.teamUtil >= 0.5
+            : view.teamUtil >= 0.5
               ? "--status-done"
               : undefined,
     },
   ];
 
   const hasWork = people.length > 0;
+  const filtersActive = time !== "all" || person !== "all" || typeSel.length < 3;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
       <PageHeader
-        title={isAdmin ? "Team Workload" : team.people.length > 1 ? "My Team's Workload" : "My Workload"}
+        title={isAdmin ? "Team Workload" : personOptions.length > 1 ? "My Team's Workload" : "My Workload"}
         subtitle={
           isLoading
             ? "Everything assigned to you and your team — requests, projects, and tasks"
-            : `${isAdmin ? "Everyone" : team.people.length > 1 ? "You + your reports" : "Your work"} · requests + projects + tasks vs weekly capacity · ${openItemCount} open item${openItemCount === 1 ? "" : "s"}`
+            : `${isAdmin ? "Everyone" : personOptions.length > 1 ? "You + your reports" : "Your work"} · requests + projects + tasks · ${openItemCount} open item${openItemCount === 1 ? "" : "s"}`
         }
         actions={
           <ToggleGroup
             type="single"
             size="sm"
             variant="outline"
-            value={win}
-            onValueChange={(v) => {
-              if (!v) return;
-              const next = v as WindowKey;
-              setWin(next);
-              persist({ window: next });
-            }}
+            value={time}
+            onValueChange={(v) => v && setTime(v as TimeKey)}
           >
-            {(Object.keys(WINDOW_LABEL) as WindowKey[]).map((w) => (
-              <ToggleGroupItem key={w} value={w} className="text-xs">
-                {WINDOW_LABEL[w]}
+            {(Object.keys(TIME_LABEL) as TimeKey[]).map((t) => (
+              <ToggleGroupItem key={t} value={t} className="text-xs">
+                {TIME_LABEL[t]}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -690,9 +778,57 @@ export default function Workload() {
         <div className="space-y-1">
           <KpiStrip items={kpis} />
           <p className="text-xs text-muted-foreground">
-            {team.overCount} of {team.people.length} people over their weekly budget
-            {team.unassignedPoints > 0 && ` • ${team.unassignedPoints.toFixed(1)} points unassigned`}.
+            {view.overCount} of {view.people.length} people over their weekly budget
+            {view.unassignedPoints > 0 && ` • ${view.unassignedPoints.toFixed(1)} points unassigned`}.
           </p>
+        </div>
+      )}
+
+      {/* Filter bar: type + person (time horizon lives in the header). */}
+      {!isLoading && (
+        <div className="flex flex-wrap items-center gap-3">
+          <ToggleGroup
+            type="multiple"
+            size="sm"
+            variant="outline"
+            value={typeSel}
+            onValueChange={(v) => v.length && setTypeSel(v as LoadKind[])}
+          >
+            {TYPE_OPTIONS.map((t) => (
+              <ToggleGroupItem key={t.key} value={t.key} className="text-xs">
+                {t.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+
+          <Select value={person} onValueChange={setPerson}>
+            <SelectTrigger className="h-8 w-[190px] text-xs">
+              <SelectValue placeholder="Person" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All people</SelectItem>
+              {personOptions.map((p) => (
+                <SelectItem key={p.key} value={p.key} className="text-xs">
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {(time !== "all" || person !== "all" || typeSel.length < 3) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-muted-foreground"
+              onClick={() => {
+                setTime("all");
+                setPerson("all");
+                setTypeSel(["request", "project", "task"]);
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
         </div>
       )}
 
@@ -708,8 +844,12 @@ export default function Workload() {
           <CardContent className="py-12">
             <EmptyState
               icon={<Users className="h-6 w-6" />}
-              title="No open work in this window"
-              description="Try a wider window (All open), or new work will appear here as it comes in."
+              title={filtersActive ? "No work matches these filters" : "No open work"}
+              description={
+                filtersActive
+                  ? "Try a wider time horizon or clear the filters."
+                  : "New work will appear here as it comes in."
+              }
             />
           </CardContent>
         </Card>
@@ -718,7 +858,7 @@ export default function Workload() {
           {/* Hero chart */}
           <ChartCard
             title="Capacity by person"
-            description={`Open Workload Points vs the ${DEFAULT_WEEKLY_CAPACITY_WLP}-point weekly budget · ${WINDOW_LABEL[win]}`}
+            description={`Open Workload Points vs the ${DEFAULT_WEEKLY_CAPACITY_WLP}-point weekly budget · ${TIME_LABEL[time]}`}
             bare
           >
             <CapacityByPersonChart
@@ -732,20 +872,16 @@ export default function Workload() {
             />
           </ChartCard>
 
-          {/* Breakdown — the same scoped work, presented as a report */}
+          {/* Analytics — the filtered set, sliced by type, points, role, and due-horizon */}
           <div className="grid gap-4 md:grid-cols-2">
-            <ChartCard
-              title="Open work by type"
-              description="Requests, projects, and tasks across everyone in scope"
-              isEmpty={breakdown.total === 0}
-            >
-              <BarChart data={breakdown.byType} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+            <ChartCard title="Open items by type" description="Count of requests, projects, and tasks" isEmpty={charts.total === 0}>
+              <BarChart data={charts.byTypeCount} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={56}>
-                  {breakdown.byType.map((_, i) => (
+                  {charts.byTypeCount.map((_, i) => (
                     <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
                   ))}
                   <LabelList dataKey="value" position="top" style={labelStyle} />
@@ -753,20 +889,42 @@ export default function Workload() {
               </BarChart>
             </ChartCard>
 
-            <ChartCard
-              title="Due-date health"
-              description="Open items across everyone in scope, by deadline"
-              isEmpty={breakdown.total === 0}
-              hint={<GlossaryHint term="dueHealth" />}
-            >
-              <BarChart data={breakdown.dueHealth} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+            <ChartCard title="Workload points by type" description="Where the weight sits (weighted points)" isEmpty={charts.total === 0} hint={<GlossaryHint term="workloadPoints" />}>
+              <BarChart data={charts.byTypePoints} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={56}>
-                  {breakdown.dueHealth.map((_, i) => (
-                    <Cell key={i} fill={HEALTH_COLORS[i % HEALTH_COLORS.length]} />
+                  {charts.byTypePoints.map((_, i) => (
+                    <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
+                  ))}
+                  <LabelList dataKey="value" position="top" style={labelStyle} />
+                </Bar>
+              </BarChart>
+            </ChartCard>
+
+            <ChartCard title="By role" description="Owner, stakeholder, assignee, lead" isEmpty={charts.byRole.length === 0}>
+              <BarChart data={charts.byRole} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} />
+                <YAxis type="category" dataKey="name" width={92} axisLine={false} tickLine={false} tick={axisTick} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+                <Bar dataKey="value" fill={ROLE_FILL} radius={[0, 4, 4, 0]} maxBarSize={28}>
+                  <LabelList dataKey="value" position="right" style={labelStyle} />
+                </Bar>
+              </BarChart>
+            </ChartCard>
+
+            <ChartCard title="Due horizon" description="When open work is due (30 / 60 / 90 days)" isEmpty={charts.total === 0} hint={<GlossaryHint term="dueHealth" />}>
+              <BarChart data={charts.dueHorizon} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={44}>
+                  {charts.dueHorizon.map((_, i) => (
+                    <Cell key={i} fill={HORIZON_COLORS[i % HORIZON_COLORS.length]} />
                   ))}
                   <LabelList dataKey="value" position="top" style={labelStyle} />
                 </Bar>
