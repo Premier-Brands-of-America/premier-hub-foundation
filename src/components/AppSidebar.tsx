@@ -3,7 +3,6 @@ import {
   CheckSquare,
   FolderKanban,
   Bot,
-  BarChart3,
   Settings,
   LogOut,
   ListChecks,
@@ -79,10 +78,10 @@ const requestsNav: NavItemConfig[] = [
 // first-class report (measuring who's drowning was a primary goal of the app),
 // not just the node-size lens on the graph.
 const insightNav: NavItemConfig[] = [
-  // Personal report of the signed-in user's own tasks/projects — everyone has these.
-  { label: "Reports", to: "/reports", icon: BarChart3 },
-  // Workload is hierarchy-scoped, not role-gated: a manager (any role) sees their
-  // reports, everyone sees their own load, admins see all. Open to all here.
+  // Workload IS the report: everything assigned to you and your team (requests +
+  // projects + tasks), hierarchy-scoped — a manager (any role) sees their reports,
+  // everyone sees their own load, admins see all. The old standalone Reports page
+  // merged in here; /reports redirects to it. Open to all.
   { label: "Workload", to: "/workload", icon: Gauge, feature: "department_dashboard" },
   { label: "Explore", to: "/graph", icon: Network, roles: ["designer", "admin"] },
 ];

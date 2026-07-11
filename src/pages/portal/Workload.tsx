@@ -124,6 +124,15 @@ const tooltipStyle = {
 } as const;
 const axisTick = { fontSize: 11, fill: "hsl(var(--muted-foreground))" } as const;
 const labelStyle = { fontSize: 11, fill: "hsl(var(--muted-foreground))", fontWeight: 600 } as const;
+/** Entity-hued bars for the work-by-type breakdown (Requests / Projects / Tasks). */
+const TYPE_COLORS = ["hsl(var(--entity-request))", "hsl(var(--entity-project))", "hsl(var(--entity-task))"];
+/** Due-date health order: Overdue, Due soon, On track, No date. */
+const HEALTH_COLORS = [
+  "hsl(var(--destructive))",
+  "hsl(var(--warning))",
+  "hsl(var(--status-done))",
+  "hsl(var(--muted-foreground))",
+];
 
 interface ChartRow {
   key: string;
@@ -590,6 +599,35 @@ export default function Workload() {
     [team.people],
   );
 
+  // Breakdown of the SAME scoped work, presented as a report: composition by kind
+  // (requests / projects / tasks) and by due-date health, aggregated across
+  // everyone in scope. This is what merges the old standalone Reports view into
+  // Workload — one dataset, one presents points, this presents the mix.
+  const breakdown = useMemo(() => {
+    const items = team.people.flatMap((p) => p.items);
+    const typeCount = { request: 0, project: 0, task: 0 };
+    const health: Record<string, number> = { overdue: 0, soon: 0, normal: 0, none: 0 };
+    for (const it of items) {
+      typeCount[it.kind] += 1;
+      const k = dueUrgency(it.due_date ?? null);
+      health[k] += 1;
+    }
+    return {
+      total: items.length,
+      byType: [
+        { name: "Requests", value: typeCount.request },
+        { name: "Projects", value: typeCount.project },
+        { name: "Tasks", value: typeCount.task },
+      ],
+      dueHealth: [
+        { name: "Overdue", value: health.overdue },
+        { name: "Due soon", value: health.soon },
+        { name: "On track", value: health.normal },
+        { name: "No date", value: health.none },
+      ],
+    };
+  }, [team.people]);
+
   const kpis: Kpi[] = [
     { value: team.people.length, label: "people" },
     { value: team.totalPoints.toFixed(1), label: "open-work points", hint: <GlossaryHint term="workloadPoints" /> },
@@ -619,11 +657,11 @@ export default function Workload() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
       <PageHeader
-        title={isAdmin ? "Team Workload" : "My Team's Workload"}
+        title={isAdmin ? "Team Workload" : team.people.length > 1 ? "My Team's Workload" : "My Workload"}
         subtitle={
           isLoading
-            ? "Total open work (requests + projects + tasks) vs weekly capacity"
-            : `${isAdmin ? "Everyone" : "Your reports"} · requests + projects + tasks vs weekly capacity · ${openItemCount} open item${openItemCount === 1 ? "" : "s"}`
+            ? "Everything assigned to you and your team — requests, projects, and tasks"
+            : `${isAdmin ? "Everyone" : team.people.length > 1 ? "You + your reports" : "Your work"} · requests + projects + tasks vs weekly capacity · ${openItemCount} open item${openItemCount === 1 ? "" : "s"}`
         }
         actions={
           <ToggleGroup
@@ -693,6 +731,48 @@ export default function Workload() {
               }}
             />
           </ChartCard>
+
+          {/* Breakdown — the same scoped work, presented as a report */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <ChartCard
+              title="Open work by type"
+              description="Requests, projects, and tasks across everyone in scope"
+              isEmpty={breakdown.total === 0}
+            >
+              <BarChart data={breakdown.byType} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={56}>
+                  {breakdown.byType.map((_, i) => (
+                    <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
+                  ))}
+                  <LabelList dataKey="value" position="top" style={labelStyle} />
+                </Bar>
+              </BarChart>
+            </ChartCard>
+
+            <ChartCard
+              title="Due-date health"
+              description="Open items across everyone in scope, by deadline"
+              isEmpty={breakdown.total === 0}
+              hint={<GlossaryHint term="dueHealth" />}
+            >
+              <BarChart data={breakdown.dueHealth} margin={{ top: 16, right: 12, bottom: 4, left: -8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={axisTick} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={32} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={56}>
+                  {breakdown.dueHealth.map((_, i) => (
+                    <Cell key={i} fill={HEALTH_COLORS[i % HEALTH_COLORS.length]} />
+                  ))}
+                  <LabelList dataKey="value" position="top" style={labelStyle} />
+                </Bar>
+              </BarChart>
+            </ChartCard>
+          </div>
 
           {/* Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3">
