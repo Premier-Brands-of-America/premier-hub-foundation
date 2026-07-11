@@ -80,7 +80,9 @@ const requestsNav: NavItemConfig[] = [
 // not just the node-size lens on the graph.
 const insightNav: NavItemConfig[] = [
   { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["designer", "admin"] },
-  { label: "Workload", to: "/workload", icon: Gauge, feature: "department_dashboard", roles: ["designer", "admin"] },
+  // Workload is hierarchy-scoped, not role-gated: a manager (any role) sees their
+  // reports, everyone sees their own load, admins see all. Open to all here.
+  { label: "Workload", to: "/workload", icon: Gauge, feature: "department_dashboard" },
   { label: "Explore", to: "/graph", icon: Network, roles: ["designer", "admin"] },
 ];
 
