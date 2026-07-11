@@ -79,7 +79,8 @@ const requestsNav: NavItemConfig[] = [
 // first-class report (measuring who's drowning was a primary goal of the app),
 // not just the node-size lens on the graph.
 const insightNav: NavItemConfig[] = [
-  { label: "Reports", to: "/reports", icon: BarChart3, feature: "reports", roles: ["designer", "admin"] },
+  // Personal report of the signed-in user's own tasks/projects — everyone has these.
+  { label: "Reports", to: "/reports", icon: BarChart3 },
   // Workload is hierarchy-scoped, not role-gated: a manager (any role) sees their
   // reports, everyone sees their own load, admins see all. Open to all here.
   { label: "Workload", to: "/workload", icon: Gauge, feature: "department_dashboard" },

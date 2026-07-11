@@ -36,6 +36,7 @@ const MyRequests = lazy(() => import("./pages/portal/MyRequests"));
 const RequestDetail = lazy(() => import("./pages/portal/RequestDetail"));
 const Queue = lazy(() => import("./pages/portal/Queue"));
 const Workload = lazy(() => import("./pages/portal/Workload"));
+const MyReportsPage = lazy(() => import("./pages/portal/MyReports"));
 const ReportsPage = lazy(() => import("./pages/portal/Reports"));
 const AuditLogPage = lazy(() => import("./pages/portal/AuditLogPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -186,7 +187,10 @@ function AppRoutes() {
           {/* Open to any authenticated user — the view's hierarchy ACL scopes it
               (admins see everyone; everyone else sees their reports + own row). */}
           <Route path="/workload" element={<ProtectedRoute><FeatureRoute feature="department_dashboard"><Workload /></FeatureRoute></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute requireRole="admin"><FeatureRoute feature="reports"><ReportsPage /></FeatureRoute></ProtectedRoute>} />
+          {/* Insight → Reports: a personal report of the signed-in user's own tasks/projects (open to all). */}
+          <Route path="/reports" element={<ProtectedRoute><MyReportsPage /></ProtectedRoute>} />
+          {/* Art-request analytics — kept for the Art dept + admins (URL-only, no nav). */}
+          <Route path="/art-reports" element={<ProtectedRoute requireRole={["designer","admin"]}><FeatureRoute feature="reports"><ReportsPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/audit" element={<ProtectedRoute requireRole="admin" allowDiagnostics><FeatureRoute feature="audit_trail"><AuditLogPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
           <Route path="/pages/:id" element={<ProtectedRoute><FeatureRoute feature="pages"><PagesPage /></FeatureRoute></ProtectedRoute>} />
