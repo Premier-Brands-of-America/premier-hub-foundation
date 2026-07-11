@@ -212,36 +212,46 @@ function CapacityByPersonChart({
   );
 }
 
-/** Banded capacity track with an overflow-stripe cap and a 100% capacity tick. */
+/**
+ * Banded capacity track. The 100%-capacity tick sits at 2/3 of the track, leaving
+ * headroom so an over-capacity person's striped overflow renders INSIDE the card
+ * instead of running off the right edge (the old version positioned it at
+ * left:100%, so at 195% it stuck out past the card). Bar length saturates at 150%
+ * utilization; the exact "%" and the "X% over" badge carry the real number beyond.
+ */
 function CapacityBar({ util, band }: { util: number; band: Band }) {
-  const pct = Math.min(util, 1) * 100;
-  const over = Math.max(util - 1, 0) * 100; // overflow beyond capacity
+  const DISPLAY_MAX = 1.5; // top of the track = 150% of weekly capacity
+  const capMark = (1 / DISPLAY_MAX) * 100; // the 100%-capacity tick (~66.7%)
+  const fillPct = (Math.min(Math.max(util, 0), 1) / DISPLAY_MAX) * 100; // up-to-capacity
+  const overPct = (Math.min(Math.max(util - 1, 0), DISPLAY_MAX - 1) / DISPLAY_MAX) * 100; // beyond
   return (
     <div
-      className="relative h-2.5 w-full rounded-full bg-muted"
+      className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted"
       role="progressbar"
       aria-valuenow={Math.round(util * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Percent of weekly capacity"
     >
+      {/* up-to-capacity fill */}
       <div
-        className="h-full rounded-full"
-        style={{ width: `${pct}%`, background: `hsl(var(${BAND_TOKEN[band]}))` }}
+        className="absolute inset-y-0 left-0 rounded-full"
+        style={{ width: `${fillPct}%`, background: `hsl(var(${BAND_TOKEN[band]}))` }}
       />
-      {over > 0 && (
+      {/* over-capacity stripe, butted onto the fill — stays within the track */}
+      {overPct > 0 && (
         <div
-          className="absolute inset-y-0 rounded-r-full"
+          className="absolute inset-y-0"
           style={{
-            left: "100%",
-            width: `${Math.min(over, 40)}%`,
+            left: `${fillPct}%`,
+            width: `${overPct}%`,
             background:
               "repeating-linear-gradient(45deg,hsl(var(--destructive)),hsl(var(--destructive)) 3px,transparent 3px,transparent 6px)",
           }}
         />
       )}
-      {/* capacity tick at 100% */}
-      <div className="absolute inset-y-[-2px] w-px bg-foreground/40" style={{ left: "100%" }} aria-hidden />
+      {/* 100%-capacity tick */}
+      <div className="absolute inset-y-0 w-px bg-foreground/50" style={{ left: `${capMark}%` }} aria-hidden />
     </div>
   );
 }
