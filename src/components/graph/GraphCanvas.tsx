@@ -4,7 +4,7 @@ import {
   getForegroundColor, getNodeColor, getStatusColor, nodeRadius, personNodeRadius,
   RELATION_STYLES, edgeDash, getCardColor,
   getSelectionColor, getHoverColor, getVoidColor, rawVar, getNodeColorRaw,
-  departmentColorVar,
+  departmentColorVar, WLP_REF_FLOOR,
 } from "./graphColors";
 import { entityImageUri } from "@/lib/avatars/entityAvatars";
 import { DEFAULT_FORCES, type GraphEdge, type GraphForces, type GraphNode, type GraphPayload, type NodeType } from "@/types/graph";
@@ -42,10 +42,11 @@ type FGNode = GraphNode & {
 };
 type FGData = { nodes: FGNode[]; links: GraphEdge[] };
 
-/** Drawn radius: person nodes scale with open workload points; everything else by degree. */
-function radiusFor(node: FGNode, nodeSize: number): number {
+/** Drawn radius: person nodes scale with open workload points (against the
+ *  busiest person in view, `wlpRef`); everything else by degree. */
+function radiusFor(node: FGNode, nodeSize: number, wlpRef: number): number {
   if (node.type === "user") {
-    return personNodeRadius(node.__wlp, node.__deg ?? 0, nodeSize);
+    return personNodeRadius(node.__wlp, node.__deg ?? 0, nodeSize, wlpRef);
   }
   return nodeRadius(node.__deg ?? 0, nodeSize);
 }
@@ -142,6 +143,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
 
   // Stable graphData reference: mutate in place when ids match to preserve positions
   const fgDataRef = useRef<FGData>({ nodes: [], links: [] });
+  // Top of the workload→size scale: the busiest person currently in view (floored),
+  // so two different loads always render at different sizes (no fixed saturation).
+  const wlpRefRef = useRef<number>(WLP_REF_FLOOR);
   const fgData = useMemo<FGData>(() => {
     const prev = fgDataRef.current;
     const prevById = new Map(prev.nodes.map((n) => [n.id, n]));
@@ -167,6 +171,14 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
       base.__deptRaw = n.type === "user" && dept ? rawVar(departmentColorVar(dept), base.__raw ?? "162 42% 36%") : null;
       return base;
     });
+    // Stretch the size scale to the busiest person in view so heavier load always
+    // reads as a bigger circle (Edwin ≫ Alex), instead of everyone above one
+    // week's budget saturating to the same max.
+    let maxWlp = 0;
+    for (const n of nextNodes) {
+      if (n.type === "user" && typeof n.__wlp === "number") maxWlp = Math.max(maxWlp, n.__wlp);
+    }
+    wlpRefRef.current = Math.max(maxWlp, WLP_REF_FLOOR);
     const next: FGData = { nodes: nextNodes, links: data.edges.map((e) => ({ ...e })) };
     fgDataRef.current = next;
     return next;
@@ -372,7 +384,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         nodeCanvasObject={(node: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
           const x0 = node.x ?? 0;
           const y0 = node.y ?? 0;
-          const r = radiusFor(node, forces.nodeSize);
+          const r = radiusFor(node, forces.nodeSize, wlpRefRef.current);
           const dimmed = highlightedSet ? !highlightedSet.has(node.id) : false;
           const isSelected = node.id === selectedId;
           const isHovered = node.id === hoverId;
@@ -533,7 +545,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, Props>(function GraphCa
         nodePointerAreaPaint={(node: FGNode, color: string, ctx: CanvasRenderingContext2D) => {
           const x = node.x ?? 0;
           const y = node.y ?? 0;
-          const r = radiusFor(node, forces.nodeSize);
+          const r = radiusFor(node, forces.nodeSize, wlpRefRef.current);
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.arc(x, y, r + 3, 0, 2 * Math.PI);

@@ -137,23 +137,35 @@ export const GRAPH_WORKLOAD_OVERLOAD = 8;
 
 /** Min/max radius multipliers for workload-scaled person nodes (× nodeSize). */
 const WLP_MIN_MULT = 1.1;  // an idle/unloaded person is still clearly a node
-const WLP_MAX_MULT = 6.0;  // a heavily loaded person towers (~5.5× the min)
-const WLP_REF = 8;         // WLP that maps to the max radius (≈ one week's budget)
+const WLP_MAX_MULT = 6.0;  // the busiest person in view towers (~5.5× the min)
+
+/**
+ * Top-of-scale floor for the workload→size mapping. The BUSIEST person in view
+ * sets the real top of the scale (so the full size range is always used); this
+ * floor only stops a near-idle team from ballooning a 1–2 point node. ≈ half a
+ * week's budget.
+ */
+export const WLP_REF_FLOOR = 6;
 
 /**
  * Radius for a person node driven by workload points (graph-space).
- * Area-proportional (sqrt) and clamped to [MIN,MAX]×nodeSize. Tuned so the size
- * difference is obvious from just a couple of points (not only at high load):
- * with nodeSize=5 → 0pts≈5.5px, 1.5pts≈15px, 3≈20px, 4.5≈24px, ≥8→30px — a clear
- * ~5.5× spread. Unknown points (null) fall back to degree-based `nodeRadius`.
+ * Area-proportional (sqrt) and scaled against `ref` — the top of the scale,
+ * which the caller sets to the busiest person's points currently in view
+ * (floored at WLP_REF_FLOOR). Because the scale stretches to the actual max,
+ * two DIFFERENT loads never collapse to the same circle. (The previous fixed
+ * reference of 8 saturated everyone at/above one week's budget to an identical
+ * max size — so a person at 9 pts and a person at 20 looked the same.)
+ * Unknown points (null) fall back to degree-based `nodeRadius`.
  */
 export function personNodeRadius(
   points: number | undefined | null,
   degree: number,
   nodeSize: number,
+  ref: number = WLP_REF_FLOOR,
 ): number {
   if (points == null) return nodeRadius(degree, nodeSize);
-  const t = Math.min(Math.max(points, 0) / WLP_REF, 1); // 0..1
+  const denom = Math.max(ref, WLP_REF_FLOOR, 1);
+  const t = Math.min(Math.max(points, 0) / denom, 1); // 0..1
   const mult = WLP_MIN_MULT + (WLP_MAX_MULT - WLP_MIN_MULT) * Math.sqrt(t);
   return mult * nodeSize;
 }
