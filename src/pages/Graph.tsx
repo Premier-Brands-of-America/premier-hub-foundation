@@ -6,7 +6,6 @@ import { GraphControlsPanel } from "@/components/graph/GraphControlsPanel";
 import { GraphToolbar } from "@/components/graph/GraphToolbar";
 import { GraphLegend } from "@/components/graph/GraphLegend";
 import { NodeDetailSheet } from "@/components/graph/NodeDetailSheet";
-import { GraphListFallback } from "@/components/graph/GraphListFallback";
 import { Button } from "@/components/ui/button";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
@@ -517,31 +516,31 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
         </div>
       )}
 
-      {isMobile ? (
-        <div className="h-full overflow-y-auto">
-          <GraphListFallback data={payload} onNodeClick={handleNodeClick} />
-        </div>
+      {/* The graph canvas renders on every device — on mobile it's a touch-pan/
+          pinch-zoom/tap-a-node surface (the heavy side panels are hidden below). */}
+      {isLoading ? (
+        <GraphLoadingShimmer width={size.w} height={size.h} />
       ) : (
         <>
-          {isLoading ? (
-            <GraphLoadingShimmer width={size.w} height={size.h} />
-          ) : (
-            <>
-              <GraphCanvas
-                ref={canvasRef}
-                data={payload}
-                forces={forces}
-                width={size.w}
-                height={size.h}
-                selectedId={selected?.id ?? null}
-                highlightIds={searchHighlight}
-                onNodeClick={handleNodeClick}
-              />
-              {isEmpty && <GraphEmptyState onReset={handleResetFilters} />}
-            </>
-          )}
+          <GraphCanvas
+            ref={canvasRef}
+            data={payload}
+            forces={forces}
+            width={size.w}
+            height={size.h}
+            selectedId={selected?.id ?? null}
+            highlightIds={searchHighlight}
+            onNodeClick={handleNodeClick}
+          />
+          {isEmpty && <GraphEmptyState onReset={handleResetFilters} />}
+        </>
+      )}
 
-          {/* Left panel: Filters + Forces */}
+      {/* Power panels (filters / forces / insights / toolbar) — desktop only; on a
+          phone they'd bury the small canvas, so mobile keeps just the graph + mode
+          switch + tap-to-open detail sheet. */}
+      {!isMobile && (
+        <>
           <div className="absolute top-3 left-3 z-10 space-y-3">
             <GraphFiltersPanel
               view={view}
@@ -591,19 +590,19 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
               }}
             />
           </div>
-
-          {/* Bottom-right: Stats + Legend */}
-          <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
-            {!isLoading && payload.nodes.length > 0 && (
-              <GraphStats payload={payload} />
-            )}
-            <GraphLegend
-              counts={nodeCounts}
-              showWorkload={mode === "network"}
-              departments={departments}
-            />
-          </div>
         </>
+      )}
+
+      {/* Bottom-right: Stats + Legend — desktop only (it covers too much of a phone). */}
+      {!isMobile && (
+        <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
+          {!isLoading && payload.nodes.length > 0 && <GraphStats payload={payload} />}
+          <GraphLegend
+            counts={nodeCounts}
+            showWorkload={mode === "network"}
+            departments={departments}
+          />
+        </div>
       )}
 
       <NodeDetailSheet

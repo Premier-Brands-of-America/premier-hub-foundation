@@ -167,23 +167,32 @@ function mapMemoryEdge(e: Record<string, unknown>): GraphEdge {
   };
 }
 
-/** Real AI knowledge graph via get_memory_graph (concepts + extracted edges). */
+/** Real AI knowledge graph via get_memory_graph (concepts + extracted edges).
+ *  Fully defensive: a missing/failing KG RPC falls back to the plain RLS-scoped
+ *  entity graph, and if THAT fails too it degrades to an empty graph — memory mode
+ *  must never surface a hard error (it took down the whole Explore view before). */
 export async function fetchMemoryGraph(filters: GraphFilters = {}): Promise<GraphPayload> {
   if (IS_PREVIEW) return buildMemoryGraph(memoryViewer());
   const limit = filters.limit ?? DEFAULT_LIMIT;
-  const { data, error } = await supabase.rpc("get_memory_graph" as never, {
-    p_limit: limit,
-  } as never);
-  if (error) {
-    // KG RPC not deployed yet → fall back to the plain RLS-scoped entity graph.
-    return fetchGraph({ ...filters, entity_types: filters.entity_types ?? ALL_MEMORY_TYPES });
+  try {
+    const { data, error } = await supabase.rpc("get_memory_graph" as never, {
+      p_limit: limit,
+    } as never);
+    if (error) throw error;
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { nodes: GraphNode[] | null; edges: Record<string, unknown>[] | null }
+      | null;
+    const nodes = (row?.nodes ?? []) as GraphNode[];
+    const edges = (row?.edges ?? []).map(mapMemoryEdge);
+    return { nodes, edges, truncated: nodes.length >= limit };
+  } catch {
+    // KG RPC not deployed / errored → plain entity graph; empty as a last resort.
+    try {
+      return await fetchGraph({ ...filters, entity_types: filters.entity_types ?? ALL_MEMORY_TYPES });
+    } catch {
+      return { nodes: [], edges: [], truncated: false };
+    }
   }
-  const row = (Array.isArray(data) ? data[0] : data) as
-    | { nodes: GraphNode[] | null; edges: Record<string, unknown>[] | null }
-    | null;
-  const nodes = (row?.nodes ?? []) as GraphNode[];
-  const edges = (row?.edges ?? []).map(mapMemoryEdge);
-  return { nodes, edges, truncated: nodes.length >= limit };
 }
 
 export async function expandNode(
