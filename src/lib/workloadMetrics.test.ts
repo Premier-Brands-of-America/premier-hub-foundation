@@ -3,10 +3,13 @@ import {
   itemPoints,
   isOpen,
   inWindow,
+  inWindowDate,
   isOverdue,
+  isOverdueDate,
   weekBounds,
   bandFor,
   buildTeamLoad,
+  buildTotalLoad,
   comparePeople,
   PRIORITY_WEIGHT,
   TYPE_MULT,
@@ -15,6 +18,8 @@ import {
   type WindowKey,
 } from "./workloadMetrics";
 import type { ArtRequest, RequestPriority, RequestStatus, RequestType } from "@/types/request";
+import type { Task } from "@/types/tasks";
+import type { ProjectWithMeta, EnrichedStakeholder } from "@/types/projects";
 
 // A Wednesday, so the containing ISO week is Mon 2026-06-22 .. Sun 2026-06-28,
 // and "next week" is Mon 2026-06-29 .. Sun 2026-07-05. Local-midnight math.
@@ -272,5 +277,235 @@ describe("WindowKey literals", () => {
   it("are the three expected windows", () => {
     const keys: WindowKey[] = ["this_week", "next_week", "all_open"];
     expect(keys).toHaveLength(3);
+  });
+});
+
+// ── buildTotalLoad — requests + projects + tasks ────────────────────────────
+
+let tseq = 0;
+function task(p: { owner: string; status?: Task["status"]; due?: string | null; title?: string }): Task {
+  tseq += 1;
+  return {
+    id: `t-${tseq}`,
+    user_id: p.owner,
+    title: p.title ?? `Task ${tseq}`,
+    description: null,
+    due_date: p.due ?? null,
+    percent_complete: null,
+    status: p.status ?? "active",
+    completed_at: null,
+    created_at: NOW.toISOString(),
+    updated_at: NOW.toISOString(),
+  };
+}
+
+let pseq = 0;
+function proj(p: {
+  owner: string;
+  status?: ProjectWithMeta["status"];
+  due?: string | null;
+  stakeholders?: string[]; // user_ids (with names supplied via the directory)
+  title?: string;
+}): ProjectWithMeta {
+  pseq += 1;
+  const stakeholders: EnrichedStakeholder[] = (p.stakeholders ?? []).map((uid, i) => ({
+    id: `sh-${pseq}-${i}`,
+    project_id: `p-${pseq}`,
+    user_id: uid,
+    percent_complete: null,
+    added_at: NOW.toISOString(),
+    full_name: null,
+    email: null,
+  }));
+  return {
+    id: `p-${pseq}`,
+    owner_id: p.owner,
+    title: p.title ?? `Project ${pseq}`,
+    description: null,
+    visibility: "private",
+    status: p.status ?? "active",
+    desired_due_date: p.due ?? null,
+    updated_due_date: null,
+    overall_percent_complete: null,
+    completed_at: null,
+    created_at: NOW.toISOString(),
+    updated_at: NOW.toISOString(),
+    stakeholders,
+  };
+}
+
+describe("inWindowDate / isOverdueDate (bare-date twins of inWindow/isOverdue)", () => {
+  it("match the ArtRequest-based versions for the same date", () => {
+    for (const d of ["2026-06-25", "2026-07-01", "2026-06-20", "2026-08-15", null]) {
+      for (const w of ["this_week", "next_week", "all_open"] as WindowKey[]) {
+        expect(inWindowDate(d, w, NOW)).toBe(inWindow(req({ due: d }), w, NOW));
+      }
+      expect(isOverdueDate(d, NOW)).toBe(isOverdue(req({ due: d }), NOW));
+    }
+  });
+});
+
+describe("buildTotalLoad — total open load across requests + projects + tasks", () => {
+  it("a task-only person (1pt) and a project-owner (3pts) both appear with correct weights", () => {
+    const directory = new Map<string, string>([
+      ["uid-taylor", "Taylor Task"],
+      ["uid-olivia", "Olivia Owner"],
+    ]);
+    const team = buildTotalLoad(
+      {
+        requests: [],
+        tasks: [task({ owner: "uid-taylor", due: null })], // 1 pt, undated → this-week
+        projects: [proj({ owner: "uid-olivia", due: null })], // 3 pts owner
+      },
+      directory,
+      "this_week",
+      undefined,
+      NOW,
+    );
+
+    const taylor = team.people.find((p) => p.person.key === "taylor task")!;
+    const olivia = team.people.find((p) => p.person.key === "olivia owner")!;
+    expect(taylor).toBeTruthy();
+    expect(olivia).toBeTruthy();
+    expect(taylor.points).toBe(1);
+    expect(taylor.items[0].kind).toBe("task");
+    expect(taylor.items[0].role).toBe("Assignee");
+    expect(olivia.points).toBe(3);
+    expect(olivia.items[0].kind).toBe("project");
+    expect(olivia.items[0].role).toBe("Owner");
+    // both undated → flagged
+    expect(taylor.undatedPoints).toBe(1);
+    expect(olivia.undatedPoints).toBe(3);
+  });
+
+  it("a request lead and a task owner with the same name merge onto one person", () => {
+    // Request lead "jaclyn" (cap → "Jaclyn", key "jaclyn"); task owner id resolves
+    // via the directory to display name "Jaclyn" → key "jaclyn" → SAME row.
+    const directory = new Map<string, string>([["uid-jaclyn", "Jaclyn"]]);
+    const team = buildTotalLoad(
+      {
+        requests: [
+          req({ lead: "jaclyn", priority: "urgent", type: "full_brief", due: "2026-06-25", status: "in_progress" }), // 4.5
+        ],
+        tasks: [task({ owner: "uid-jaclyn", due: "2026-06-25" })], // 1
+        projects: [],
+      },
+      directory,
+      "this_week",
+      undefined,
+      NOW,
+    );
+
+    // Exactly one person row, carrying BOTH contributions.
+    expect(team.people).toHaveLength(1);
+    const jaclyn = team.people[0];
+    expect(jaclyn.person.key).toBe("jaclyn");
+    expect(jaclyn.count).toBe(2);
+    expect(jaclyn.points).toBe(5.5); // 4.5 request + 1 task
+    expect(jaclyn.items.map((i) => i.kind).sort()).toEqual(["request", "task"]);
+  });
+
+  it("scores project owner (3) + non-owner stakeholder (1.5), dedupes owner-as-stakeholder", () => {
+    const directory = new Map<string, string>([
+      ["uid-owner", "Ollie Owner"],
+      ["uid-stake", "Sasha Stake"],
+    ]);
+    const team = buildTotalLoad(
+      {
+        requests: [],
+        tasks: [],
+        // Owner also listed as a stakeholder → must NOT get the extra 1.5.
+        projects: [proj({ owner: "uid-owner", due: null, stakeholders: ["uid-owner", "uid-stake"] })],
+      },
+      directory,
+      "all_open",
+      undefined,
+      NOW,
+    );
+
+    const owner = team.people.find((p) => p.person.key === "ollie owner")!;
+    const stake = team.people.find((p) => p.person.key === "sasha stake")!;
+    expect(owner.points).toBe(3); // owner only, not 4.5
+    expect(owner.items).toHaveLength(1);
+    expect(stake.points).toBe(1.5);
+    expect(stake.items[0].role).toBe("Stakeholder");
+  });
+
+  it("excludes complete/done work and respects the window", () => {
+    const directory = new Map<string, string>([["uid-a", "Alex A"]]);
+    const team = buildTotalLoad(
+      {
+        requests: [],
+        tasks: [
+          task({ owner: "uid-a", status: "complete", due: "2026-06-25" }), // excluded (done)
+          task({ owner: "uid-a", status: "active", due: "2026-07-01" }), // next week → excluded from this_week
+        ],
+        projects: [
+          proj({ owner: "uid-a", status: "complete", due: null }), // excluded (done)
+        ],
+      },
+      directory,
+      "this_week",
+      undefined,
+      NOW,
+    );
+    // Nothing lands in this_week → Alex should not appear at all.
+    expect(team.people.find((p) => p.person.key === "alex a")).toBeUndefined();
+    expect(team.totalPoints).toBe(0);
+  });
+
+  it("resolves an unknown owner id to a short non-blank label", () => {
+    const team = buildTotalLoad(
+      { requests: [], tasks: [task({ owner: "abcdef123456", due: null })], projects: [] },
+      new Map(),
+      "this_week",
+      undefined,
+      NOW,
+    );
+    const row = team.people[0];
+    expect(row.person.key).toBe("uid:abcdef123456");
+    expect(row.person.name).toBe("User abcdef");
+    expect(row.points).toBe(1);
+  });
+
+  it("bands + team totals mirror buildTeamLoad's math for a mixed team", () => {
+    const directory = new Map<string, string>([
+      ["uid-olivia", "Olivia"],
+      ["uid-taylor", "Taylor"],
+    ]);
+    // Olivia owns 4 projects (12 pts) → over capacity (util 1.2).
+    // Taylor holds 3 tasks (3 pts) → under (util 0.3).
+    const team = buildTotalLoad(
+      {
+        requests: [],
+        tasks: [
+          task({ owner: "uid-taylor", due: null }),
+          task({ owner: "uid-taylor", due: null }),
+          task({ owner: "uid-taylor", due: null }),
+        ],
+        projects: [
+          proj({ owner: "uid-olivia", due: null }),
+          proj({ owner: "uid-olivia", due: null }),
+          proj({ owner: "uid-olivia", due: null }),
+          proj({ owner: "uid-olivia", due: null }),
+        ],
+      },
+      directory,
+      "all_open",
+      undefined,
+      NOW,
+    );
+    const olivia = team.people.find((p) => p.person.key === "olivia")!;
+    const taylor = team.people.find((p) => p.person.key === "taylor")!;
+    expect(olivia.points).toBe(12);
+    expect(olivia.util).toBeCloseTo(1.2, 5);
+    expect(olivia.band).toBe("over");
+    expect(taylor.points).toBe(3);
+    expect(taylor.band).toBe("under");
+    expect(team.totalPoints).toBe(15);
+    expect(team.totalCapacity).toBe(20);
+    expect(team.overCount).toBe(1);
+    // default sort: highest util first
+    expect(team.people[0].person.key).toBe("olivia");
   });
 });

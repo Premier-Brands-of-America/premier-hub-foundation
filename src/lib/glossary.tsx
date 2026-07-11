@@ -35,10 +35,12 @@ export const GLOSSARY: Record<string, { title: string; body: ReactNode }> = {
     title: "Workload Points (WLP)",
     body: (
       <>
-        A weight per open item, since the hub tracks no hours. Each item counts as{" "}
-        <b>priority × type</b>: urgent <b>3</b>, high <b>2</b>, medium <b>1.5</b>, low <b>1</b> —
-        times <b>1.5</b> for a Full Brief (<b>1</b> for an Easy request). Only open items count;
-        Done and Archived don't.
+        A weight per open item, since the hub tracks no hours. It counts <b>all</b> of a person's
+        open work: an art <b>request</b> they lead scores <b>priority × type</b> — urgent <b>3</b>,
+        high <b>2</b>, medium <b>1.5</b>, low <b>1</b>, times <b>1.5</b> for a Full Brief (<b>1</b>{" "}
+        for Easy); a <b>project</b> counts <b>3</b> if they own it, <b>1.5</b> as a stakeholder;
+        and a <b>task</b> assigned to them counts <b>1</b> — the same weights as the graph. Only
+        open items count; Done and Archived don't.
       </>
     ),
   },

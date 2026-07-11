@@ -1,12 +1,16 @@
 /**
  * Team Workload — the honest answer to "who is drowning and who has room?"
  *
- * Replaces the old "% of the busiest person" bar with a weighted-points capacity
- * model (src/lib/workloadMetrics.ts): each open item scores priority × type, is
- * windowed by due date, and is measured against a weekly points budget. The hero
- * is a horizontal bar chart with a vermilion capacity line; per-person cards drill
+ * Measures each person's TOTAL open workload — art requests they lead, projects
+ * they own or are a stakeholder on, and tasks assigned to them — against a weekly
+ * points budget (src/lib/workloadMetrics.ts `buildTotalLoad`). Every open item
+ * scores by kind (owner 3 ≫ stakeholder 1.5 ≫ task 1; requests keep priority ×
+ * type), is windowed by due date, and is measured against capacity — the same
+ * weights the Network graph uses, so the report and the graph agree. The hero is
+ * a horizontal bar chart with a vermilion capacity line; per-person cards drill
  * into the items that built each total. Numbers are honest — there is no time
- * tracking, and a footnote says so. Preview reads demo requests via useQueue().
+ * tracking, and a footnote says so. Preview is self-contained (demo requests via
+ * useQueue(), demo tasks/projects via the flat query helpers).
  */
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -49,23 +53,28 @@ import { SectionHeader } from "@/components/pressroom/SectionHeader";
 import { GlossaryHint } from "@/lib/glossary";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { StatusBadge, PriorityBadge } from "@/components/requests/requestBadges";
+import { useQuery } from "@tanstack/react-query";
 import { useQueue } from "@/hooks/useRequests";
+import { useTasksFlat, useProjectsFlat } from "@/hooks/use-queries";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchDirectory } from "@/lib/directory";
+import { buildOrgTree, flattenOrg, type OrgPerson } from "@/lib/orgChart";
 import { dueLabel, dueUrgency } from "@/lib/dueDate";
 import { cn } from "@/lib/utils";
 import {
-  buildTeamLoad,
+  buildTotalLoad,
   comparePeople,
-  itemPoints,
   DEFAULT_WEEKLY_CAPACITY_WLP,
   UNASSIGNED_KEY,
   type Band,
-  type PersonLoad,
+  type LoadItem,
+  type PersonTotalLoad,
   type SortKey,
   type WindowKey,
 } from "@/lib/workloadMetrics";
 import { getWorkloadPrefs, setWorkloadPrefs } from "@/lib/workloadPrefs";
-import type { ArtRequest } from "@/types/request";
+import type { ProjectWithMeta } from "@/types/projects";
+import type { RequestStatus } from "@/types/request";
 
 /** Band → design-system color token (never the crimson brand accent for data). */
 const BAND_TOKEN: Record<Band, string> = {
@@ -87,6 +96,23 @@ const SORT_LABEL: Record<SortKey, string> = {
   points: "Points",
   name: "Name",
   overdue: "Overdue",
+};
+
+/** LoadItem.kind → the route + avatar entity type for the drill-in link. */
+const KIND_ROUTE: Record<LoadItem["kind"], string> = {
+  request: "/requests",
+  project: "/projects",
+  task: "/tasks",
+};
+const KIND_AVATAR: Record<LoadItem["kind"], "request" | "project" | "task"> = {
+  request: "request",
+  project: "project",
+  task: "task",
+};
+const KIND_LABEL: Record<LoadItem["kind"], string> = {
+  request: "Request",
+  project: "Project",
+  task: "Task",
 };
 
 const tooltipStyle = {
@@ -220,18 +246,35 @@ function CapacityBar({ util, band }: { util: number; band: Band }) {
   );
 }
 
-/** One drill-in row: the request as a link + its per-item WLP contribution. */
-function RequestRow({ r }: { r: ArtRequest }) {
-  const urgency = dueUrgency(r.due_date);
+/** Small neutral kind badge ("Project" / "Task") for non-request contributions. */
+function KindBadge({ kind }: { kind: LoadItem["kind"] }) {
+  const token = kind === "project" ? "--entity-project" : "--entity-task";
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+      style={{ backgroundColor: `hsl(var(${token}) / 0.14)`, color: `hsl(var(${token}))` }}
+    >
+      {KIND_LABEL[kind]}
+    </span>
+  );
+}
+
+/** One drill-in row: any LoadItem as a link + its per-item WLP contribution.
+ *  Requests keep priority + status chips; projects/tasks show a kind badge + role. */
+function LoadItemRow({ item }: { item: LoadItem }) {
+  const urgency = dueUrgency(item.due_date);
+  // The link target uses the underlying entity id (strip the synthetic prefix we
+  // add to make LoadItem ids unique across kinds/roles).
+  const entityId = item.id.includes(":") ? item.id.split(":")[1] : item.id;
   return (
     <li>
       <Link
-        to={`/requests/${r.id}`}
+        to={`${KIND_ROUTE[item.kind]}/${entityId}`}
         className="flex items-center gap-2 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent/40"
       >
-        <EntityAvatar type="request" seed={r.id} name={r.title} size="xs" />
-        <span className="flex-1 truncate text-foreground">{r.title}</span>
-        {r.due_date && (
+        <EntityAvatar type={KIND_AVATAR[item.kind]} seed={item.id} name={item.title} size="xs" />
+        <span className="flex-1 truncate text-foreground">{item.title}</span>
+        {item.due_date && (
           <span
             className="hidden shrink-0 text-xs tabular-nums sm:inline"
             style={{
@@ -243,13 +286,24 @@ function RequestRow({ r }: { r: ArtRequest }) {
                     : "hsl(var(--muted-foreground))",
             }}
           >
-            {dueLabel(r.due_date)}
+            {dueLabel(item.due_date)}
           </span>
         )}
-        <PriorityBadge priority={r.priority} />
-        <StatusBadge status={r.status} />
+        {item.kind === "request" ? (
+          <>
+            {item.priority && <PriorityBadge priority={item.priority} />}
+            {item.status && <StatusBadge status={item.status as RequestStatus} />}
+          </>
+        ) : (
+          <>
+            <KindBadge kind={item.kind} />
+            {item.role && (
+              <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">{item.role}</span>
+            )}
+          </>
+        )}
         <span className="w-12 shrink-0 text-right text-xs font-semibold tabular-nums text-muted-foreground">
-          {itemPoints(r).toFixed(1)} pts
+          {item.points.toFixed(1)} pts
         </span>
       </Link>
     </li>
@@ -264,7 +318,7 @@ function PersonLoadCard({
   selected,
   onSelect,
 }: {
-  load: PersonLoad;
+  load: PersonTotalLoad;
   selected: boolean;
   onSelect: (key: string) => void;
 }) {
@@ -320,8 +374,8 @@ function PersonLoadCard({
         </div>
 
         <ul className="divide-y divide-border/60">
-          {shown.map((r) => (
-            <RequestRow key={r.id} r={r} />
+          {shown.map((item) => (
+            <LoadItemRow key={item.id} item={item} />
           ))}
         </ul>
 
@@ -343,11 +397,117 @@ function PersonLoadCard({
   );
 }
 
+/** Build a user_id → display-name directory from everything we know locally:
+ *  project stakeholders (they carry full_name), plus the current signed-in user.
+ *  Any task/project owner id not covered here falls back to a short id label in
+ *  buildTotalLoad (never blank). This keeps preview fully self-contained. */
+function useDirectory(projects: ProjectWithMeta[]): Map<string, string> {
+  const { user, profile } = useAuth();
+  return useMemo(() => {
+    const dir = new Map<string, string>();
+    for (const p of projects) {
+      for (const s of p.stakeholders ?? []) {
+        if (s.user_id && s.full_name && s.full_name.trim() && !dir.has(s.user_id)) {
+          dir.set(s.user_id, s.full_name.trim());
+        }
+      }
+    }
+    // The signed-in user — so someone with only tasks/projects (e.g. the admin)
+    // is named, not shown as an id. Their profile name wins for their own id.
+    const meId = user?.id ?? profile?.user_id ?? null;
+    const meName = profile?.full_name ?? null;
+    if (meId && meName && meName.trim()) dir.set(meId, meName.trim());
+    return dir;
+  }, [projects, user?.id, profile?.user_id, profile?.full_name]);
+}
+
+/**
+ * Access scope for the Workload view (ACL). Admins see everyone's load (it's
+ * metadata — counts + ownership, not project detail — so no authorization is
+ * needed). A non-admin (manager/lead) sees ONLY their reporting subtree within
+ * their own department, plus their own row. Enforced here at the view; the real
+ * data boundary is RLS. Returns null `allowedKeys` = "see all" (admin).
+ *
+ * Workload people are keyed by lowercased name, so the allowed set carries both
+ * each subordinate's full name and their first name (request leads are often
+ * recorded first-name-only).
+ */
+function useWorkloadScope(): { isAdmin: boolean; allowedKeys: Set<string> | null } {
+  const { user, profile } = useAuth();
+  const isAdmin = !!profile?.is_admin || profile?.role === "admin";
+  const { data: directory = [] } = useQuery({
+    queryKey: ["workload-directory"],
+    queryFn: fetchDirectory,
+    staleTime: 5 * 60_000,
+    enabled: !isAdmin, // admins see all → no need to fetch the org
+  });
+
+  return useMemo(() => {
+    if (isAdmin) return { isAdmin: true, allowedKeys: null };
+
+    const meId = user?.id ?? profile?.user_id ?? null;
+    const meEmail = (profile?.email ?? user?.email ?? null)?.toLowerCase() ?? null;
+
+    // Map email → id so manager_email links resolve to a manager id.
+    const idByEmail = new Map<string, string>();
+    for (const p of directory) {
+      const id = p.user_id ?? (p.email ? `email:${p.email.toLowerCase()}` : null);
+      if (id && p.email) idByEmail.set(p.email.toLowerCase(), id);
+    }
+    const orgPeople: OrgPerson[] = directory.map((p) => ({
+      id: p.user_id ?? (p.email ? `email:${p.email.toLowerCase()}` : p.full_name ?? "?"),
+      name: p.full_name ?? p.email ?? "Unknown",
+      department: p.department ?? undefined,
+      managerId: p.manager_email ? idByEmail.get(p.manager_email.toLowerCase()) ?? null : null,
+    }));
+
+    // Locate the viewer in the directory (by id, then email).
+    const me =
+      orgPeople.find((p) => meId && p.id === meId) ??
+      orgPeople.find((p) => meEmail && p.id === `email:${meEmail}`) ??
+      orgPeople.find((p) => {
+        const dp = directory.find((d) => d.user_id === p.id || (d.email && `email:${d.email.toLowerCase()}` === p.id));
+        return meEmail && dp?.email?.toLowerCase() === meEmail;
+      }) ?? null;
+
+    const keys = new Set<string>();
+    const addName = (n?: string | null) => {
+      if (!n) return;
+      const full = n.trim().toLowerCase();
+      if (full) { keys.add(full); keys.add(full.split(/\s+/)[0]); }
+    };
+
+    // Always allow the viewer's own row.
+    addName(profile?.full_name ?? me?.name ?? null);
+
+    if (me) {
+      const forest = buildOrgTree(orgPeople);
+      const all = flattenOrg(forest);
+      const meNode = all.find((n) => n.person.id === me.id) ?? null;
+      const myDept = me.department;
+      if (meNode) {
+        for (const n of flattenOrg([meNode])) {
+          // Subordinates within the viewer's department (undefined dept = don't restrict).
+          if (!myDept || n.person.department === myDept) addName(n.person.name);
+        }
+      }
+    }
+
+    return { isAdmin: false, allowedKeys: keys };
+  }, [isAdmin, directory, user?.id, user?.email, profile?.user_id, profile?.email, profile?.full_name]);
+}
+
 export default function Workload() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const { data, isLoading } = useQueue();
-  const requests = useMemo(() => data ?? [], [data]);
+  const { data: requestData, isLoading: requestsLoading } = useQueue();
+  const { tasks, isLoading: tasksLoading } = useTasksFlat();
+  const { projects, isLoading: projectsLoading } = useProjectsFlat();
+
+  const requests = useMemo(() => requestData ?? [], [requestData]);
+  const isLoading = requestsLoading || tasksLoading || projectsLoading;
+
+  const directory = useDirectory(projects);
 
   const initial = useMemo(() => getWorkloadPrefs(userId), [userId]);
   const [win, setWin] = useState<WindowKey>(initial.window);
@@ -363,7 +523,34 @@ export default function Workload() {
     });
   }
 
-  const team = useMemo(() => buildTeamLoad(requests, win), [requests, win]);
+  const { isAdmin, allowedKeys } = useWorkloadScope();
+
+  const fullTeam = useMemo(
+    () => buildTotalLoad({ requests, tasks, projects }, directory, win),
+    [requests, tasks, projects, directory, win],
+  );
+
+  // ACL: a non-admin sees only their subtree (+ self); recompute team totals from
+  // the visible set so the KPIs reflect what they're allowed to see. Admins (null
+  // allowedKeys) see the full team unchanged.
+  const team = useMemo(() => {
+    if (allowedKeys === null) return fullTeam;
+    // Only the viewer's subtree — no Unassigned bucket (not their subordinate).
+    const scored = fullTeam.people.filter(
+      (p) => p.person.key !== UNASSIGNED_KEY && allowedKeys.has(p.person.key),
+    );
+    const totalPoints = Math.round(scored.reduce((s, p) => s + p.points, 0) * 10) / 10;
+    const totalCapacity = scored.reduce((s, p) => s + p.capacity, 0);
+    return {
+      ...fullTeam,
+      people: scored,
+      totalPoints,
+      totalCapacity,
+      teamUtil: totalCapacity > 0 ? totalPoints / totalCapacity : 0,
+      overCount: scored.filter((p) => p.band === "over").length,
+      unassignedPoints: 0,
+    };
+  }, [fullTeam, allowedKeys]);
 
   const people = useMemo(() => {
     const filtered = showUnassigned
@@ -387,9 +574,15 @@ export default function Workload() {
     [people],
   );
 
+  // Total open contributions surfaced in the current window (across all people).
+  const openItemCount = useMemo(
+    () => team.people.reduce((s, p) => s + p.count, 0),
+    [team.people],
+  );
+
   const kpis: Kpi[] = [
     { value: team.people.length, label: "people" },
-    { value: team.totalPoints.toFixed(1), label: "open points", hint: <GlossaryHint term="workloadPoints" /> },
+    { value: team.totalPoints.toFixed(1), label: "open-work points", hint: <GlossaryHint term="workloadPoints" /> },
     {
       value: team.overCount,
       label: "over capacity",
@@ -416,11 +609,11 @@ export default function Workload() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-3 sm:p-4 md:p-6">
       <PageHeader
-        title="Team Workload"
+        title={isAdmin ? "Team Workload" : "My Team's Workload"}
         subtitle={
           isLoading
-            ? "Weighted open work vs weekly capacity"
-            : `Weighted open work vs weekly capacity · ${requests.length} open item${requests.length === 1 ? "" : "s"}`
+            ? "Total open work (requests + projects + tasks) vs weekly capacity"
+            : `${isAdmin ? "Everyone" : "Your reports"} · requests + projects + tasks vs weekly capacity · ${openItemCount} open item${openItemCount === 1 ? "" : "s"}`
         }
         actions={
           <ToggleGroup
@@ -468,7 +661,7 @@ export default function Workload() {
             <EmptyState
               icon={<Users className="h-6 w-6" />}
               title="No open work in this window"
-              description="Try a wider window (All open), or new requests will appear here as they come in."
+              description="Try a wider window (All open), or new work will appear here as it comes in."
             />
           </CardContent>
         </Card>
@@ -495,16 +688,19 @@ export default function Workload() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <SectionHeader label="People" count={people.length} />
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Switch
-                  checked={showUnassigned}
-                  onCheckedChange={(c) => {
-                    setShowUnassigned(c);
-                    persist({ showUnassigned: c });
-                  }}
-                />
-                Show unassigned
-              </label>
+              {/* Unassigned work only exists in the full (admin) view. */}
+              {isAdmin && (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch
+                    checked={showUnassigned}
+                    onCheckedChange={(c) => {
+                      setShowUnassigned(c);
+                      persist({ showUnassigned: c });
+                    }}
+                  />
+                  Show unassigned
+                </label>
+              )}
               <Select
                 value={sort}
                 onValueChange={(v) => {
@@ -552,8 +748,9 @@ export default function Workload() {
               Capacity is a weekly points budget, not hours.
             </TooltipContent>
           </UiTooltip>
-          Workload is weighted by priority and request type (no time tracking). Capacity is a weekly
-          points budget of {DEFAULT_WEEKLY_CAPACITY_WLP} — a planning heuristic, not a clock.
+          Workload counts open requests (priority × type), projects (owner 3 / stakeholder 1.5), and
+          tasks (1) — no time tracking. Capacity is a weekly points budget of{" "}
+          {DEFAULT_WEEKLY_CAPACITY_WLP} — a planning heuristic, not a clock.
         </p>
       </TooltipProvider>
     </div>
