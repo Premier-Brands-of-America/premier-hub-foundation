@@ -76,9 +76,11 @@ export const GLOSSARY: Record<string, { title: string; body: ReactNode }> = {
     title: "Node size = workload",
     body: (
       <>
-        A person's circle grows with the work they're attached to in the graph: leading a project
-        counts <b>3</b>, being a stakeholder <b>1.5</b>, holding a task <b>1</b>. A vermilion ring
-        marks someone heavily loaded.
+        A person's circle grows with their <b>total open workload</b> — the same number as the
+        Workload report, no matter where the work comes from: art <b>requests</b> they lead
+        (priority × type), <b>projects</b> they own (<b>3</b>) or support (<b>1.5</b>), and{" "}
+        <b>tasks</b> assigned to them (<b>1</b>). The busiest person in view is the largest; a
+        vermilion ring marks someone <b>over capacity</b>.
       </>
     ),
   },

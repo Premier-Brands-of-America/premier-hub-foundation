@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useGraphData } from "@/hooks/use-graph-data";
 import { useGraphRealtime } from "@/hooks/use-graph-realtime";
 import { useAuth } from "@/hooks/useAuth";
-import { GRAPH_WORKLOAD_WEIGHT, GRAPH_WORKLOAD_OVERLOAD } from "@/components/graph/graphColors";
+import { useQueue } from "@/hooks/useRequests";
+import { useTasksFlat, useProjectsFlat } from "@/hooks/use-queries";
+import { buildTotalLoad, UNASSIGNED_KEY, type PersonTotalLoad } from "@/lib/workloadMetrics";
 import { MemoryInsightsPanel } from "@/components/memory/MemoryInsightsPanel";
 import { DEFAULT_FORCES } from "@/types/graph";
 import { Network, Share2, Brain, SlidersHorizontal } from "lucide-react";
@@ -294,8 +296,53 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
 
   useGraphRealtime();
   const { data, isLoading } = useGraphData(filters, mode);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const isAdmin = !!profile?.is_admin || profile?.role === "admin";
+
+  // General per-person workload (requests + projects + tasks) — the SAME model the
+  // Workload report uses, so a user's node size reflects their TOTAL open load
+  // regardless of source, and the graph and the report agree. ("El workload es
+  // general — medir el workload de los users sin importar de dónde venga.")
+  const { data: requestData } = useQueue();
+  const { tasks } = useTasksFlat();
+  const { projects: wlProjects } = useProjectsFlat();
+  const workloadDirectory = useMemo(() => {
+    const dir = new Map<string, string>();
+    for (const p of wlProjects) {
+      for (const s of p.stakeholders ?? []) {
+        if (s.user_id && s.full_name?.trim() && !dir.has(s.user_id)) dir.set(s.user_id, s.full_name.trim());
+      }
+    }
+    const meId = user?.id ?? profile?.user_id ?? null;
+    const meName = profile?.full_name ?? null;
+    if (meId && meName?.trim()) dir.set(meId, meName.trim());
+    return dir;
+  }, [wlProjects, user?.id, profile?.user_id, profile?.full_name]);
+  const workload = useMemo(
+    () => buildTotalLoad({ requests: requestData ?? [], tasks, projects: wlProjects }, workloadDirectory, "all_open"),
+    [requestData, tasks, wlProjects, workloadDirectory],
+  );
+  // Resolve a person node's display label to its workload row. People are keyed by
+  // lowercased name; match the full label, then a unique first name (request leads
+  // are often recorded first-name-only).
+  const workloadIndex = useMemo(() => {
+    const byName = new Map<string, PersonTotalLoad>();
+    const firstCount = new Map<string, number>();
+    for (const p of workload.people) {
+      if (p.person.key === UNASSIGNED_KEY) continue;
+      byName.set(p.person.name.trim().toLowerCase(), p);
+      byName.set(p.person.key, p);
+      const f = p.person.name.trim().toLowerCase().split(/\s+/)[0];
+      firstCount.set(f, (firstCount.get(f) ?? 0) + 1);
+    }
+    const byFirst = new Map<string, PersonTotalLoad>();
+    for (const p of workload.people) {
+      if (p.person.key === UNASSIGNED_KEY) continue;
+      const f = p.person.name.trim().toLowerCase().split(/\s+/)[0];
+      if (firstCount.get(f) === 1) byFirst.set(f, p);
+    }
+    return { byName, byFirst };
+  }, [workload.people]);
 
   useEffect(() => {
     const p = filtersToParams(filters);
@@ -327,44 +374,38 @@ export default function GraphPage({ initialMode }: { initialMode?: GraphMode } =
   );
   const filtered = useMemo(() => applyViewFilters(scoped, view), [scoped, view]);
 
-  // Workload reflection: a person's node size reflects the work they're attached
-  // to IN THE GRAPH — only projects and tasks carry weight, and leading a project
-  // outweighs holding a task (owner 3 ≫ stakeholder 1.5 ≫ task 1). Computed from
-  // the graph's own owns/stakeholder/assigned_to edges, so it's coherent with what
-  // the canvas draws (no dependency on the request queue). Network mode only.
+  // Workload reflection: a person's node size reflects their TOTAL open workload —
+  // art requests they lead, projects they own or support, and tasks assigned to
+  // them — the SAME number the Workload report shows, matched onto the person node
+  // by name. General by design: the size measures the person's load regardless of
+  // where the work comes from, not just what happens to be wired in this view.
+  // Network mode only.
   const payload = useMemo<GraphPayload>(() => {
     if (mode !== "network") return filtered;
-    const typeOf = new Map(filtered.nodes.map((n) => [n.id, n.type] as const));
-    const points = new Map<string, number>();
-    const add = (id: string, w: number) => points.set(id, (points.get(id) ?? 0) + w);
-    for (const e of filtered.edges) {
-      const [s, t] = edgeEnds(e);
-      const su = typeOf.get(s) === "user";
-      const tu = typeOf.get(t) === "user";
-      const person = su ? s : tu ? t : null;
-      const other = su ? t : s;
-      if (!person) continue;
-      const ot = typeOf.get(other);
-      const W = GRAPH_WORKLOAD_WEIGHT;
-      if (e.type === "owns" && ot === "project") add(person, W.ownsProject);
-      else if (e.type === "stakeholder" && ot === "project") add(person, W.stakeholderProject);
-      else if (e.type === "assigned_to" && ot === "task") add(person, W.assignedTask);
-    }
-    if (points.size === 0) return filtered;
-    const nodes = filtered.nodes.map((n) =>
-      n.type === "user" && points.has(n.id)
-        ? {
-            ...n,
-            metadata: {
-              ...(n.metadata ?? {}),
-              workloadPoints: points.get(n.id),
-              overloaded: (points.get(n.id) ?? 0) >= GRAPH_WORKLOAD_OVERLOAD,
-            },
-          }
-        : n,
-    );
-    return { ...filtered, nodes };
-  }, [filtered, mode]);
+    const { byName, byFirst } = workloadIndex;
+    if (byName.size === 0) return filtered;
+    const resolve = (label: string | undefined): PersonTotalLoad | undefined => {
+      const l = (label ?? "").trim().toLowerCase();
+      if (!l) return undefined;
+      return byName.get(l) ?? byFirst.get(l) ?? byFirst.get(l.split(/\s+/)[0]);
+    };
+    let matched = false;
+    const nodes = filtered.nodes.map((n) => {
+      if (n.type !== "user") return n;
+      const load = resolve(n.label);
+      if (!load) return n;
+      matched = true;
+      return {
+        ...n,
+        metadata: {
+          ...(n.metadata ?? {}),
+          workloadPoints: load.points,
+          overloaded: load.band === "over",
+        },
+      };
+    });
+    return matched ? { ...filtered, nodes } : filtered;
+  }, [filtered, mode, workloadIndex]);
 
   const statusOptions = useMemo(() => {
     const set = new Set<string>();
